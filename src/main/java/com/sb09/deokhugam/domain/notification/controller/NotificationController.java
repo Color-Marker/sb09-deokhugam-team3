@@ -1,8 +1,10 @@
 package com.sb09.deokhugam.domain.notification.controller;
 
+import com.sb09.deokhugam.domain.notification.dto.request.NotificationListRequest;
 import com.sb09.deokhugam.domain.notification.dto.request.NotificationUpdateRequest;
 import com.sb09.deokhugam.domain.notification.dto.response.NotificationDto;
 import com.sb09.deokhugam.domain.notification.service.NotificationService;
+import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,10 +25,11 @@ public class NotificationController {
 
   private final NotificationService notificationService;
 
-  @GetMapping
-  public ResponseEntity<?> list(
+  @PatchMapping("/read-all")
+  public ResponseEntity<Void> readAll(
+      @RequestHeader("Deokhugam-Request-User-ID") UUID userId
   ){
-
+    return notificationService.readAll(userId);
   }
 
   @PatchMapping("/{notificationId}")
@@ -36,6 +39,13 @@ public class NotificationController {
       @RequestBody NotificationUpdateRequest request
   ){
     NotificationDto result = notificationService.updateStatus(notificationId, userId, request);
+    return ResponseEntity.ok(result);
+  }
+
+  @GetMapping
+  public ResponseEntity<CursorPageResponseDto<NotificationDto>> list(NotificationListRequest request){
+    CursorPageResponseDto<NotificationDto> result = notificationService.list(request);
+    return ResponseEntity.ok(result);
   }
 
 }
