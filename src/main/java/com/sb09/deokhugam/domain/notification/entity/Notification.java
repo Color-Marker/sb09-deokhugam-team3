@@ -26,7 +26,7 @@ public class Notification extends BaseUpdateableEntity {
   @Column(name = "confirm_status", nullable = false)
   private boolean confirmStatus;
 
-  @Column(nullable = false)
+  @Column(nullable = false, length = 10)
   @Enumerated(EnumType.STRING)
   private NotificationType type;
 
