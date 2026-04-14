@@ -1,4 +1,4 @@
-package com.sb09.deokhugam.domain.notification;
+package com.sb09.deokhugam.domain.notification.entity;
 
 import com.sb09.deokhugam.global.common.entity.BaseUpdateableEntity;
 import jakarta.persistence.Column;
