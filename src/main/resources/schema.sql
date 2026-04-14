@@ -140,11 +140,14 @@ CREATE TABLE notifications (
                                CONSTRAINT pk_notifications
                                    PRIMARY KEY (id),
                                CONSTRAINT fk_notifications_user
-                                   FOREIGN KEY (user_id) REFERENCES users (id),
+                                   FOREIGN KEY (user_id) REFERENCES users (id)
+                                   ON DELETE CASCADE,
                                CONSTRAINT fk_notifications_sender
-                                   FOREIGN KEY (sender_id) REFERENCES users (id),
+                                   FOREIGN KEY (sender_id) REFERENCES users (id)
+                                   ON DELETE SET NULL,
                                CONSTRAINT fk_notifications_review
-                                   FOREIGN KEY (review_id) REFERENCES reviews (id),
+                                   FOREIGN KEY (review_id) REFERENCES reviews (id)
+                                   ON DELETE CASCADE,
                                CONSTRAINT chk_notifications_type
                                    CHECK (type IN ('LIKE', 'COMMENT', 'RANKING'))
 );
