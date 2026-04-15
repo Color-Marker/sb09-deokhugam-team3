@@ -158,7 +158,8 @@ CREATE TABLE notifications (
 CREATE TABLE popular_books (
                                id              UUID            NOT NULL DEFAULT gen_random_uuid(),
                                book_id         UUID            NOT NULL,
-                               period          VARCHAR(10)     NOT NULL,       -- DAILY | WEEKLY | MONTHLY | ALL_TIME
+                               period          VARCHAR(10)     NOT NULL,-- DAILY | WEEKLY | MONTHLY | ALL_TIME
+                               base_date       DATE            NOT NULL,
                                rank            BIGINT          NOT NULL,
                                score           DECIMAL(10, 4)  NOT NULL,
                                review_count    BIGINT          NOT NULL DEFAULT 0,
@@ -169,6 +170,8 @@ CREATE TABLE popular_books (
                                    PRIMARY KEY (id),
                                CONSTRAINT fk_popular_books_book
                                    FOREIGN KEY (book_id) REFERENCES books (id),
+                               CONSTRAINT uq_popular_books_target
+                                   UNIQUE (book_id, period, base_date),
                                CONSTRAINT chk_popular_books_period
                                    CHECK (period IN ('DAILY', 'WEEKLY', 'MONTHLY', 'ALL_TIME')),
                                CONSTRAINT chk_popular_books_rank
@@ -184,6 +187,7 @@ CREATE TABLE popular_reviews (
                                  id              UUID            NOT NULL DEFAULT gen_random_uuid(),
                                  review_id       UUID            NOT NULL,
                                  period          VARCHAR(10)     NOT NULL,       -- DAILY | WEEKLY | MONTHLY | ALL_TIME
+                                 base_date       DATE            NOT NULL,
                                  rank            BIGINT          NOT NULL,
                                  score           DECIMAL(10, 4)  NOT NULL,
                                  like_count      BIGINT          NOT NULL DEFAULT 0,
@@ -194,6 +198,8 @@ CREATE TABLE popular_reviews (
                                      PRIMARY KEY (id),
                                  CONSTRAINT fk_popular_reviews_review
                                      FOREIGN KEY (review_id) REFERENCES reviews (id),
+                                 CONSTRAINT uq_popular_reviews_target
+                                     UNIQUE (review_id, period, base_date),
                                  CONSTRAINT chk_popular_reviews_period
                                      CHECK (period IN ('DAILY', 'WEEKLY', 'MONTHLY', 'ALL_TIME')),
                                  CONSTRAINT chk_popular_reviews_rank
@@ -207,6 +213,7 @@ CREATE TABLE power_users (
                              id                  UUID            NOT NULL DEFAULT gen_random_uuid(),
                              user_id             UUID            NOT NULL,
                              period              VARCHAR(10)     NOT NULL,   -- DAILY | WEEKLY | MONTHLY | ALL_TIME
+                             base_date           DATE            NOT NULL,
                              rank                BIGINT          NOT NULL,
                              score               DECIMAL(10, 4)  NOT NULL,
                              review_score_sum    DECIMAL(10, 4)  NOT NULL DEFAULT 0.0,
@@ -218,6 +225,8 @@ CREATE TABLE power_users (
                                  PRIMARY KEY (id),
                              CONSTRAINT fk_power_users_user
                                  FOREIGN KEY (user_id) REFERENCES users (id),
+                             CONSTRAINT uq_power_users_target
+                                 UNIQUE (user_id, period, base_date),
                              CONSTRAINT chk_power_users_period
                                  CHECK (period IN ('DAILY', 'WEEKLY', 'MONTHLY', 'ALL_TIME')),
                              CONSTRAINT chk_power_users_rank
@@ -259,13 +268,13 @@ CREATE INDEX idx_notifications_confirmed ON notifications (confirmed);
 CREATE INDEX idx_notifications_created_at ON notifications (created_at);
 
 -- popular_books
-CREATE INDEX idx_popular_books_period_rank ON popular_books (period, rank);  -- 커서페이지네이션용
+CREATE INDEX idx_popular_books_period_rank ON popular_books (period, base_date, rank);  -- 커서페이지네이션용
 CREATE INDEX idx_popular_books_created_at ON popular_books (created_at);
 
 -- popular_reviews
-CREATE INDEX idx_popular_reviews_period_rank ON popular_reviews (period, rank); -- 커서페이지네이션용
+CREATE INDEX idx_popular_reviews_period_rank ON popular_reviews (period, base_date, rank); -- 커서페이지네이션용
 CREATE INDEX idx_popular_reviews_created_at ON popular_reviews (created_at);
 
 -- power_users
-CREATE INDEX idx_power_users_period_rank ON power_users (period, rank); -- 커서페이지네이션용
+CREATE INDEX idx_power_users_period_rank ON power_users (period, base_date, rank); -- 커서페이지네이션용
 CREATE INDEX idx_power_users_created_at ON power_users (created_at);
