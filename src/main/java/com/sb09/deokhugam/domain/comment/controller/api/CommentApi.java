@@ -53,6 +53,7 @@ public interface CommentApi {
   })
   ResponseEntity<CommentDto> updateComment(
       @Parameter(description = "댓글 ID") @PathVariable UUID commentId,
+      @PathVariable UUID requestUserId,
       @RequestBody CommentUpdateRequest request
   );
 
@@ -63,7 +64,8 @@ public interface CommentApi {
       @ApiResponse(responseCode = "404", description = "댓글을 찾을 수 없음")
   })
   ResponseEntity<Void> softDeleteComment(
-      @Parameter(description = "댓글 ID") @PathVariable UUID commentId
+      @Parameter(description = "댓글 ID") @PathVariable UUID commentId,
+      @PathVariable UUID requestUserId
   );
 
   @Operation(summary = "댓글 물리 삭제", description = "댓글을 DB에서 완전히 삭제합니다.")
@@ -73,6 +75,7 @@ public interface CommentApi {
       @ApiResponse(responseCode = "404", description = "댓글을 찾을 수 없음")
   })
   ResponseEntity<Void> hardDeleteComment(
-      @Parameter(description = "댓글 ID") @PathVariable UUID commentId
+      @Parameter(description = "댓글 ID") @PathVariable UUID commentId,
+      @PathVariable UUID requestUserId
   );
 }

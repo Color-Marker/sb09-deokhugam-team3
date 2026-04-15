@@ -55,25 +55,28 @@ public class CommentController implements CommentApi {
   @PatchMapping("/{commentId}")
   public ResponseEntity<CommentDto> updateComment(
       @PathVariable UUID commentId,
+      @RequestParam UUID requestUserId,
       @Valid @RequestBody CommentUpdateRequest request
   ) {
-    CommentDto updated = commentService.update(commentId, request);
+    CommentDto updated = commentService.update(commentId, requestUserId, request);
     return ResponseEntity.ok(updated);
   }
 
   @DeleteMapping("/{commentId}")
   public ResponseEntity<Void> softDeleteComment(
-      @PathVariable UUID commentId
+      @PathVariable UUID commentId,
+      @RequestParam UUID requestUserId
   ) {
-    commentService.softDelete(commentId);
+    commentService.softDelete(commentId, requestUserId);
     return ResponseEntity.noContent().build();
   }
 
   @DeleteMapping("/{commentId}/hard")
   public ResponseEntity<Void> hardDeleteComment(
-      @PathVariable UUID commentId
+      @PathVariable UUID commentId,
+      @RequestParam UUID requestUserId
   ) {
-    commentService.hardDelete(commentId);
+    commentService.hardDelete(commentId, requestUserId);
     return ResponseEntity.noContent().build();
   }
 }
