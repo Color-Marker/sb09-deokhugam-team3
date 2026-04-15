@@ -15,6 +15,7 @@ import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
 import com.sb09.deokhugam.global.Exception.comment.CommentAlreadyDeletedException;
 import com.sb09.deokhugam.global.Exception.comment.CommentNotFoundException;
+import com.sb09.deokhugam.global.Exception.comment.ForbiddenAuthorityException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -83,11 +84,14 @@ public class BasicCommentService implements CommentService {
 
   @Override
   @Transactional
-  public CommentDto update(UUID commentId, CommentUpdateRequest request) {
+  public CommentDto update(UUID commentId, UUID requestUserId, CommentUpdateRequest request) {
     Comment comment = commentRepository.findById(commentId)
         .orElseThrow(() -> CommentNotFoundException.withId(commentId));
     if (comment.getDeletedAt() != null) {
       throw new CustomException(ErrorCode.DELETED_COMMENT);
+    }
+    if (!comment.getUser().getId().equals(requestUserId)) {
+      throw new CustomException(ErrorCode.COMMENT_UPDATE_FORBIDDEN);
     }
     comment.updateContent(request.content());
     return commentMapper.toDto(comment);
@@ -95,24 +99,28 @@ public class BasicCommentService implements CommentService {
 
   @Override
   @Transactional
-  public void softDelete(UUID commentId) {
+  public void softDelete(UUID commentId, UUID requestUserId) {
     Comment comment = commentRepository.findById(commentId)
         .orElseThrow(() -> CommentNotFoundException.withId(commentId));
 
     if (comment.getDeletedAt() != null) {
       throw new CommentAlreadyDeletedException();
     }
-    // TODO: 권한 체크
+    if (!comment.getUser().getId().equals(requestUserId)) {
+      throw new ForbiddenAuthorityException(ErrorCode.COMMENT_DELETE_FORBIDDEN);
+    }
     comment.markAsDeleted();
   }
 
   @Override
   @Transactional
-  public void hardDelete(UUID commentId) {
+  public void hardDelete(UUID commentId, UUID requestUserId) {
     Comment comment = commentRepository.findById(commentId)
         .orElseThrow(() -> CommentNotFoundException.withId(commentId));
 
-    // TODO: 권한 체크
+    if (!comment.getUser().getId().equals(requestUserId)) {
+      throw new ForbiddenAuthorityException(ErrorCode.COMMENT_DELETE_FORBIDDEN);
+    }
     commentRepository.delete(comment);
   }
 }
