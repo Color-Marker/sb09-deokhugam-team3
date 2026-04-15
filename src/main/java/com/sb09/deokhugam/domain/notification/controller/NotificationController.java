@@ -29,7 +29,8 @@ public class NotificationController {
   public ResponseEntity<Void> readAll(
       @RequestHeader("Deokhugam-Request-User-ID") UUID userId
   ){
-    return notificationService.readAll(userId);
+    notificationService.readAll(userId);
+    return ResponseEntity.noContent().build();
   }
 
   @PatchMapping("/{notificationId}")

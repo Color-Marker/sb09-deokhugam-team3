@@ -9,6 +9,5 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
-  @Query("SELECT n FROM Notification n WHERE n.user.id = :userId")
-  List<Notification> findAllByUserId(@Param("userId") UUID userId);
+  List<Notification> findByUserId(UUID userId);
 }
