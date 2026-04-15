@@ -13,11 +13,16 @@ import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
+import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +35,7 @@ public class BasicNotificationService implements NotificationService {
   private final NotificationRepository notificationRepository;
   private final UserRepository userRepository;
   private final NotificationMapper notificationMapper;
+  private final CursorPageResponseMapper cursorPageResponseMapper;
 
   @Override
   public void readAll(UUID userId) {
@@ -73,30 +79,21 @@ public class BasicNotificationService implements NotificationService {
     }
 
     notification.update();
-    String message;
 
-    if(notification.getType().equals(NotificationType.RANKING)){
-      message = "당신의 리뷰가 인기 순위 10위 내에 선정되었습니다.";
-    }
-    else {
-      String nickname = notification.getSender() != null ? notification.getSender().getNickname() : "알 수 없음";
-      message = createMessage(notification.getType(), nickname);
-    }
-
-    return notificationMapper.toDto(notification, message);
+    return notificationMapper.toDto(notification);
   }
 
-  public String createMessage(NotificationType type, String nickname){
-    if(type.equals(NotificationType.LIKE)) {
-      return "[" + nickname + "]님이 나의 리뷰를 좋아합니다.";
-    }
-    else {
-      return "[" + nickname + "]님이 나의 리뷰에 댓글을 남겼습니다.";
-    }
-  }
-
+  @Transactional(readOnly = true)
   @Override
   public CursorPageResponseDto<NotificationDto> list(NotificationListRequest request) {
-    return null;
+    Slice<Notification> slice = notificationRepository.searchNotifiaction(request);
+    Long totalElements = notificationRepository.countNotification(request);
+    return cursorPageResponseMapper.fromSlice(
+        slice,
+        notificationMapper::toDto,
+        Notification::getId,
+        Notification::getCreatedAt,
+        totalElements
+    );
   }
 }
