@@ -9,6 +9,7 @@ build/
 *.log
 .env
 deokhugam.env
+gradlew
 
 ### STS ###
 .apt_generated
