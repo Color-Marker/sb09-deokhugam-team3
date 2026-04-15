@@ -8,6 +8,10 @@ import com.sb09.deokhugam.domain.review.entity.Review;
 import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
+
+import com.sb09.deokhugam.global.Exception.CustomException;
+import com.sb09.deokhugam.global.Exception.ErrorCode;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,13 +37,14 @@ public class ReviewService {
 
     // 도서와 유저가 실제로 DB에 존재하는지 확인
     Book book = bookRepository.findById(request.bookId())
-        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 도서입니다."));
+        .orElseThrow(() -> new CustomException(ErrorCode.BOOK_NOT_FOUND));
+
     Users user = userRepository.findById(userId)
-        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
     // 중복 작성 검증 (1인 1리뷰)
     if (reviewRepository.existsByBookIdAndUserId(book.getId(), user.getId())) {
-      throw new IllegalArgumentException("이미 해당 도서에 작성한 리뷰가 존재합니다.");
+      throw new CustomException(ErrorCode.DUPLICATE_REVIEW);
     }
 
     // 리뷰 엔티티 생성 및 저장
@@ -54,7 +59,7 @@ public class ReviewService {
     // 유저 활동 점수 업데이트 (Users 엔티티의 메서드 사용)
     user.addReviewScore(request.rating().doubleValue());
 
-    //  도서 통계 업데이트 로직 호출
+    // 도서 통계 업데이트 로직 호출
     updateBookStats(book, request.rating());
   }
 
@@ -65,11 +70,11 @@ public class ReviewService {
   public void updateReview(UUID reviewId, ReviewUpdateRequest request, UUID userId) {
 
     Review review = reviewRepository.findById(reviewId)
-        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 리뷰입니다."));
+        .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
-    // 권한 확인: 수정을 요청한 사람이 실제 작성자인지 검사
+    // 권한 확인: 수정을 요청한 사람이 실제 작성자인지 검사 (CustomException 추가)
     if (!review.getUserId().equals(userId)) {
-      throw new IllegalArgumentException("본인이 작성한 리뷰만 수정할 수 있습니다.");
+      throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
     }
 
     // 내용 및 평점 업데이트
@@ -86,16 +91,16 @@ public class ReviewService {
   public void deleteReview(UUID reviewId, UUID userId) {
 
     Review review = reviewRepository.findById(reviewId)
-        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 리뷰입니다."));
+        .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
     // 권한 확인
     if (!review.getUserId().equals(userId)) {
-      throw new IllegalArgumentException("본인이 작성한 리뷰만 삭제할 수 있습니다.");
+      throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
     }
 
     // 이미 삭제된 리뷰인지 확인
     if (review.getDeletedAt() != null) {
-      throw new IllegalArgumentException("이미 삭제된 리뷰입니다.");
+      throw new CustomException(ErrorCode.DELETED_REVIEW);
     }
 
     // 물리 삭제(reviewRepository.delete(review)) 대신 논리 삭제 처리
@@ -110,10 +115,13 @@ public class ReviewService {
 
     // 기존 총점 = 기존 평균 평점 * 기존 리뷰 개수
     double currentTotal = book.getRating().doubleValue() * book.getReviewCount();
+
     // 새로운 평균 = (기존 총점 + 새로운 평점) / 새로운 리뷰 개수
     double newAverage = (currentTotal + newRatingValue) / newReviewCount;
+
     // 소수점 셋째 자리에서 반올림하여 둘째 자리까지 표현
     BigDecimal finalRating = BigDecimal.valueOf(newAverage).setScale(2, RoundingMode.HALF_UP);
+
     // Book 엔티티 업데이트
     book.updateRatingAndReviewCount(finalRating, newReviewCount);
   }
