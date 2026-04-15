@@ -40,5 +40,7 @@ deokhugam:
       presigned-url-expiration: ${AWS_S3_PRESIGNED_URL_EXPIRATION:PT10M}
 
 logging:
+  file:
+    path: ${LOG_PATH:./.logs}
   level:
     root: info

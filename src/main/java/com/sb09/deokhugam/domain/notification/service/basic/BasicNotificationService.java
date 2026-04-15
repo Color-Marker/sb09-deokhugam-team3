@@ -43,6 +43,7 @@ public class BasicNotificationService implements NotificationService {
       log.warn("사용자를 찾을 수 없습니다.");
       throw new CustomException(ErrorCode.USER_NOT_FOUND);
     }
+    log.info("유저ID: {} 의 모든 알림을 읽음 상태로 전환합니다.", userId);
     List<Notification> notis = notificationRepository.findByUserId(userId);
     for (Notification n : notis){
       n.update();
@@ -74,6 +75,7 @@ public class BasicNotificationService implements NotificationService {
       throw new CustomException(ErrorCode.NOTIFICATION_ACCESS_FORBIDDEN);
     }
 
+    log.info("유저 {}의 알림 {}을 읽음 상태로 전환합니다.", user.getNickname(), notification.getId());
     notification.update();
 
     return notificationMapper.toDto(notification);
@@ -84,6 +86,7 @@ public class BasicNotificationService implements NotificationService {
   public CursorPageResponseDto<NotificationDto> list(NotificationListRequest request) {
     Slice<Notification> slice = notificationRepository.searchNotification(request);
     Long totalElements = notificationRepository.countNotification(request);
+    log.info("유저ID: {} 의 알림 목록을 불러옵니다.", request.getUserId());
     return cursorPageResponseMapper.fromSlice(
         slice,
         notificationMapper::toDto,
@@ -109,13 +112,12 @@ public class BasicNotificationService implements NotificationService {
       // 좋아요 & 댓글
       notification = new Notification(type, review, sender, user);
     }
-    else{
+    else {
       // 랭킹
       notification = new Notification(type, review, null, user);
     }
-
     Notification result = notificationRepository.save(notification);
-    log.info("알람 {}이 생성되었습니다.", result.getId());
+    log.info("타입: {} 인 알람: {} 이 생성되었습니다.", result.getType().toString(), result.getId());
     return result;
   }
 
