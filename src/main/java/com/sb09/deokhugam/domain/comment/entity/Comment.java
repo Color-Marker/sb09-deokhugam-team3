@@ -21,18 +21,18 @@ public class Comment extends BaseFullAuditEntity {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "review_id", nullable = false)
-  private Review reviewId;
+  private Review review;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
-  private Users userId;
+  private Users user;
 
   @Column(name = "content", nullable = false)
   private String content;
 
-  public Comment(Review reviewId, Users userId, String content) {
-    this.reviewId = reviewId;
-    this.userId = userId;
+  public Comment(Review review, Users user, String content) {
+    this.review = review;
+    this.user = user;
     this.content = content;
   }
 
