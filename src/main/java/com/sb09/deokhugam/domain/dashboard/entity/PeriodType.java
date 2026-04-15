@@ -1,6 +1,6 @@
 package com.sb09.deokhugam.domain.dashboard.entity;
 
-public enum Period {
+public enum PeriodType {
   DAILY,
   WEEKLY,
   MONTHLY,

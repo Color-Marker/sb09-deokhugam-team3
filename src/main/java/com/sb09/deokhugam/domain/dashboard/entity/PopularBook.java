@@ -32,8 +32,9 @@ public class PopularBook {
   @Column(name = "book_id", nullable = false)
   private UUID bookId;
 
+  @Enumerated(EnumType.STRING)
   @Column(name = "period", nullable = false, length = 10)
-  private String period; // DAILY, WEEKLY, MONTHLY, ALL_TIME
+  private PeriodType period; // DAILY, WEEKLY, MONTHLY, ALL_TIME
 
   @Column(name = "rank", nullable = false)
   private Long rank;
@@ -52,7 +53,7 @@ public class PopularBook {
   private LocalDateTime createdAt;
 
   @Builder
-  public PopularBook(UUID bookId, String period, Long rank, BigDecimal score, Long reviewCount, BigDecimal rating) {
+  public PopularBook(UUID bookId, PeriodType period, Long rank, BigDecimal score, Long reviewCount, BigDecimal rating) {
     this.bookId = bookId;
     this.period = period;
     this.rank = rank;

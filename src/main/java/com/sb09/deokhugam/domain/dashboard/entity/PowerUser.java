@@ -32,8 +32,9 @@ public class PowerUser {
   @Column(name = "user_id", nullable = false)
   private UUID userId;
 
+  @Enumerated(EnumType.STRING)
   @Column(name = "period", nullable = false, length = 10)
-  private String period;
+  private PeriodType period;
 
   @Column(name = "rank", nullable = false)
   private Long rank;
@@ -55,7 +56,7 @@ public class PowerUser {
   private LocalDateTime createdAt;
 
   @Builder
-  public PowerUser(UUID userId, String period, Long rank, BigDecimal score, BigDecimal reviewScoreSum, Long likeCount, Long commentCount) {
+  public PowerUser(UUID userId, PeriodType period, Long rank, BigDecimal score, BigDecimal reviewScoreSum, Long likeCount, Long commentCount) {
     this.userId = userId;
     this.period = period;
     this.rank = rank;
