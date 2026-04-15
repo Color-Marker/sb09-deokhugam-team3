@@ -5,6 +5,7 @@ import com.sb09.deokhugam.domain.comment.dto.CommentDto;
 import com.sb09.deokhugam.domain.comment.dto.request.CommentCreateRequest;
 import com.sb09.deokhugam.domain.comment.dto.request.CommentUpdateRequest;
 import com.sb09.deokhugam.domain.comment.service.CommentService;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,7 @@ public class CommentController implements CommentApi {
 
   @PostMapping
   public ResponseEntity<CommentDto> createComment(
-      @RequestBody CommentCreateRequest request
+      @Valid @RequestBody CommentCreateRequest request
   ) {
     CommentDto created = commentService.create(request);
     return ResponseEntity.status(HttpStatus.CREATED).body(created); // 생성 성공은 201 반환
@@ -54,7 +55,7 @@ public class CommentController implements CommentApi {
   @PatchMapping("/{commentId}")
   public ResponseEntity<CommentDto> updateComment(
       @PathVariable UUID commentId,
-      @RequestBody CommentUpdateRequest request
+      @Valid @RequestBody CommentUpdateRequest request
   ) {
     CommentDto updated = commentService.update(commentId, request);
     return ResponseEntity.ok(updated);

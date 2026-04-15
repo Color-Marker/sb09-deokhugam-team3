@@ -13,6 +13,7 @@ import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.Exception.comment.CommentAlreadyDeletedException;
 import com.sb09.deokhugam.global.Exception.comment.CommentNotFoundException;
 import java.util.List;
 import java.util.UUID;
@@ -99,7 +100,7 @@ public class BasicCommentService implements CommentService {
         .orElseThrow(() -> CommentNotFoundException.withId(commentId));
 
     if (comment.getDeletedAt() != null) {
-      throw new CustomException(ErrorCode.DELETED_COMMENT);
+      throw new CommentAlreadyDeletedException();
     }
     // TODO: 권한 체크
     comment.markAsDeleted();
