@@ -20,12 +20,10 @@ import lombok.experimental.SuperBuilder;
 @Entity
 @Table(name= "notifications")
 @Getter
-@SuperBuilder
-@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notification extends BaseUpdateableEntity {
 
-  @Column(name = "confirm_status", nullable = false)
+  @Column(name = "confirmed", nullable = false)
   private boolean confirmStatus;
 
   @Column(nullable = false, length = 10)
@@ -46,5 +44,13 @@ public class Notification extends BaseUpdateableEntity {
 
   public void update(){
     this.confirmStatus = true;
+  }
+
+  public Notification(NotificationType type, Review review, Users sender, Users user){
+    this.confirmStatus = false;
+    this.type = type;
+    this.review = review;
+    this.sender = sender;
+    this.user = user;
   }
 }

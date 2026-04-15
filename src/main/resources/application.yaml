@@ -12,6 +12,11 @@ spring:
     open-in-view: false
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
 
 management:
   endpoints:

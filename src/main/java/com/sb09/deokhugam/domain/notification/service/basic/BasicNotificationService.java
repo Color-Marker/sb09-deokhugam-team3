@@ -8,22 +8,18 @@ import com.sb09.deokhugam.domain.notification.entity.NotificationType;
 import com.sb09.deokhugam.domain.notification.mapper.NotificationMapper;
 import com.sb09.deokhugam.domain.notification.repository.NotificationRepository;
 import com.sb09.deokhugam.domain.notification.service.NotificationService;
+import com.sb09.deokhugam.domain.review.entity.Review;
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.Sort;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -86,7 +82,7 @@ public class BasicNotificationService implements NotificationService {
   @Transactional(readOnly = true)
   @Override
   public CursorPageResponseDto<NotificationDto> list(NotificationListRequest request) {
-    Slice<Notification> slice = notificationRepository.searchNotifiaction(request);
+    Slice<Notification> slice = notificationRepository.searchNotification(request);
     Long totalElements = notificationRepository.countNotification(request);
     return cursorPageResponseMapper.fromSlice(
         slice,
@@ -96,4 +92,31 @@ public class BasicNotificationService implements NotificationService {
         totalElements
     );
   }
+
+  // 위는 controller에서 호출 -----------------------------------
+  // 아래는 내부 작업 -----------------------------------
+  @Override
+  public Notification create(NotificationType type, Review review, Users sender){
+    UUID userId = review.getUserId();
+    Users user = userRepository.findById(userId).orElseThrow(
+        () -> {
+          log.warn("사용자를 찾을 수 없습니다");
+          return new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+    );
+    Notification notification;
+    if(!type.equals(NotificationType.RANKING)){
+      // 좋아요 & 댓글
+      notification = new Notification(type, review, sender, user);
+    }
+    else{
+      // 랭킹
+      notification = new Notification(type, review, null, user);
+    }
+
+    Notification result = notificationRepository.save(notification);
+    log.info("알람 {}이 생성되었습니다.", result.getId());
+    return result;
+  }
+
 }
