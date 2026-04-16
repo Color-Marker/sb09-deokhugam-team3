@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 @Table(name = "users")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-
 public class Users extends BaseFullAuditEntity {
 
   @Column(nullable = false, unique = true, length = 255)
@@ -23,7 +22,7 @@ public class Users extends BaseFullAuditEntity {
 
   @Column(nullable = false, length = 255)
   private String password;
-
+  
   @Builder
   public Users(String email, String nickname, String password) {
     this.email = email;
@@ -31,6 +30,7 @@ public class Users extends BaseFullAuditEntity {
     this.password = password;
   }
 
+  // 닉네임 수정 편의 메서드
   public void updateNickname(String nickname) {
     this.nickname = nickname;
   }
