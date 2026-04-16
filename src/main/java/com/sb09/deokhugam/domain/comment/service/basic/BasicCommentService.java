@@ -7,6 +7,8 @@ import com.sb09.deokhugam.domain.comment.entity.Comment;
 import com.sb09.deokhugam.domain.comment.mapper.CommentMapper;
 import com.sb09.deokhugam.domain.comment.repository.CommentRepository;
 import com.sb09.deokhugam.domain.comment.service.CommentService;
+import com.sb09.deokhugam.domain.notification.entity.NotificationType;
+import com.sb09.deokhugam.domain.notification.service.NotificationService;
 import com.sb09.deokhugam.domain.review.entity.Review;
 import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
 import com.sb09.deokhugam.domain.user.entity.Users;
@@ -32,6 +34,7 @@ public class BasicCommentService implements CommentService {
   private final UserRepository userRepository;
   private final ReviewRepository reviewRepository;
   private final CommentMapper commentMapper;
+  private final NotificationService notificationService;
 
   @Override
   @Transactional
@@ -58,6 +61,10 @@ public class BasicCommentService implements CommentService {
     Comment comment = new Comment(review, user, content);
 
     commentRepository.save(comment);
+
+    log.info("리뷰ID: {} 에 대한 유저ID: {} 의 댓글 작성 알람을 생성합니다.", reviewId, userId);
+    notificationService.create(NotificationType.COMMENT, review, user);
+
     return commentMapper.toDto(comment);
   }
 
