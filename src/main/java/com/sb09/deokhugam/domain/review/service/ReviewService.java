@@ -103,8 +103,8 @@ public class ReviewService {
       throw new CustomException(ErrorCode.DELETED_REVIEW);
     }
 
-    // 물리 삭제(reviewRepository.delete(review)) 대신 논리 삭제 처리
-    review.deleteSoftly();
+    // 물리 삭제 대신 BaseFullAuditEntity에서 제공하는 메서드로 논리 삭제 처리
+    review.markAsDeleted();
   }
 
   /**

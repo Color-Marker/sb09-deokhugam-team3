@@ -9,7 +9,7 @@ public record ReviewResponse(
     String bookTitle,
     String bookThumbnailUrl, // 썸네일
     UUID userId,
-    String userNicknama,
+    String userNickname,
     String content,
     Integer rating,
     Integer likeCount,
