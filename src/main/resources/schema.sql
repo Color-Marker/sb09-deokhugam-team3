@@ -269,10 +269,10 @@ CREATE INDEX idx_notifications_confirmed ON notifications (confirmed);
 CREATE INDEX idx_notifications_created_at ON notifications (created_at);
 
 -- popular_books
-CREATE INDEX idx_popular_books_period_ranking ON popular_books (period, ranking);  -- 인덱스명 및 컬럼명 변경
+CREATE INDEX idx_popular_books_period_ranking ON popular_books (period, base_date, ranking);  -- 인덱스명 및 컬럼명 변경
 
 -- popular_reviews
-CREATE INDEX idx_popular_reviews_period_ranking ON popular_reviews (period, ranking); -- 인덱스명 및 컬럼명 변경
+CREATE INDEX idx_popular_reviews_period_ranking ON popular_reviews (period, base_date, ranking); -- 인덱스명 및 컬럼명 변경
 
 -- power_users
-CREATE INDEX idx_power_users_period_ranking ON power_users (period, ranking); -- 인덱스명 및 컬럼명 변경
+CREATE INDEX idx_power_users_period_ranking ON power_users (period, base_date, ranking); -- 인덱스명 및 컬럼명 변경
