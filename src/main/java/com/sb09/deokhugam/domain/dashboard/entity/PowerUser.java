@@ -46,8 +46,8 @@ public class PowerUser {
   @Column(name = "base_date", nullable = false)
   private LocalDate baseDate;
 
-  @Column(name = "rank", nullable = false)
-  private Long rank;
+  @Column(name = "ranking", nullable = false)
+  private Long ranking;
 
   @Column(name = "score", nullable = false, precision = 10, scale = 4)
   private BigDecimal score;
@@ -66,11 +66,11 @@ public class PowerUser {
   private LocalDateTime createdAt;
 
   @Builder
-  public PowerUser(UUID userId, PeriodType period, LocalDate baseDate, Long rank, BigDecimal score, BigDecimal reviewScoreSum, Long likeCount, Long commentCount) {
+  public PowerUser(UUID userId, PeriodType period, LocalDate baseDate, Long ranking, BigDecimal score, BigDecimal reviewScoreSum, Long likeCount, Long commentCount) {
     this.userId = userId;
     this.period = period;
     this.baseDate = baseDate;
-    this.rank = rank;
+    this.ranking = ranking;
     this.score = score;
     this.reviewScoreSum = reviewScoreSum;
     this.likeCount = likeCount;
