@@ -6,7 +6,7 @@
 -- =====================================================
 -- 사용자 (Users)
 -- =====================================================
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
                        id          UUID            NOT NULL DEFAULT gen_random_uuid(),
                        email       VARCHAR(255)    NOT NULL,
                        nickname    VARCHAR(20)     NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE users (
 -- =====================================================
 -- 도서 (Books)
 -- =====================================================
-CREATE TABLE books (
+CREATE TABLE IF NOT EXISTS books (
                        id              UUID            NOT NULL DEFAULT gen_random_uuid(),
                        title           VARCHAR(500)    NOT NULL,
                        author          VARCHAR(255)    NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE books (
 -- =====================================================
 -- 리뷰 (Reviews)
 -- =====================================================
-CREATE TABLE reviews (
+CREATE TABLE IF NOT EXISTS reviews (
                          id              UUID        NOT NULL DEFAULT gen_random_uuid(),
                          book_id         UUID        NOT NULL,
                          user_id         UUID        NOT NULL,
@@ -85,7 +85,7 @@ CREATE TABLE reviews (
 -- =====================================================
 -- 리뷰 좋아요 (Review Likes)
 -- =====================================================
-CREATE TABLE review_likes (
+CREATE TABLE IF NOT EXISTS review_likes (
                               id          UUID        NOT NULL DEFAULT gen_random_uuid(),
                               review_id   UUID        NOT NULL,
                               user_id     UUID        NOT NULL,
@@ -104,7 +104,7 @@ CREATE TABLE review_likes (
 -- =====================================================
 -- 댓글 (Comments) (리뷰의 댓글)
 -- =====================================================
-CREATE TABLE comments (
+CREATE TABLE IF NOT EXISTS comments (
                           id          UUID        NOT NULL DEFAULT gen_random_uuid(),
                           review_id   UUID        NOT NULL,
                           user_id     UUID        NOT NULL,
@@ -127,7 +127,7 @@ CREATE TABLE comments (
 -- type: LIKE(좋아요), COMMENT(댓글), RANKING(인기 리뷰 순위 진입)
 -- sender_id: 좋아요/댓글 발송자 ID, 랭킹 알림은 NULL
 -- user_id: 알림 수신자 (리뷰 작성자)
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
                                id              UUID        NOT NULL DEFAULT gen_random_uuid(),
                                user_id         UUID        NOT NULL,
                                sender_id       UUID        NULL,               -- 랭킹 알림은 NULL
@@ -155,7 +155,7 @@ CREATE TABLE notifications (
 -- =====================================================
 -- 인기 도서 (Popular Books) - 배치 결과 저장
 -- =====================================================
-CREATE TABLE popular_books (
+CREATE TABLE IF NOT EXISTS popular_books (
                                id              UUID            NOT NULL DEFAULT gen_random_uuid(),
                                book_id         UUID            NOT NULL,
                                period          VARCHAR(10)     NOT NULL,-- DAILY | WEEKLY | MONTHLY | ALL_TIME
@@ -183,7 +183,7 @@ CREATE TABLE popular_books (
 -- =====================================================
 -- 인기 리뷰 (Popular Reviews) - 배치 결과 저장
 -- =====================================================
-CREATE TABLE popular_reviews (
+CREATE TABLE IF NOT EXISTS popular_reviews (
                                  id              UUID            NOT NULL DEFAULT gen_random_uuid(),
                                  review_id       UUID            NOT NULL,
                                  period          VARCHAR(10)     NOT NULL,       -- DAILY | WEEKLY | MONTHLY | ALL_TIME
@@ -209,7 +209,7 @@ CREATE TABLE popular_reviews (
 -- =====================================================
 -- 파워 유저 (Power Users) - 배치 결과 저장
 -- =====================================================
-CREATE TABLE power_users (
+CREATE TABLE IF NOT EXISTS power_users (
                              id                  UUID            NOT NULL DEFAULT gen_random_uuid(),
                              user_id             UUID            NOT NULL,
                              period              VARCHAR(10)     NOT NULL,   -- DAILY | WEEKLY | MONTHLY | ALL_TIME
@@ -238,34 +238,34 @@ CREATE TABLE power_users (
 -- =====================================================
 
 -- users
-CREATE INDEX idx_users_email ON users (email); -- 로그인 시에 이메일로 조회
-CREATE INDEX idx_users_deleted_at ON users (deleted_at) WHERE deleted_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_users_email ON users (email); -- 로그인 시에 이메일로 조회
+CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users (deleted_at) WHERE deleted_at IS NOT NULL;
 
 -- books
-CREATE INDEX idx_books_isbn ON books (isbn) WHERE isbn IS NOT NULL;
-CREATE INDEX idx_books_title ON books (title);
-CREATE INDEX idx_books_deleted_at ON books (deleted_at) WHERE deleted_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_books_isbn ON books (isbn) WHERE isbn IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_books_title ON books (title);
+CREATE INDEX IF NOT EXISTS idx_books_deleted_at ON books (deleted_at) WHERE deleted_at IS NOT NULL;
 
 -- reviews
-CREATE INDEX idx_reviews_book_id ON reviews (book_id); -- 특정 도서의 리뷰 목록 조회
-CREATE INDEX idx_reviews_user_id ON reviews (user_id); -- 특정 사용자의 리뷰 목록 조회
-CREATE INDEX idx_reviews_deleted_at ON reviews (deleted_at) WHERE deleted_at IS NOT NULL;
-CREATE INDEX idx_reviews_created_at ON reviews (created_at); -- 커서 페이지네이션용
-CREATE INDEX idx_reviews_rating ON reviews (rating);
+CREATE INDEX IF NOT EXISTS idx_reviews_book_id ON reviews (book_id); -- 특정 도서의 리뷰 목록 조회
+CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews (user_id); -- 특정 사용자의 리뷰 목록 조회
+CREATE INDEX IF NOT EXISTS idx_reviews_deleted_at ON reviews (deleted_at) WHERE deleted_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_reviews_created_at ON reviews (created_at); -- 커서 페이지네이션용
+CREATE INDEX IF NOT EXISTS idx_reviews_rating ON reviews (rating);
 
 -- review_likes
-CREATE INDEX idx_review_likes_review_id ON review_likes (review_id);
-CREATE INDEX idx_review_likes_user_id ON review_likes (user_id);
+CREATE INDEX IF NOT EXISTS idx_review_likes_review_id ON review_likes (review_id);
+CREATE INDEX IF NOT EXISTS idx_review_likes_user_id ON review_likes (user_id);
 
 -- comments
-CREATE INDEX idx_comments_review_id ON comments (review_id); --특정 리뷰의 댓글 목록 조회
-CREATE INDEX idx_comments_deleted_at ON comments (deleted_at) WHERE deleted_at IS NOT NULL;
-CREATE INDEX idx_comments_created_at ON comments (created_at); -- 커서 페이지네이션용
+CREATE INDEX IF NOT EXISTS idx_comments_review_id ON comments (review_id); --특정 리뷰의 댓글 목록 조회
+CREATE INDEX IF NOT EXISTS idx_comments_deleted_at ON comments (deleted_at) WHERE deleted_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments (created_at); -- 커서 페이지네이션용
 
 -- notifications
-CREATE INDEX idx_notifications_user_id ON notifications (user_id); -- 본인 알림 목록 조회
-CREATE INDEX idx_notifications_confirmed ON notifications (confirmed);
-CREATE INDEX idx_notifications_created_at ON notifications (created_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications (user_id); -- 본인 알림 목록 조회
+CREATE INDEX IF NOT EXISTS idx_notifications_confirmed ON notifications (confirmed);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications (created_at);
 
 -- popular_books
 CREATE INDEX idx_popular_books_period_rank ON popular_books (period, base_date, rank);  -- 커서페이지네이션용
