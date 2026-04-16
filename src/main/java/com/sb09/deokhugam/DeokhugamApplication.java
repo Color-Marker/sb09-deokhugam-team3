@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @EnableScheduling
 @SpringBootApplication
-@EnableJpaAuditing
 public class DeokhugamApplication {
 
   public static void main(String[] args) {
