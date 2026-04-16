@@ -8,9 +8,11 @@ services:
     networks:
       - my-room
     environment:
-      POSTGRES_USER: testuser
-      POSTGRES_PASSWORD: testpassword
-      POSTGRES_DB: deokhugam_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data # [추가] 데이터 보존을 위한 볼륨 설정
     ports:
       - "5433:5432" # 로컬에서 DB 접속할 때를 위해 포트 오픈 (5432포트는 기존 스프린트 미션에서 사용중)
 
