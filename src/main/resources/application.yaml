@@ -39,6 +39,17 @@ deokhugam:
       bucket: ${AWS_S3_BUCKET:}
       presigned-url-expiration: ${AWS_S3_PRESIGNED_URL_EXPIRATION:PT10M}
 
+naver:
+  api:
+    client-id: ${NAVER_CLIENT_ID}
+    client-secret: ${NAVER_CLIENT_SECRET}
+    book-search-url: https://openapi.naver.com/v1/search/book.json
+
+ocr:
+  api:
+    key: ${OCR_API_KEY}
+    url: https://api.ocr.space/parse/image
+
 logging:
   file:
     path: ${LOG_PATH:./.logs}
