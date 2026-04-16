@@ -14,7 +14,7 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   batch:
     jdbc:
-      initialize-schema: never # schema.sql 로 같이 생성
+      initialize-schema: always
     job:
       enabled: false
 
