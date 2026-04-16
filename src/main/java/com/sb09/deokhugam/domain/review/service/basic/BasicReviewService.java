@@ -3,8 +3,12 @@ package com.sb09.deokhugam.domain.review.service.basic;
 import com.sb09.deokhugam.domain.book.entity.Book;
 import com.sb09.deokhugam.domain.book.repository.BookRepository;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
+import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
+import com.sb09.deokhugam.domain.review.dto.response.ReviewDto;
 import com.sb09.deokhugam.domain.review.entity.Review;
+import com.sb09.deokhugam.domain.review.mapper.ReviewMapper;
+import com.sb09.deokhugam.domain.review.repository.ReviewLikeRepository;
 import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
 import com.sb09.deokhugam.domain.review.service.ReviewService;
 import com.sb09.deokhugam.domain.user.entity.Users;
@@ -12,13 +16,17 @@ import com.sb09.deokhugam.domain.user.repository.UserRepository;
 
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -29,6 +37,8 @@ public class BasicReviewService implements ReviewService {
   private final ReviewRepository reviewRepository;
   private final BookRepository bookRepository;
   private final UserRepository userRepository;
+  private final ReviewLikeRepository reviewLikeRepository;
+  private final ReviewMapper reviewMapper;
 
   /**
    * 1. 리뷰 등록 (Create)
@@ -107,6 +117,45 @@ public class BasicReviewService implements ReviewService {
 
     // 물리 삭제 대신 BaseFullAuditEntity에서 제공하는 메서드로 논리 삭제 처리
     review.markAsDeleted();
+  }
+
+  /**
+   * 4. 리뷰 목록 조회 (무한 스크롤 및 검색)
+   */
+  @Override
+  public CursorPageResponseDto<ReviewDto> getReviews(ReviewListRequest request,
+      UUID currentUserId) {
+
+    Slice<Review> reviews = reviewRepository.searchReviews(request);
+
+    List<ReviewDto> dtoList = reviews.getContent().stream()
+        .map(review -> {
+          Book book = bookRepository.findById(review.getBookId()).orElse(null);
+          Users user = userRepository.findById(review.getUserId()).orElse(null);
+
+          boolean likedByMe = false;
+          if (currentUserId != null) {
+            likedByMe = reviewLikeRepository.existsByReviewIdAndUserId(review.getId(),
+                currentUserId);
+          }
+
+          return reviewMapper.toDto(review, book, user, likedByMe);
+        })
+        .toList();
+
+    // 다음 페이지를 위한 커서 정보 추출
+    UUID nextCursor = dtoList.isEmpty() ? null : dtoList.get(dtoList.size() - 1).id();
+    LocalDateTime nextAfter =
+        dtoList.isEmpty() ? null : dtoList.get(dtoList.size() - 1).createdAt();
+    
+    return new CursorPageResponseDto<>(
+        dtoList,             // 1. content (데이터 목록)
+        nextCursor,          // 2. nextCursor (다음 커서 ID)
+        nextAfter,           // 3. nextAfter (다음 기준 시간)
+        request.limit(),     // 4. size (한 번에 가져올 개수)
+        0L,                  // 5. totalElements (전체 개수 - 일단 0으로 처리)
+        reviews.hasNext()    // 6. hasNext (다음 페이지 존재 여부)
+    );
   }
 
   /**
