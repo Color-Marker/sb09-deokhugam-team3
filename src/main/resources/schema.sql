@@ -159,7 +159,8 @@ CREATE TABLE IF NOT EXISTS popular_books (
                                id              UUID            NOT NULL DEFAULT gen_random_uuid(),
                                book_id         UUID            NOT NULL,
                                period          VARCHAR(10)     NOT NULL,       -- DAILY | WEEKLY | MONTHLY | ALL_TIME
-                               rank            BIGINT          NOT NULL,
+                               ranking         BIGINT          NOT NULL,       -- rank -> ranking 변경
+                               base_date       DATE            NOT NULL,
                                score           DECIMAL(10, 4)  NOT NULL,
                                review_count    BIGINT          NOT NULL DEFAULT 0,
                                rating          DECIMAL(3, 2)   NOT NULL DEFAULT 0.0,
@@ -171,10 +172,12 @@ CREATE TABLE IF NOT EXISTS popular_books (
                                    FOREIGN KEY (book_id) REFERENCES books (id),
                                CONSTRAINT chk_popular_books_period
                                    CHECK (period IN ('DAILY', 'WEEKLY', 'MONTHLY', 'ALL_TIME')),
-                               CONSTRAINT chk_popular_books_rank
-                                   CHECK (rank > 0),
+                               CONSTRAINT chk_popular_books_ranking
+                                   CHECK (ranking > 0),                        -- 제약조건 컬럼명 변경
                                CONSTRAINT chk_popular_books_rating
-                                   CHECK (rating >= 0.0 AND rating <= 5.0)
+                                   CHECK (rating >= 0.0 AND rating <= 5.0),
+                               CONSTRAINT uq_popular_books_book_period_date
+                                   UNIQUE (book_id, period, base_date)
 );
 
 -- =====================================================
@@ -184,7 +187,8 @@ CREATE TABLE IF NOT EXISTS popular_reviews (
                                  id              UUID            NOT NULL DEFAULT gen_random_uuid(),
                                  review_id       UUID            NOT NULL,
                                  period          VARCHAR(10)     NOT NULL,       -- DAILY | WEEKLY | MONTHLY | ALL_TIME
-                                 rank            BIGINT          NOT NULL,
+                                 ranking         BIGINT          NOT NULL,       -- rank -> ranking 변경
+                                 base_date       DATE            NOT NULL,
                                  score           DECIMAL(10, 4)  NOT NULL,
                                  like_count      BIGINT          NOT NULL DEFAULT 0,
                                  comment_count   BIGINT          NOT NULL DEFAULT 0,
@@ -196,8 +200,11 @@ CREATE TABLE IF NOT EXISTS popular_reviews (
                                      FOREIGN KEY (review_id) REFERENCES reviews (id),
                                  CONSTRAINT chk_popular_reviews_period
                                      CHECK (period IN ('DAILY', 'WEEKLY', 'MONTHLY', 'ALL_TIME')),
-                                 CONSTRAINT chk_popular_reviews_rank
-                                     CHECK (rank > 0)
+                                 CONSTRAINT chk_popular_reviews_ranking
+                                     CHECK (ranking > 0),                         -- 제약조건 컬럼명 변경
+                                 CONSTRAINT uq_popular_reviews_review_period_date
+                                     UNIQUE (review_id, period, base_date)
+
 );
 
 -- =====================================================
@@ -207,7 +214,8 @@ CREATE TABLE IF NOT EXISTS power_users (
                              id                  UUID            NOT NULL DEFAULT gen_random_uuid(),
                              user_id             UUID            NOT NULL,
                              period              VARCHAR(10)     NOT NULL,   -- DAILY | WEEKLY | MONTHLY | ALL_TIME
-                             rank                BIGINT          NOT NULL,
+                             ranking             BIGINT          NOT NULL,       -- rank -> ranking 변경
+                             base_date           DATE            NOT NULL,
                              score               DECIMAL(10, 4)  NOT NULL,
                              review_score_sum    DECIMAL(10, 4)  NOT NULL DEFAULT 0.0,
                              like_count          BIGINT          NOT NULL DEFAULT 0,
@@ -220,8 +228,10 @@ CREATE TABLE IF NOT EXISTS power_users (
                                  FOREIGN KEY (user_id) REFERENCES users (id),
                              CONSTRAINT chk_power_users_period
                                  CHECK (period IN ('DAILY', 'WEEKLY', 'MONTHLY', 'ALL_TIME')),
-                             CONSTRAINT chk_power_users_rank
-                                 CHECK (rank > 0)
+                             CONSTRAINT chk_power_users_ranking
+                                 CHECK (ranking > 0),                             -- 제약조건 컬럼명 변경
+                             CONSTRAINT uq_power_users_user_period_date
+                                 UNIQUE (user_id, period, base_date)
 );
 
 -- =====================================================
@@ -229,43 +239,40 @@ CREATE TABLE IF NOT EXISTS power_users (
 -- =====================================================
 
 -- users
-CREATE INDEX IF NOT EXISTS idx_users_email ON users (email); -- 로그인 시에 이메일로 조회
-CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users (deleted_at) WHERE deleted_at IS NOT NULL;
+CREATE INDEX idx_users_email ON users (email); -- 로그인 시에 이메일로 조회
+CREATE INDEX idx_users_deleted_at ON users (deleted_at) WHERE deleted_at IS NOT NULL;
 
 -- books
-CREATE INDEX IF NOT EXISTS idx_books_isbn ON books (isbn) WHERE isbn IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_books_title ON books (title);
-CREATE INDEX IF NOT EXISTS idx_books_deleted_at ON books (deleted_at) WHERE deleted_at IS NOT NULL;
+CREATE INDEX idx_books_isbn ON books (isbn) WHERE isbn IS NOT NULL;
+CREATE INDEX idx_books_title ON books (title);
+CREATE INDEX idx_books_deleted_at ON books (deleted_at) WHERE deleted_at IS NOT NULL;
 
 -- reviews
-CREATE INDEX IF NOT EXISTS idx_reviews_book_id ON reviews (book_id); -- 특정 도서의 리뷰 목록 조회
-CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews (user_id); -- 특정 사용자의 리뷰 목록 조회
-CREATE INDEX IF NOT EXISTS idx_reviews_deleted_at ON reviews (deleted_at) WHERE deleted_at IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_reviews_created_at ON reviews (created_at); -- 커서 페이지네이션용
-CREATE INDEX IF NOT EXISTS idx_reviews_rating ON reviews (rating);
+CREATE INDEX idx_reviews_book_id ON reviews (book_id); -- 특정 도서의 리뷰 목록 조회
+CREATE INDEX idx_reviews_user_id ON reviews (user_id); -- 특정 사용자의 리뷰 목록 조회
+CREATE INDEX idx_reviews_deleted_at ON reviews (deleted_at) WHERE deleted_at IS NOT NULL;
+CREATE INDEX idx_reviews_created_at ON reviews (created_at); -- 커서 페이지네이션용
+CREATE INDEX idx_reviews_rating ON reviews (rating);
 
 -- review_likes
-CREATE INDEX IF NOT EXISTS idx_review_likes_review_id ON review_likes (review_id);
-CREATE INDEX IF NOT EXISTS idx_review_likes_user_id ON review_likes (user_id);
+CREATE INDEX idx_review_likes_review_id ON review_likes (review_id);
+CREATE INDEX idx_review_likes_user_id ON review_likes (user_id);
 
 -- comments
-CREATE INDEX IF NOT EXISTS idx_comments_review_id ON comments (review_id); --특정 리뷰의 댓글 목록 조회
-CREATE INDEX IF NOT EXISTS idx_comments_deleted_at ON comments (deleted_at) WHERE deleted_at IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments (created_at); -- 커서 페이지네이션용
+CREATE INDEX idx_comments_review_id ON comments (review_id); --특정 리뷰의 댓글 목록 조회
+CREATE INDEX idx_comments_deleted_at ON comments (deleted_at) WHERE deleted_at IS NOT NULL;
+CREATE INDEX idx_comments_created_at ON comments (created_at); -- 커서 페이지네이션용
 
 -- notifications
-CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications (user_id); -- 본인 알림 목록 조회
-CREATE INDEX IF NOT EXISTS idx_notifications_confirmed ON notifications (confirmed);
-CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications (created_at);
+CREATE INDEX idx_notifications_user_id ON notifications (user_id); -- 본인 알림 목록 조회
+CREATE INDEX idx_notifications_confirmed ON notifications (confirmed);
+CREATE INDEX idx_notifications_created_at ON notifications (created_at);
 
 -- popular_books
-CREATE INDEX IF NOT EXISTS idx_popular_books_period_rank ON popular_books (period, rank);  -- 커서페이지네이션용
-CREATE INDEX IF NOT EXISTS idx_popular_books_created_at ON popular_books (created_at);
+CREATE INDEX idx_popular_books_period_ranking ON popular_books (period, base_date, ranking);  -- 인덱스명 및 컬럼명 변경
 
 -- popular_reviews
-CREATE INDEX IF NOT EXISTS idx_popular_reviews_period_rank ON popular_reviews (period, rank); -- 커서페이지네이션용
-CREATE INDEX IF NOT EXISTS idx_popular_reviews_created_at ON popular_reviews (created_at);
+CREATE INDEX idx_popular_reviews_period_ranking ON popular_reviews (period, base_date, ranking); -- 인덱스명 및 컬럼명 변경
 
 -- power_users
-CREATE INDEX IF NOT EXISTS idx_power_users_period_rank ON power_users (period, rank); -- 커서페이지네이션용
-CREATE INDEX IF NOT EXISTS idx_power_users_created_at ON power_users (created_at);
+CREATE INDEX idx_power_users_period_ranking ON power_users (period, base_date, ranking); -- 인덱스명 및 컬럼명 변경
