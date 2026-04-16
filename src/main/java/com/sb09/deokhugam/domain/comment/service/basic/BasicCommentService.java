@@ -2,11 +2,14 @@ package com.sb09.deokhugam.domain.comment.service.basic;
 
 import com.sb09.deokhugam.domain.comment.dto.CommentDto;
 import com.sb09.deokhugam.domain.comment.dto.request.CommentCreateRequest;
+import com.sb09.deokhugam.domain.comment.dto.request.CommentListRequest;
 import com.sb09.deokhugam.domain.comment.dto.request.CommentUpdateRequest;
 import com.sb09.deokhugam.domain.comment.entity.Comment;
 import com.sb09.deokhugam.domain.comment.mapper.CommentMapper;
 import com.sb09.deokhugam.domain.comment.repository.CommentRepository;
 import com.sb09.deokhugam.domain.comment.service.CommentService;
+import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
+import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 import com.sb09.deokhugam.domain.notification.entity.NotificationType;
 import com.sb09.deokhugam.domain.notification.service.NotificationService;
 import com.sb09.deokhugam.domain.review.entity.Review;
@@ -18,10 +21,12 @@ import com.sb09.deokhugam.global.Exception.ErrorCode;
 import com.sb09.deokhugam.global.Exception.comment.CommentAlreadyDeletedException;
 import com.sb09.deokhugam.global.Exception.comment.CommentNotFoundException;
 import com.sb09.deokhugam.global.Exception.comment.ForbiddenAuthorityException;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +40,7 @@ public class BasicCommentService implements CommentService {
   private final ReviewRepository reviewRepository;
   private final CommentMapper commentMapper;
   private final NotificationService notificationService;
+  private final CursorPageResponseMapper cursorPageResponseMapper;
 
   @Override
   @Transactional
@@ -84,11 +90,24 @@ public class BasicCommentService implements CommentService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<CommentDto> findAllByReviewId(UUID reviewId) {
-    return commentRepository.findAllByReviewIdAndDeletedAtIsNull(reviewId)
-        .stream()
-        .map(commentMapper::toDto)
-        .toList();
+  public CursorPageResponseDto<CommentDto> findAllByReviewId(CommentListRequest request) {
+    PageRequest pageable = PageRequest.of(0, request.getLimit());
+    Slice<Comment> slice;
+    if (request.getDirection() == Sort.Direction.ASC) {
+      slice = commentRepository.findCommentsAsc(request.getReviewId(), request.getAfter(),
+          pageable);
+    } else {
+      slice = commentRepository.findCommentsDesc(request.getReviewId(), request.getAfter(),
+          pageable);
+    }
+    Long totalElements = commentRepository.countByReviewId(request.getReviewId());
+    return cursorPageResponseMapper.fromSlice(
+        slice,
+        commentMapper::toDto,
+        Comment::getId,
+        Comment::getCreatedAt,
+        totalElements
+    );
   }
 
   @Override
@@ -115,11 +134,11 @@ public class BasicCommentService implements CommentService {
     Comment comment = commentRepository.findById(commentId)
         .orElseThrow(() -> CommentNotFoundException.withId(commentId));
 
-    if (comment.getDeletedAt() != null) {
-      throw new CommentAlreadyDeletedException();
-    }
     if (!comment.getUser().getId().equals(requestUserId)) {
       throw new ForbiddenAuthorityException(ErrorCode.COMMENT_DELETE_FORBIDDEN);
+    }
+    if (comment.getDeletedAt() != null) {
+      throw new CommentAlreadyDeletedException();
     }
     comment.markAsDeleted();
     log.info("댓글 논리삭제 완료: id={}", commentId);
