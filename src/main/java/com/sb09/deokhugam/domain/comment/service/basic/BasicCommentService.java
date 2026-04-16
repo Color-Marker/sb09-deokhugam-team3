@@ -39,6 +39,7 @@ public class BasicCommentService implements CommentService {
   @Override
   @Transactional
   public CommentDto create(CommentCreateRequest request) {
+    log.debug("댓글 생성 시작: {}", request);
     UUID reviewId = request.reviewId();
     UUID userId = request.userId();
 
@@ -65,6 +66,7 @@ public class BasicCommentService implements CommentService {
     log.info("리뷰ID: {} 에 대한 유저ID: {} 의 댓글 작성 알람을 생성합니다.", reviewId, userId);
     notificationService.create(NotificationType.COMMENT, review, user);
 
+    log.info("댓글 생성 완료: 리뷰 id={}, 유저 id={}", reviewId, userId);
     return commentMapper.toDto(comment);
   }
 
@@ -92,6 +94,7 @@ public class BasicCommentService implements CommentService {
   @Override
   @Transactional
   public CommentDto update(UUID commentId, UUID requestUserId, CommentUpdateRequest request) {
+    log.debug("댓글 수정 시작: id={}, request={}", commentId, request);
     Comment comment = commentRepository.findById(commentId)
         .orElseThrow(() -> CommentNotFoundException.withId(commentId));
     if (comment.getDeletedAt() != null) {
@@ -101,12 +104,14 @@ public class BasicCommentService implements CommentService {
       throw new CustomException(ErrorCode.COMMENT_UPDATE_FORBIDDEN);
     }
     comment.updateContent(request.content());
+    log.info("댓글 수정 완료: id={}, reviewID={}", commentId, comment.getReview().getId());
     return commentMapper.toDto(comment);
   }
 
   @Override
   @Transactional
   public void softDelete(UUID commentId, UUID requestUserId) {
+    log.debug("댓글 논리삭제 시작: id={}, requestUserId={}", commentId, requestUserId);
     Comment comment = commentRepository.findById(commentId)
         .orElseThrow(() -> CommentNotFoundException.withId(commentId));
 
@@ -117,11 +122,13 @@ public class BasicCommentService implements CommentService {
       throw new ForbiddenAuthorityException(ErrorCode.COMMENT_DELETE_FORBIDDEN);
     }
     comment.markAsDeleted();
+    log.info("댓글 논리삭제 완료: id={}", commentId);
   }
 
   @Override
   @Transactional
   public void hardDelete(UUID commentId, UUID requestUserId) {
+    log.debug("댓글 물리삭제 시작: id={}, requestUserId={}", commentId, requestUserId);
     Comment comment = commentRepository.findById(commentId)
         .orElseThrow(() -> CommentNotFoundException.withId(commentId));
 
@@ -129,5 +136,6 @@ public class BasicCommentService implements CommentService {
       throw new ForbiddenAuthorityException(ErrorCode.COMMENT_DELETE_FORBIDDEN);
     }
     commentRepository.delete(comment);
+    log.info("댓글 물리삭제 완료: id={}", commentId);
   }
 }

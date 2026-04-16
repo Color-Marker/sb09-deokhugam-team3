@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,27 +22,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/comments")
 @RequiredArgsConstructor
 public class CommentController implements CommentApi {
-
+  
   private final CommentService commentService;
-
-  @GetMapping
-  public ResponseEntity<List<CommentDto>> getComments(
-      @RequestParam UUID reviewId
-  ) {
-    List<CommentDto> comments = commentService.findAllByReviewId(reviewId);
-    return ResponseEntity.ok(comments);
-  }
 
   @PostMapping
   public ResponseEntity<CommentDto> createComment(
       @Valid @RequestBody CommentCreateRequest request
   ) {
+    log.info("댓글 생성 요청: {}", request);
     CommentDto created = commentService.create(request);
-    return ResponseEntity.status(HttpStatus.CREATED).body(created); // 생성 성공은 201 반환
+    log.info("생성된 댓글 응답: {}", created);
+    return ResponseEntity.status(HttpStatus.CREATED).body(created);
   }
 
   @GetMapping("/{commentId}")
@@ -52,13 +48,23 @@ public class CommentController implements CommentApi {
     return ResponseEntity.ok(comment);
   }
 
+  @GetMapping
+  public ResponseEntity<List<CommentDto>> getComments(
+      @RequestParam UUID reviewId
+  ) {
+    List<CommentDto> comments = commentService.findAllByReviewId(reviewId);
+    return ResponseEntity.ok(comments);
+  }
+
   @PatchMapping("/{commentId}")
   public ResponseEntity<CommentDto> updateComment(
       @PathVariable UUID commentId,
       @RequestParam UUID requestUserId,
       @Valid @RequestBody CommentUpdateRequest request
   ) {
+    log.info("댓글 수정 요청: {}", request);
     CommentDto updated = commentService.update(commentId, requestUserId, request);
+    log.info("수정된 댓글 응답: {}", updated);
     return ResponseEntity.ok(updated);
   }
 
@@ -67,7 +73,9 @@ public class CommentController implements CommentApi {
       @PathVariable UUID commentId,
       @RequestParam UUID requestUserId
   ) {
+    log.info("댓글 논리삭제 요청: 댓글 Id={}, 요청자 Id={}", commentId, requestUserId);
     commentService.softDelete(commentId, requestUserId);
+    log.info("댓글 논리삭제 응답: 댓글 Id={}", commentId);
     return ResponseEntity.noContent().build();
   }
 
@@ -76,7 +84,9 @@ public class CommentController implements CommentApi {
       @PathVariable UUID commentId,
       @RequestParam UUID requestUserId
   ) {
+    log.info("댓글 물리삭제 요청: 댓글 Id={}, 요청자 Id={}", commentId, requestUserId);
     commentService.hardDelete(commentId, requestUserId);
+    log.info("댓글 물리삭제 응답: 댓글 Id={}", commentId);
     return ResponseEntity.noContent().build();
   }
 }
