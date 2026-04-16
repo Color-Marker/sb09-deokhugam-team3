@@ -1,11 +1,12 @@
 -- =====================================================
 -- 덕후감 (Deokhugam) Database Schema
+-- PostgreSQL
 -- =====================================================
 
 -- =====================================================
 -- 사용자 (Users)
 -- =====================================================
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
                        id          UUID            NOT NULL DEFAULT gen_random_uuid(),
                        email       VARCHAR(255)    NOT NULL,
                        nickname    VARCHAR(20)     NOT NULL,
@@ -25,7 +26,7 @@ CREATE TABLE users (
 -- =====================================================
 -- 도서 (Books)
 -- =====================================================
-CREATE TABLE books (
+CREATE TABLE IF NOT EXISTS books (
                        id              UUID            NOT NULL DEFAULT gen_random_uuid(),
                        title           VARCHAR(500)    NOT NULL,
                        author          VARCHAR(255)    NOT NULL,
@@ -53,7 +54,7 @@ CREATE TABLE books (
 -- =====================================================
 -- 리뷰 (Reviews)
 -- =====================================================
-CREATE TABLE reviews (
+CREATE TABLE IF NOT EXISTS reviews (
                          id              UUID        NOT NULL DEFAULT gen_random_uuid(),
                          book_id         UUID        NOT NULL,
                          user_id         UUID        NOT NULL,
@@ -84,7 +85,7 @@ CREATE TABLE reviews (
 -- =====================================================
 -- 리뷰 좋아요 (Review Likes)
 -- =====================================================
-CREATE TABLE review_likes (
+CREATE TABLE IF NOT EXISTS review_likes (
                               id          UUID        NOT NULL DEFAULT gen_random_uuid(),
                               review_id   UUID        NOT NULL,
                               user_id     UUID        NOT NULL,
@@ -103,7 +104,7 @@ CREATE TABLE review_likes (
 -- =====================================================
 -- 댓글 (Comments) (리뷰의 댓글)
 -- =====================================================
-CREATE TABLE comments (
+CREATE TABLE IF NOT EXISTS comments (
                           id          UUID        NOT NULL DEFAULT gen_random_uuid(),
                           review_id   UUID        NOT NULL,
                           user_id     UUID        NOT NULL,
@@ -126,7 +127,7 @@ CREATE TABLE comments (
 -- type: LIKE(좋아요), COMMENT(댓글), RANKING(인기 리뷰 순위 진입)
 -- sender_id: 좋아요/댓글 발송자 ID, 랭킹 알림은 NULL
 -- user_id: 알림 수신자 (리뷰 작성자)
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
                                id              UUID        NOT NULL DEFAULT gen_random_uuid(),
                                user_id         UUID        NOT NULL,
                                sender_id       UUID        NULL,               -- 랭킹 알림은 NULL
@@ -140,13 +141,13 @@ CREATE TABLE notifications (
                                    PRIMARY KEY (id),
                                CONSTRAINT fk_notifications_user
                                    FOREIGN KEY (user_id) REFERENCES users (id)
-                                       ON DELETE CASCADE,
+                                   ON DELETE CASCADE,
                                CONSTRAINT fk_notifications_sender
                                    FOREIGN KEY (sender_id) REFERENCES users (id)
-                                       ON DELETE SET NULL,
+                                   ON DELETE SET NULL,
                                CONSTRAINT fk_notifications_review
                                    FOREIGN KEY (review_id) REFERENCES reviews (id)
-                                       ON DELETE CASCADE,
+                                   ON DELETE CASCADE,
                                CONSTRAINT chk_notifications_type
                                    CHECK (type IN ('LIKE', 'COMMENT', 'RANKING'))
 );
@@ -154,11 +155,12 @@ CREATE TABLE notifications (
 -- =====================================================
 -- 인기 도서 (Popular Books) - 배치 결과 저장
 -- =====================================================
-CREATE TABLE popular_books (
+CREATE TABLE IF NOT EXISTS popular_books (
                                id              UUID            NOT NULL DEFAULT gen_random_uuid(),
                                book_id         UUID            NOT NULL,
                                period          VARCHAR(10)     NOT NULL,       -- DAILY | WEEKLY | MONTHLY | ALL_TIME
                                ranking         BIGINT          NOT NULL,       -- rank -> ranking 변경
+                               base_date       DATE            NOT NULL,
                                score           DECIMAL(10, 4)  NOT NULL,
                                review_count    BIGINT          NOT NULL DEFAULT 0,
                                rating          DECIMAL(3, 2)   NOT NULL DEFAULT 0.0,
@@ -173,17 +175,20 @@ CREATE TABLE popular_books (
                                CONSTRAINT chk_popular_books_ranking
                                    CHECK (ranking > 0),                        -- 제약조건 컬럼명 변경
                                CONSTRAINT chk_popular_books_rating
-                                   CHECK (rating >= 0.0 AND rating <= 5.0)
+                                   CHECK (rating >= 0.0 AND rating <= 5.0),
+                               CONSTRAINT uq_popular_books_book_period_date
+                                   UNIQUE (book_id, period, base_date)
 );
 
 -- =====================================================
 -- 인기 리뷰 (Popular Reviews) - 배치 결과 저장
 -- =====================================================
-CREATE TABLE popular_reviews (
+CREATE TABLE IF NOT EXISTS popular_reviews (
                                  id              UUID            NOT NULL DEFAULT gen_random_uuid(),
                                  review_id       UUID            NOT NULL,
                                  period          VARCHAR(10)     NOT NULL,       -- DAILY | WEEKLY | MONTHLY | ALL_TIME
                                  ranking         BIGINT          NOT NULL,       -- rank -> ranking 변경
+                                 base_date       DATE            NOT NULL,
                                  score           DECIMAL(10, 4)  NOT NULL,
                                  like_count      BIGINT          NOT NULL DEFAULT 0,
                                  comment_count   BIGINT          NOT NULL DEFAULT 0,
@@ -196,17 +201,21 @@ CREATE TABLE popular_reviews (
                                  CONSTRAINT chk_popular_reviews_period
                                      CHECK (period IN ('DAILY', 'WEEKLY', 'MONTHLY', 'ALL_TIME')),
                                  CONSTRAINT chk_popular_reviews_ranking
-                                     CHECK (ranking > 0)                         -- 제약조건 컬럼명 변경
+                                     CHECK (ranking > 0),                         -- 제약조건 컬럼명 변경
+                                 CONSTRAINT uq_popular_reviews_review_period_date
+                                     UNIQUE (review_id, period, base_date)
+
 );
 
 -- =====================================================
 -- 파워 유저 (Power Users) - 배치 결과 저장
 -- =====================================================
-CREATE TABLE power_users (
+CREATE TABLE IF NOT EXISTS power_users (
                              id                  UUID            NOT NULL DEFAULT gen_random_uuid(),
                              user_id             UUID            NOT NULL,
                              period              VARCHAR(10)     NOT NULL,   -- DAILY | WEEKLY | MONTHLY | ALL_TIME
                              ranking             BIGINT          NOT NULL,       -- rank -> ranking 변경
+                             base_date           DATE            NOT NULL,
                              score               DECIMAL(10, 4)  NOT NULL,
                              review_score_sum    DECIMAL(10, 4)  NOT NULL DEFAULT 0.0,
                              like_count          BIGINT          NOT NULL DEFAULT 0,
@@ -220,7 +229,9 @@ CREATE TABLE power_users (
                              CONSTRAINT chk_power_users_period
                                  CHECK (period IN ('DAILY', 'WEEKLY', 'MONTHLY', 'ALL_TIME')),
                              CONSTRAINT chk_power_users_ranking
-                                 CHECK (ranking > 0)                             -- 제약조건 컬럼명 변경
+                                 CHECK (ranking > 0),                             -- 제약조건 컬럼명 변경
+                             CONSTRAINT uq_power_users_user_period_date
+                                 UNIQUE (user_id, period, base_date)
 );
 
 -- =====================================================
@@ -258,10 +269,10 @@ CREATE INDEX idx_notifications_confirmed ON notifications (confirmed);
 CREATE INDEX idx_notifications_created_at ON notifications (created_at);
 
 -- popular_books
-CREATE INDEX idx_popular_books_period_ranking ON popular_books (period, ranking);  -- 인덱스명 및 컬럼명 변경
+CREATE INDEX idx_popular_books_period_ranking ON popular_books (period, base_date, ranking);  -- 인덱스명 및 컬럼명 변경
 
 -- popular_reviews
-CREATE INDEX idx_popular_reviews_period_ranking ON popular_reviews (period, ranking); -- 인덱스명 및 컬럼명 변경
+CREATE INDEX idx_popular_reviews_period_ranking ON popular_reviews (period, base_date, ranking); -- 인덱스명 및 컬럼명 변경
 
 -- power_users
-CREATE INDEX idx_power_users_period_ranking ON power_users (period, ranking); -- 인덱스명 및 컬럼명 변경
+CREATE INDEX idx_power_users_period_ranking ON power_users (period, base_date, ranking); -- 인덱스명 및 컬럼명 변경
