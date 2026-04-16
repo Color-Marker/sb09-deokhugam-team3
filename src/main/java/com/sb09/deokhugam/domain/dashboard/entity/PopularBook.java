@@ -46,8 +46,8 @@ public class PopularBook {
   @Column(name = "base_date", nullable = false)
   private LocalDate baseDate;
 
-  @Column(name = "rank", nullable = false)
-  private Long rank;
+  @Column(name = "ranking", nullable = false)
+  private Long ranking;
 
   @Column(name = "score", nullable = false, precision = 10, scale = 4)
   private BigDecimal score;
@@ -63,11 +63,11 @@ public class PopularBook {
   private LocalDateTime createdAt;
 
   @Builder
-  public PopularBook(UUID bookId, PeriodType period, LocalDate baseDate, Long rank, BigDecimal score, Long reviewCount, BigDecimal rating) {
+  public PopularBook(UUID bookId, PeriodType period, LocalDate baseDate, Long ranking, BigDecimal score, Long reviewCount, BigDecimal rating) {
     this.bookId = bookId;
     this.period = period;
     this.baseDate = baseDate;
-    this.rank = rank;
+    this.ranking = ranking;
     this.score = score;
     this.reviewCount = reviewCount;
     this.rating = rating;
