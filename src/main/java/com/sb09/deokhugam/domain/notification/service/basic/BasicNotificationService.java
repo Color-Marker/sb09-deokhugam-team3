@@ -46,8 +46,10 @@ public class BasicNotificationService implements NotificationService {
     log.info("유저ID: {} 의 모든 알림을 읽음 상태로 전환합니다.", userId);
     List<Notification> notis = notificationRepository.findByUserId(userId);
     for (Notification n : notis){
+      log.info("알람ID: {} 을 읽음 상태로 전환합니다.", n.getId());
       n.update();
     }
+    log.info("유저ID: {} 의 모든 알림 읽음 상태 전환 완료되었습니다.", userId);
   }
 
   @Override
@@ -87,6 +89,7 @@ public class BasicNotificationService implements NotificationService {
     Slice<Notification> slice = notificationRepository.searchNotification(request);
     Long totalElements = notificationRepository.countNotification(request);
     log.info("유저ID: {} 의 알림 목록을 불러옵니다.", request.getUserId());
+    log.info("유저ID {} 의 알림 {} 개를 불러옵니다.", request.getUserId(), totalElements);
     return cursorPageResponseMapper.fromSlice(
         slice,
         notificationMapper::toDto,
