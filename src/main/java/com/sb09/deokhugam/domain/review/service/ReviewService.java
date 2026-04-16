@@ -57,7 +57,7 @@ public class ReviewService {
     reviewRepository.save(review);
 
     // 유저 활동 점수 업데이트 (Users 엔티티의 메서드 사용)
-    user.addReviewScore(request.rating().doubleValue());
+    //user.addReviewScore(request.rating().doubleValue());
 
     // 도서 통계 업데이트 로직 호출
     updateBookStats(book, request.rating());
@@ -79,9 +79,7 @@ public class ReviewService {
 
     // 내용 및 평점 업데이트
     review.updateReview(request.content(), request.rating());
-
-    // (선택 심화) 평점이 바뀌었다면 도서의 평균 평점과 유저의 총점도 다시 계산해야 하지만,
-    // 로직이 복잡해지므로 일단 내용과 평점 수정만 적용합니다.
+    
   }
 
   /**
