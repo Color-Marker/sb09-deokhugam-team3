@@ -24,7 +24,7 @@ import lombok.experimental.SuperBuilder;
 public class Notification extends BaseUpdateableEntity {
 
   @Column(name = "confirmed", nullable = false)
-  private boolean confirmStatus;
+  private Boolean confirmStatus;
 
   @Column(nullable = false, length = 10)
   @Enumerated(EnumType.STRING)

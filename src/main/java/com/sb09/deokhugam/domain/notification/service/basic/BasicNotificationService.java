@@ -54,7 +54,7 @@ public class BasicNotificationService implements NotificationService {
 
   @Override
   public NotificationDto updateStatus(UUID notificationId, UUID userId, NotificationUpdateRequest request) {
-    if(userId == null){
+    if(userId == null || request.confirmed() != true){
       log.warn("잘못된 요청입니다.");
       throw new CustomException(ErrorCode.INVALID_REQUEST);
     }
