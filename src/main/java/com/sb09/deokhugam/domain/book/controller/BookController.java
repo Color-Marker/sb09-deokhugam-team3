@@ -6,6 +6,7 @@ import com.sb09.deokhugam.domain.book.dto.NaverBookDto;
 import com.sb09.deokhugam.domain.book.dto.request.BookCreateRequest;
 import com.sb09.deokhugam.domain.book.dto.request.BookUpdateRequest;
 import com.sb09.deokhugam.domain.book.service.BookService;
+import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -30,7 +31,7 @@ public class BookController implements BookApi {
 
   @PostMapping(consumes = "multipart/form-data")
   public ResponseEntity<BookDto> createBook(
-      @RequestPart BookCreateRequest bookData,
+      @RequestPart @Valid BookCreateRequest bookData,
       @RequestPart(required = false) MultipartFile thumbnailImage
   ) {
     BookDto book = bookService.create(bookData, thumbnailImage);
@@ -48,7 +49,7 @@ public class BookController implements BookApi {
   @PatchMapping(value = "/{bookId}", consumes = "multipart/form-data")
   public ResponseEntity<BookDto> updateBook(
       @PathVariable UUID bookId,
-      @RequestPart BookUpdateRequest bookData,
+      @RequestPart @Valid BookUpdateRequest bookData,
       @RequestPart(required = false) MultipartFile thumbnailImage
   ) {
     BookDto book = bookService.update(bookId, bookData, thumbnailImage);
