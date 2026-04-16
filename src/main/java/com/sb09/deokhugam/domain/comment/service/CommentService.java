@@ -14,9 +14,9 @@ public interface CommentService {
 
   List<CommentDto> findAllByReviewId(UUID reviewId);
 
-  CommentDto update(UUID commentId, CommentUpdateRequest request);
+  CommentDto update(UUID commentId, UUID requestUserId, CommentUpdateRequest request);
 
-  void softDelete(UUID commentId);
+  void softDelete(UUID commentId, UUID requestUserId);
 
-  void hardDelete(UUID commentId);
+  void hardDelete(UUID commentId, UUID requestUserId);
 }

@@ -1,5 +1,7 @@
 package com.sb09.deokhugam.domain.comment.entity;
 
+import com.sb09.deokhugam.domain.review.entity.Review;
+import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.global.common.entity.BaseFullAuditEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,18 +21,18 @@ public class Comment extends BaseFullAuditEntity {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "review_id", nullable = false)
-  private Review reviewId;
+  private Review review;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
-  private User userId;
+  private Users user;
 
   @Column(name = "content", nullable = false)
   private String content;
 
-  public Comment(Review reviewId, User userId, String content) {
-    this.reviewId = reviewId;
-    this.userId = userId;
+  public Comment(Review review, Users user, String content) {
+    this.review = review;
+    this.user = user;
     this.content = content;
   }
 
