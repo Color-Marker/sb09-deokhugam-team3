@@ -16,10 +16,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.apache.catalina.User;
 
 @Entity
-@Table(name = "notifications")
+@Table(name= "notifications")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notification extends BaseUpdateableEntity {
