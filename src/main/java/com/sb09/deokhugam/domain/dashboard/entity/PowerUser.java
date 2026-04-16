@@ -9,6 +9,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -18,8 +19,14 @@ import java.util.UUID;
 @EntityListeners(AuditingEntityListener.class)
 @Table(
     name = "power_users",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uq_power_users_target",
+            columnNames = {"user_id", "period", "base_date"}
+        )
+    },
     indexes = {
-        @Index(name = "idx_power_users_period_rank", columnList = "period, rank"),
+        @Index(name = "idx_power_users_period_rank", columnList = "period, base_date, rank"),
         @Index(name = "idx_power_users_created_at", columnList = "created_at")
     }
 )
@@ -35,6 +42,9 @@ public class PowerUser {
   @Enumerated(EnumType.STRING)
   @Column(name = "period", nullable = false, length = 10)
   private PeriodType period;
+
+  @Column(name = "base_date", nullable = false)
+  private LocalDate baseDate;
 
   @Column(name = "rank", nullable = false)
   private Long rank;
@@ -56,9 +66,10 @@ public class PowerUser {
   private LocalDateTime createdAt;
 
   @Builder
-  public PowerUser(UUID userId, PeriodType period, Long rank, BigDecimal score, BigDecimal reviewScoreSum, Long likeCount, Long commentCount) {
+  public PowerUser(UUID userId, PeriodType period, LocalDate baseDate, Long rank, BigDecimal score, BigDecimal reviewScoreSum, Long likeCount, Long commentCount) {
     this.userId = userId;
     this.period = period;
+    this.baseDate = baseDate;
     this.rank = rank;
     this.score = score;
     this.reviewScoreSum = reviewScoreSum;

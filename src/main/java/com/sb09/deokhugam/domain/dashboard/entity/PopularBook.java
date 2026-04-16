@@ -9,6 +9,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -18,8 +19,14 @@ import java.util.UUID;
 @EntityListeners(AuditingEntityListener.class)
 @Table(
     name = "popular_books",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uq_popular_books_target",
+            columnNames = {"book_id", "period", "base_date"}
+        )
+    },
     indexes = {
-        @Index(name = "idx_popular_books_period_rank", columnList = "period, rank"),
+        @Index(name = "idx_popular_books_period_rank", columnList = "period, base_date, rank"),
         @Index(name = "idx_popular_books_created_at", columnList = "created_at")
     }
 )
@@ -35,6 +42,9 @@ public class PopularBook {
   @Enumerated(EnumType.STRING)
   @Column(name = "period", nullable = false, length = 10)
   private PeriodType period; // DAILY, WEEKLY, MONTHLY, ALL_TIME
+
+  @Column(name = "base_date", nullable = false)
+  private LocalDate baseDate;
 
   @Column(name = "rank", nullable = false)
   private Long rank;
@@ -53,9 +63,10 @@ public class PopularBook {
   private LocalDateTime createdAt;
 
   @Builder
-  public PopularBook(UUID bookId, PeriodType period, Long rank, BigDecimal score, Long reviewCount, BigDecimal rating) {
+  public PopularBook(UUID bookId, PeriodType period, LocalDate baseDate, Long rank, BigDecimal score, Long reviewCount, BigDecimal rating) {
     this.bookId = bookId;
     this.period = period;
+    this.baseDate = baseDate;
     this.rank = rank;
     this.score = score;
     this.reviewCount = reviewCount;

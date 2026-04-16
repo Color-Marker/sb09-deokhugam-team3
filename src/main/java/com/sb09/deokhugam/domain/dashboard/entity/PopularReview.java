@@ -9,6 +9,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -18,8 +19,14 @@ import java.util.UUID;
 @EntityListeners(AuditingEntityListener.class)
 @Table(
     name = "popular_reviews",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uq_popular_reviews_target",
+            columnNames = {"review_id", "period", "base_date"}
+        )
+    },
     indexes = {
-        @Index(name = "idx_popular_reviews_period_rank", columnList = "period, rank"),
+        @Index(name = "idx_popular_reviews_period_rank", columnList = "period, base_date, rank"),
         @Index(name = "idx_popular_reviews_created_at", columnList = "created_at")
     }
 )
@@ -35,6 +42,9 @@ public class PopularReview {
   @Enumerated(EnumType.STRING)
   @Column(name = "period", nullable = false, length = 10)
   private PeriodType period;
+
+  @Column(name = "base_date", nullable = false)
+  private LocalDate baseDate;
 
   @Column(name = "rank", nullable = false)
   private Long rank;
@@ -53,9 +63,10 @@ public class PopularReview {
   private LocalDateTime createdAt;
 
   @Builder
-  public PopularReview(UUID reviewId, PeriodType period, Long rank, BigDecimal score, Long likeCount, Long commentCount) {
+  public PopularReview(UUID reviewId, PeriodType period, LocalDate baseDate, Long rank, BigDecimal score, Long likeCount, Long commentCount) {
     this.reviewId = reviewId;
     this.period = period;
+    this.baseDate = baseDate;
     this.rank = rank;
     this.score = score;
     this.likeCount = likeCount;
