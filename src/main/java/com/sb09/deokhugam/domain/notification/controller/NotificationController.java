@@ -1,8 +1,12 @@
 package com.sb09.deokhugam.domain.notification.controller;
 
+import com.sb09.deokhugam.domain.notification.dto.request.NotificationListRequest;
 import com.sb09.deokhugam.domain.notification.dto.request.NotificationUpdateRequest;
 import com.sb09.deokhugam.domain.notification.dto.response.NotificationDto;
 import com.sb09.deokhugam.domain.notification.service.NotificationService;
+import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,19 +27,29 @@ public class NotificationController {
 
   private final NotificationService notificationService;
 
-  @GetMapping
-  public ResponseEntity<?> list(
+  @PatchMapping("/read-all")
+  public ResponseEntity<Void> readAll(
+      @RequestHeader("Deokhugam-Request-User-ID") @NotNull(message = "유저 ID는 필수입니다") UUID userId
   ){
-
+    notificationService.readAll(userId);
+    return ResponseEntity.noContent().build();
   }
 
   @PatchMapping("/{notificationId}")
   public ResponseEntity<NotificationDto> updateStatus(
-      @PathVariable UUID notificationId,
-      @RequestHeader("Deokhugam-Request-User-ID") UUID userId,
-      @RequestBody NotificationUpdateRequest request
+      @PathVariable @NotNull(message = "알림 ID는 필수입니다") UUID notificationId,
+      @RequestHeader("Deokhugam-Request-User-ID") @NotNull(message = "유저 ID는 필수입니다") UUID userId,
+      @Valid @RequestBody NotificationUpdateRequest request
   ){
     NotificationDto result = notificationService.updateStatus(notificationId, userId, request);
+    return ResponseEntity.ok(result);
+  }
+
+  @GetMapping
+  public ResponseEntity<CursorPageResponseDto<NotificationDto>> list(
+      @Valid NotificationListRequest request){
+    CursorPageResponseDto<NotificationDto> result = notificationService.list(request);
+    return ResponseEntity.ok(result);
   }
 
 }
