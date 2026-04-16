@@ -2,7 +2,7 @@ package com.sb09.deokhugam.domain.review.controller;
 
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
-import com.sb09.deokhugam.domain.review.service.ReviewService;
+import com.sb09.deokhugam.domain.review.service.basic.BasicReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,7 +16,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ReviewController {
 
-  private final ReviewService reviewService;
+  private final BasicReviewService reviewService;
 
   /**
    * 1. 리뷰 등록 API [POST] /api/reviews
