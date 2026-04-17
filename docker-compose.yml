@@ -33,6 +33,9 @@ services:
         condition: service_healthy # DB가 먼저 켜진 다음에 서버를 켠다.
     ports:
       - "8081:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${PROFILE:-local}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=${DDL_AUTO:-update}
     env_file:
       - .env # .env 파일에 적힌 값을 자동으로 읽어온다.
 
