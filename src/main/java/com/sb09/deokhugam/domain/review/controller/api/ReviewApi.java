@@ -23,23 +23,23 @@ public interface ReviewApi {
 
   @Operation(summary = "리뷰 등록", description = "새로운 도서 리뷰를 등록합니다.")
   @ApiResponses({
-      @ApiResponse(responseCode = "201", description = "리뷰 등록 성공"),
+      @ApiResponse(responseCode = "201", description = "리뷰 등록 성공 (생성된 리뷰 정보 반환)"), // 수정됨
       @ApiResponse(responseCode = "400", description = "잘못된 요청 (데이터 형식 오류)"),
       @ApiResponse(responseCode = "404", description = "도서 또는 사용자를 찾을 수 없음"),
       @ApiResponse(responseCode = "409", description = "이미 해당 도서에 리뷰를 작성한 사용자")
   })
-  ResponseEntity<Void> createReview(
+  ResponseEntity<ReviewDto> createReview( // 반환 타입 ReviewDto로 변경됨
       @Parameter(description = "인증된 유저 ID") @RequestHeader("X-User-Id") UUID userId,
       @Valid @RequestBody ReviewCreateRequest request
   );
 
   @Operation(summary = "리뷰 수정", description = "작성한 리뷰의 내용 및 평점을 수정합니다.")
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "리뷰 수정 성공"),
+      @ApiResponse(responseCode = "200", description = "리뷰 수정 성공 (수정된 리뷰 정보 반환)"), // 수정됨
       @ApiResponse(responseCode = "403", description = "리뷰 수정 권한 없음 (타인 리뷰)"),
       @ApiResponse(responseCode = "404", description = "리뷰를 찾을 수 없음")
   })
-  ResponseEntity<Void> updateReview(
+  ResponseEntity<ReviewDto> updateReview( // 반환 타입 ReviewDto로 변경됨
       @Parameter(description = "리뷰 ID") @PathVariable UUID reviewId,
       @Parameter(description = "인증된 유저 ID") @RequestHeader("X-User-Id") UUID userId,
       @Valid @RequestBody ReviewUpdateRequest request

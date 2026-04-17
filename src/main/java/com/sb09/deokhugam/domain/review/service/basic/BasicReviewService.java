@@ -51,7 +51,7 @@ public class BasicReviewService implements ReviewService {
    */
   @Override
   @Transactional
-  public void createReview(ReviewCreateRequest request, UUID userId) {
+  public ReviewDto createReview(ReviewCreateRequest request, UUID userId) { // 반환 타입 변경
 
     // 도서와 유저가 실제로 DB에 존재하는지 확인 (타 도메인이므로 기존 CustomException 유지)
     Book book = bookRepository.findById(request.bookId())
@@ -79,12 +79,16 @@ public class BasicReviewService implements ReviewService {
         .content(request.content())
         .rating(request.rating())
         .build();
-    reviewRepository.save(review);
+
+    Review savedReview = reviewRepository.save(review); // 저장된 객체 받기
 
     // 도서 통계 업데이트 로직 호출
     updateBookStats(book, request.rating());
 
-    log.info("리뷰가 성공적으로 등록되었습니다. reviewId: {}, userId: {}", review.getId(), user.getId());
+    log.info("리뷰가 성공적으로 등록되었습니다. reviewId: {}, userId: {}", savedReview.getId(), user.getId());
+
+    // 저장된 리뷰를 Dto로 매핑하여 반환
+    return reviewMapper.toDto(savedReview, book, user, false);
   }
 
   /**
@@ -92,7 +96,8 @@ public class BasicReviewService implements ReviewService {
    */
   @Override
   @Transactional
-  public void updateReview(UUID reviewId, ReviewUpdateRequest request, UUID userId) {
+  public ReviewDto updateReview(UUID reviewId, ReviewUpdateRequest request,
+      UUID userId) { // 반환 타입 변경
 
     Review review = reviewRepository.findById(reviewId)
         .orElseThrow(() -> {
@@ -110,6 +115,13 @@ public class BasicReviewService implements ReviewService {
     review.updateReview(request.content(), request.rating());
 
     log.info("리뷰가 성공적으로 수정되었습니다. reviewId: {}", reviewId);
+
+    // 수정한 리뷰를 Dto로 반환하기 위해 타 도메인 정보 조회
+    Book book = bookRepository.findById(review.getBookId()).orElse(null);
+    Users user = userRepository.findById(review.getUserId()).orElse(null);
+    boolean likedByMe = reviewLikeRepository.existsByReviewIdAndUserId(review.getId(), userId);
+
+    return reviewMapper.toDto(review, book, user, likedByMe);
   }
 
   /**

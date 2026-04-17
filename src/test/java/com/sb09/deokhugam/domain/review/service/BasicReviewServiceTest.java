@@ -81,7 +81,7 @@ public class BasicReviewServiceTest {
 
     // Mock 객체들의 기본 행동 설정
     given(book.getId()).willReturn(bookId);
-    given(book.getReviewCount()).willReturn(0); // 통계 업데이트를 위한 기본값
+    given(book.getReviewCount()).willReturn(0);
     given(book.getRating()).willReturn(java.math.BigDecimal.ZERO);
 
     given(users.getId()).willReturn(userId);
@@ -95,17 +95,20 @@ public class BasicReviewServiceTest {
   @Test
   @DisplayName("리뷰 등록 성공 테스트")
   void createReview_success() {
-    // given: DB에 책과 유저가 정상적으로 존재하고, 리뷰는 아직 안 쓴 상태
+    // given
     given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
     given(userRepository.findById(userId)).willReturn(Optional.of(users));
     given(reviewRepository.existsByBookIdAndUserId(bookId, userId)).willReturn(false);
 
+    // 추가: DB에 save를 요청하면, 아까 만들어둔 가짜 review를 돌려주기로 약속
+    given(reviewRepository.save(any(Review.class))).willReturn(review);
+
     ReviewCreateRequest request = new ReviewCreateRequest(bookId, "너무 재밌어요!", 5);
 
-    // when: 리뷰 생성 로직 실행
+    // when
     reviewService.createReview(request, userId);
 
-    // then: reviewRepository.save()가 딱 1번 호출되었는지 검증 (진짜로 저장 요청을 보냈는지 확인)
+    // then
     verify(reviewRepository, times(1)).save(any(Review.class));
   }
 
@@ -115,7 +118,6 @@ public class BasicReviewServiceTest {
     given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
     given(userRepository.findById(userId)).willReturn(Optional.of(users));
 
-    // DB에 이미 리뷰가 있다고 세팅
     given(reviewRepository.existsByBookIdAndUserId(bookId, userId)).willReturn(true);
 
     ReviewCreateRequest request = new ReviewCreateRequest(bookId, "내용", 5);
@@ -131,7 +133,6 @@ public class BasicReviewServiceTest {
   void updateReview_notOwner() {
     UUID otherUserId = UUID.randomUUID();
     given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
-    // 현재 리뷰의 작성자는 userId로 세팅되어 있음
 
     ReviewUpdateRequest request = new ReviewUpdateRequest("수정내용", 4);
 
@@ -144,7 +145,6 @@ public class BasicReviewServiceTest {
   @Test
   @DisplayName("예외 검증 - 존재하지 않는 리뷰 삭제 시도 시 예외 발생 (ReviewNotFoundException)")
   void deleteReview_notFound() {
-    // DB에서 리뷰를 찾지 못함 (Optional.empty())
     given(reviewRepository.findById(reviewId)).willReturn(Optional.empty());
 
     assertThatThrownBy(() -> reviewService.deleteReview(reviewId, userId))
@@ -156,7 +156,6 @@ public class BasicReviewServiceTest {
   @Test
   @DisplayName("예외 검증 - 이미 삭제된 리뷰 재삭제 시도 시 예외 발생 (ReviewAlreadyDeletedException)")
   void deleteReview_alreadyDeleted() {
-    // 이미 논리 삭제(deletedAt) 시간이 찍혀있다고 가정
     given(review.getDeletedAt()).willReturn(LocalDateTime.now());
     given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
 

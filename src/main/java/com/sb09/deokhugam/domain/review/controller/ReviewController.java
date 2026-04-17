@@ -26,29 +26,29 @@ public class ReviewController implements ReviewApi {
    * 1. 리뷰 등록 API [POST] /api/reviews
    */
   @PostMapping
-  public ResponseEntity<Void> createReview(
+  public ResponseEntity<ReviewDto> createReview( // 반환 타입 변경
       @RequestHeader("X-User-Id") UUID userId, // 헤더에서 유저 ID 추출
       @Valid @RequestBody ReviewCreateRequest request) {
 
-    reviewService.createReview(request, userId);
+    ReviewDto response = reviewService.createReview(request, userId); // Dto 받아오기
 
     // 성공 시 201 Created 응답
-    return ResponseEntity.status(HttpStatus.CREATED).build();
+    return ResponseEntity.status(HttpStatus.CREATED).body(response); // body 추가
   }
 
   /**
    * 2. 리뷰 수정 API [PATCH] /api/reviews/{reviewId}
    */
   @PatchMapping("/{reviewId}")
-  public ResponseEntity<Void> updateReview(
+  public ResponseEntity<ReviewDto> updateReview( // 반환 타입 변경
       @PathVariable UUID reviewId, // 주소에서 리뷰 ID 추출
       @RequestHeader("X-User-Id") UUID userId,
       @Valid @RequestBody ReviewUpdateRequest request) {
 
-    reviewService.updateReview(reviewId, request, userId);
+    ReviewDto response = reviewService.updateReview(reviewId, request, userId); // Dto 받아오기
 
     // 성공 시 200 OK 응답
-    return ResponseEntity.ok().build();
+    return ResponseEntity.ok(response); // body 추가
   }
 
   /**
