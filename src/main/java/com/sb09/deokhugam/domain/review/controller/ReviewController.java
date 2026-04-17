@@ -1,5 +1,6 @@
 package com.sb09.deokhugam.domain.review.controller;
 
+import com.sb09.deokhugam.domain.review.controller.api.ReviewApi;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
@@ -17,7 +18,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/reviews")
 @RequiredArgsConstructor
-public class ReviewController {
+public class ReviewController implements ReviewApi {
 
   private final ReviewService reviewService;
 
@@ -25,29 +26,29 @@ public class ReviewController {
    * 1. 리뷰 등록 API [POST] /api/reviews
    */
   @PostMapping
-  public ResponseEntity<Void> createReview(
+  public ResponseEntity<ReviewDto> createReview( // 반환 타입 변경
       @RequestHeader("X-User-Id") UUID userId, // 헤더에서 유저 ID 추출
       @Valid @RequestBody ReviewCreateRequest request) {
 
-    reviewService.createReview(request, userId);
+    ReviewDto response = reviewService.createReview(request, userId); // Dto 받아오기
 
     // 성공 시 201 Created 응답
-    return ResponseEntity.status(HttpStatus.CREATED).build();
+    return ResponseEntity.status(HttpStatus.CREATED).body(response); // body 추가
   }
 
   /**
    * 2. 리뷰 수정 API [PATCH] /api/reviews/{reviewId}
    */
   @PatchMapping("/{reviewId}")
-  public ResponseEntity<Void> updateReview(
+  public ResponseEntity<ReviewDto> updateReview( // 반환 타입 변경
       @PathVariable UUID reviewId, // 주소에서 리뷰 ID 추출
       @RequestHeader("X-User-Id") UUID userId,
       @Valid @RequestBody ReviewUpdateRequest request) {
 
-    reviewService.updateReview(reviewId, request, userId);
+    ReviewDto response = reviewService.updateReview(reviewId, request, userId); // Dto 받아오기
 
     // 성공 시 200 OK 응답
-    return ResponseEntity.ok().build();
+    return ResponseEntity.ok(response); // body 추가
   }
 
   /**
@@ -73,7 +74,7 @@ public class ReviewController {
       // 헤더에서 유저 ID를 가져옵니다. (로그인 안 한 경우도 고려해 false 설정)
       @RequestHeader(value = "Deokhugam-Request-User-ID", required = false) UUID userId
   ) {
-    
+
     CursorPageResponseDto<ReviewDto> response = reviewService.getReviews(request, userId);
 
     return ResponseEntity.ok(response);
