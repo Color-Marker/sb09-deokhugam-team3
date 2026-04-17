@@ -56,8 +56,8 @@ public class ReviewService {
         .build();
     reviewRepository.save(review);
 
-    // 유저 활동 점수 업데이트 (Users 엔티티의 메서드 사용)
-    user.addReviewScore(request.rating().doubleValue());
+//    // 유저 활동 점수 업데이트 (Users 엔티티의 메서드 사용)
+//    user.addReviewScore(request.rating().doubleValue());
 
     // 도서 통계 업데이트 로직 호출
     updateBookStats(book, request.rating());
