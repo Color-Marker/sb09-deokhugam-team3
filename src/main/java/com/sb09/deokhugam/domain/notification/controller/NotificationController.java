@@ -1,5 +1,6 @@
 package com.sb09.deokhugam.domain.notification.controller;
 
+import com.sb09.deokhugam.domain.notification.controller.api.NotificationApi;
 import com.sb09.deokhugam.domain.notification.dto.request.NotificationListRequest;
 import com.sb09.deokhugam.domain.notification.dto.request.NotificationUpdateRequest;
 import com.sb09.deokhugam.domain.notification.dto.response.NotificationDto;
@@ -23,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
-public class NotificationController {
+public class NotificationController implements NotificationApi {
 
   private final NotificationService notificationService;
 
