@@ -1,5 +1,6 @@
 package com.sb09.deokhugam.global.common.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
@@ -24,5 +25,6 @@ public abstract class BaseEntity {
 
   @CreatedDate
   @Column(name = "created_at", updatable = false, nullable = false)
+  @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul") //프론트 코드 호환을 위한 날짜형식
   private LocalDateTime createdAt;
 }

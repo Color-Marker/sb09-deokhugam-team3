@@ -2,8 +2,9 @@ package com.sb09.deokhugam.domain.comment.service;
 
 import com.sb09.deokhugam.domain.comment.dto.CommentDto;
 import com.sb09.deokhugam.domain.comment.dto.request.CommentCreateRequest;
+import com.sb09.deokhugam.domain.comment.dto.request.CommentListRequest;
 import com.sb09.deokhugam.domain.comment.dto.request.CommentUpdateRequest;
-import java.util.List;
+import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import java.util.UUID;
 
 public interface CommentService {
@@ -12,7 +13,7 @@ public interface CommentService {
 
   CommentDto findById(UUID commentId);
 
-  List<CommentDto> findAllByReviewId(UUID reviewId);
+  CursorPageResponseDto<CommentDto> findAllByReviewId(CommentListRequest request);
 
   CommentDto update(UUID commentId, UUID requestUserId, CommentUpdateRequest request);
 
