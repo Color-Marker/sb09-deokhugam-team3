@@ -7,6 +7,7 @@ import com.sb09.deokhugam.domain.user.dto.request.UserUpdateRequest;
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.mapper.UserMapper;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
+import com.sb09.deokhugam.domain.user.service.UserService;
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
 import java.util.UUID;
@@ -19,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserService implements com.sb09.deokhugam.domain.user.service.UserService {
+public class BasicUserService implements UserService {
 
   private final UserRepository userRepository;
   private final UserMapper userMapper;
