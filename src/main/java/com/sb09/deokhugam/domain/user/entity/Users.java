@@ -22,7 +22,7 @@ public class Users extends BaseFullAuditEntity {
 
   @Column(nullable = false, length = 255)
   private String password;
-  
+
   @Builder
   public Users(String email, String nickname, String password) {
     this.email = email;
