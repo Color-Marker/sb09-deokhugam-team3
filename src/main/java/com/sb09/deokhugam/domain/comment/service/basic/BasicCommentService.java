@@ -68,6 +68,7 @@ public class BasicCommentService implements CommentService {
     Comment comment = new Comment(review, user, content);
 
     commentRepository.save(comment);
+    review.addCommentCount();
 
     log.info("리뷰ID: {} 에 대한 유저ID: {} 의 댓글 작성 알람을 생성합니다.", reviewId, userId);
     notificationService.create(NotificationType.COMMENT, review, user);
@@ -141,6 +142,7 @@ public class BasicCommentService implements CommentService {
       throw new CommentAlreadyDeletedException();
     }
     comment.markAsDeleted();
+    comment.getReview().removeCommentCount();
     log.info("댓글 논리삭제 완료: id={}", commentId);
   }
 
@@ -155,6 +157,7 @@ public class BasicCommentService implements CommentService {
       throw new ForbiddenAuthorityException(ErrorCode.COMMENT_DELETE_FORBIDDEN);
     }
     commentRepository.delete(comment);
+    comment.getReview().removeCommentCount();
     log.info("댓글 물리삭제 완료: id={}", commentId);
   }
 }
