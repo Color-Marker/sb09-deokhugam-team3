@@ -16,7 +16,12 @@ import com.sb09.deokhugam.domain.user.repository.UserRepository;
 
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.Exception.review.DuplicateReviewException;
+import com.sb09.deokhugam.global.Exception.review.ReviewAlreadyDeletedException;
+import com.sb09.deokhugam.global.Exception.review.ReviewForbiddenException;
+import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
+import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +44,7 @@ public class BasicReviewService implements ReviewService {
   private final UserRepository userRepository;
   private final ReviewLikeRepository reviewLikeRepository;
   private final ReviewMapper reviewMapper;
+  private final CursorPageResponseMapper cursorPageResponseMapper;
 
   /**
    * 1. 리뷰 등록 (Create)
@@ -47,7 +53,7 @@ public class BasicReviewService implements ReviewService {
   @Transactional
   public void createReview(ReviewCreateRequest request, UUID userId) {
 
-    // 도서와 유저가 실제로 DB에 존재하는지 확인
+    // 도서와 유저가 실제로 DB에 존재하는지 확인 (타 도메인이므로 기존 CustomException 유지)
     Book book = bookRepository.findById(request.bookId())
         .orElseThrow(() -> new CustomException(ErrorCode.BOOK_NOT_FOUND));
 
@@ -56,7 +62,7 @@ public class BasicReviewService implements ReviewService {
 
     // 중복 작성 검증 (1인 1리뷰)
     if (reviewRepository.existsByBookIdAndUserId(book.getId(), user.getId())) {
-      throw new CustomException(ErrorCode.DUPLICATE_REVIEW);
+      throw new DuplicateReviewException();
     }
 
     // 리뷰 엔티티 생성 및 저장
@@ -67,9 +73,6 @@ public class BasicReviewService implements ReviewService {
         .rating(request.rating())
         .build();
     reviewRepository.save(review);
-
-    // 유저 활동 점수 업데이트 (Users 엔티티의 메서드 사용)
-    //user.addReviewScore(request.rating().doubleValue());
 
     // 도서 통계 업데이트 로직 호출
     updateBookStats(book, request.rating());
@@ -83,11 +86,11 @@ public class BasicReviewService implements ReviewService {
   public void updateReview(UUID reviewId, ReviewUpdateRequest request, UUID userId) {
 
     Review review = reviewRepository.findById(reviewId)
-        .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
+        .orElseThrow(() -> ReviewNotFoundException.withId(reviewId)); // ID 추적 기능(withId) 적용
 
     // 권한 확인: 수정을 요청한 사람이 실제 작성자인지 검사 (CustomException 추가)
     if (!review.getUserId().equals(userId)) {
-      throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+      throw new ReviewForbiddenException();
     }
 
     // 내용 및 평점 업데이트
@@ -103,16 +106,16 @@ public class BasicReviewService implements ReviewService {
   public void deleteReview(UUID reviewId, UUID userId) {
 
     Review review = reviewRepository.findById(reviewId)
-        .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
+        .orElseThrow(() -> ReviewNotFoundException.withId(reviewId));
 
     // 권한 확인
     if (!review.getUserId().equals(userId)) {
-      throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+      throw new ReviewForbiddenException();
     }
 
     // 이미 삭제된 리뷰인지 확인
     if (review.getDeletedAt() != null) {
-      throw new CustomException(ErrorCode.DELETED_REVIEW);
+      throw ReviewAlreadyDeletedException.withId(reviewId);
     }
 
     // 물리 삭제 대신 BaseFullAuditEntity에서 제공하는 메서드로 논리 삭제 처리
@@ -127,9 +130,11 @@ public class BasicReviewService implements ReviewService {
       UUID currentUserId) {
 
     Slice<Review> reviews = reviewRepository.searchReviews(request);
-
-    List<ReviewDto> dtoList = reviews.getContent().stream()
-        .map(review -> {
+    Long totalElements = 0L; // 무한 스크롤이라 전체 개수는 임시로 0 처리
+    
+    return cursorPageResponseMapper.fromSlice(
+        reviews,
+        review -> {
           Book book = bookRepository.findById(review.getBookId()).orElse(null);
           Users user = userRepository.findById(review.getUserId()).orElse(null);
 
@@ -140,21 +145,10 @@ public class BasicReviewService implements ReviewService {
           }
 
           return reviewMapper.toDto(review, book, user, likedByMe);
-        })
-        .toList();
-
-    // 다음 페이지를 위한 커서 정보 추출
-    UUID nextCursor = dtoList.isEmpty() ? null : dtoList.get(dtoList.size() - 1).id();
-    LocalDateTime nextAfter =
-        dtoList.isEmpty() ? null : dtoList.get(dtoList.size() - 1).createdAt();
-    
-    return new CursorPageResponseDto<>(
-        dtoList,             // 1. content (데이터 목록)
-        nextCursor,          // 2. nextCursor (다음 커서 ID)
-        nextAfter,           // 3. nextAfter (다음 기준 시간)
-        request.limit(),     // 4. size (한 번에 가져올 개수)
-        0L,                  // 5. totalElements (전체 개수 - 일단 0으로 처리)
-        reviews.hasNext()    // 6. hasNext (다음 페이지 존재 여부)
+        },
+        Review::getId,
+        Review::getCreatedAt,
+        totalElements
     );
   }
 
