@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Entity
-@Table(name= "notifications")
+@Table(name = "notifications")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notification extends BaseUpdateableEntity {
@@ -42,11 +42,11 @@ public class Notification extends BaseUpdateableEntity {
   @JoinColumn(name = "user_id", columnDefinition = "uuid", nullable = false)
   private Users user;
 
-  public void update(){
+  public void update() {
     this.confirmStatus = true;
   }
 
-  public Notification(NotificationType type, Review review, Users sender, Users user){
+  public Notification(NotificationType type, Review review, Users sender, Users user) {
     this.confirmStatus = false;
     this.type = type;
     this.review = review;
