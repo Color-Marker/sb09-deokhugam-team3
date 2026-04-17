@@ -29,7 +29,7 @@ public class RequestTrackingFilter implements Filter {
 
       // MDC에 컨텍스트 정보 설정
       MDC.put("traceId", traceId);
-      MDC.put("sessionId", sessionId.substring(0, 8));
+      MDC.put("sessionId", sessionId.length() >= 8 ? sessionId.substring(0, 8) : sessionId);
       MDC.put("userIp", userIp);
 
       ((HttpServletResponse) response).setHeader("X-Request-ID", traceId);

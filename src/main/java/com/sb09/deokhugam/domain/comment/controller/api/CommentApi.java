@@ -2,7 +2,9 @@ package com.sb09.deokhugam.domain.comment.controller.api;
 
 import com.sb09.deokhugam.domain.comment.dto.CommentDto;
 import com.sb09.deokhugam.domain.comment.dto.request.CommentCreateRequest;
+import com.sb09.deokhugam.domain.comment.dto.request.CommentListRequest;
 import com.sb09.deokhugam.domain.comment.dto.request.CommentUpdateRequest;
+import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -13,6 +15,7 @@ import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 @Tag(name = "Comment", description = "댓글 관련 API")
 public interface CommentApi {
@@ -22,8 +25,8 @@ public interface CommentApi {
       @ApiResponse(responseCode = "200", description = "조회 성공"),
       @ApiResponse(responseCode = "404", description = "리뷰를 찾을 수 없음")
   })
-  ResponseEntity<List<CommentDto>> getComments(
-      @Parameter(description = "리뷰 ID") UUID reviewId
+  ResponseEntity<CursorPageResponseDto<CommentDto>> getComments(
+      @Parameter(description = "리뷰 ID") CommentListRequest request
   );
 
   @Operation(summary = "댓글 등록", description = "리뷰에 댓글을 등록합니다.")
@@ -53,7 +56,7 @@ public interface CommentApi {
   })
   ResponseEntity<CommentDto> updateComment(
       @Parameter(description = "댓글 ID") @PathVariable UUID commentId,
-      @PathVariable UUID requestUserId,
+      @RequestHeader("X-User-Id") UUID requestUserId,
       @RequestBody CommentUpdateRequest request
   );
 
@@ -65,7 +68,7 @@ public interface CommentApi {
   })
   ResponseEntity<Void> softDeleteComment(
       @Parameter(description = "댓글 ID") @PathVariable UUID commentId,
-      @PathVariable UUID requestUserId
+      @RequestHeader("X-User-Id") UUID requestUserId
   );
 
   @Operation(summary = "댓글 물리 삭제", description = "댓글을 DB에서 완전히 삭제합니다.")
@@ -76,6 +79,6 @@ public interface CommentApi {
   })
   ResponseEntity<Void> hardDeleteComment(
       @Parameter(description = "댓글 ID") @PathVariable UUID commentId,
-      @PathVariable UUID requestUserId
+      @RequestHeader("X-User-Id") UUID requestUserId
   );
 }
