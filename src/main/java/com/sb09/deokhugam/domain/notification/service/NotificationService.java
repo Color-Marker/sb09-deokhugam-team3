@@ -11,8 +11,12 @@ import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import java.util.UUID;
 
 public interface NotificationService {
+
   void readAll(UUID userId);
+
   NotificationDto updateStatus(UUID notificationId, UUID userId, NotificationUpdateRequest request);
+
   CursorPageResponseDto<NotificationDto> list(NotificationListRequest request);
+
   Notification create(NotificationType type, Review review, Users sender);
 }
