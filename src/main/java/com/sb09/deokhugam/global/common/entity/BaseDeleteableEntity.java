@@ -1,5 +1,6 @@
 package com.sb09.deokhugam.global.common.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import java.time.LocalDateTime;
@@ -12,6 +13,7 @@ import org.hibernate.annotations.SQLRestriction;
 public abstract class BaseDeleteableEntity extends BaseEntity {
 
   @Column(name = "deleted_at")
+  @JsonIgnore //JSON응답에서 제외
   private LocalDateTime deletedAt;
 
 //논리삭제
