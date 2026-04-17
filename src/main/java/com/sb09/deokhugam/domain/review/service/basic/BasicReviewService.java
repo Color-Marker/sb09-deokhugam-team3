@@ -23,17 +23,17 @@ import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -55,13 +55,20 @@ public class BasicReviewService implements ReviewService {
 
     // 도서와 유저가 실제로 DB에 존재하는지 확인 (타 도메인이므로 기존 CustomException 유지)
     Book book = bookRepository.findById(request.bookId())
-        .orElseThrow(() -> new CustomException(ErrorCode.BOOK_NOT_FOUND));
+        .orElseThrow(() -> {
+          log.warn("도서를 찾을 수 없습니다. bookId: {}", request.bookId());
+          return new CustomException(ErrorCode.BOOK_NOT_FOUND);
+        });
 
     Users user = userRepository.findById(userId)
-        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        .orElseThrow(() -> {
+          log.warn("사용자를 찾을 수 없습니다. userId: {}", userId);
+          return new CustomException(ErrorCode.USER_NOT_FOUND);
+        });
 
     // 중복 작성 검증 (1인 1리뷰)
     if (reviewRepository.existsByBookIdAndUserId(book.getId(), user.getId())) {
+      log.warn("이미 리뷰를 작성한 사용자입니다. bookId: {}, userId: {}", book.getId(), user.getId());
       throw new DuplicateReviewException();
     }
 
@@ -76,6 +83,8 @@ public class BasicReviewService implements ReviewService {
 
     // 도서 통계 업데이트 로직 호출
     updateBookStats(book, request.rating());
+
+    log.info("리뷰가 성공적으로 등록되었습니다. reviewId: {}, userId: {}", review.getId(), user.getId());
   }
 
   /**
@@ -86,16 +95,21 @@ public class BasicReviewService implements ReviewService {
   public void updateReview(UUID reviewId, ReviewUpdateRequest request, UUID userId) {
 
     Review review = reviewRepository.findById(reviewId)
-        .orElseThrow(() -> ReviewNotFoundException.withId(reviewId)); // ID 추적 기능(withId) 적용
+        .orElseThrow(() -> {
+          log.warn("리뷰를 찾을 수 없습니다. reviewId: {}", reviewId);
+          return ReviewNotFoundException.withId(reviewId);
+        }); // ID 추적 기능(withId) 적용
 
     // 권한 확인: 수정을 요청한 사람이 실제 작성자인지 검사 (CustomException 추가)
     if (!review.getUserId().equals(userId)) {
+      log.warn("리뷰 수정 권한이 없습니다. reviewId: {}, 요청 userId: {}", reviewId, userId);
       throw new ReviewForbiddenException();
     }
 
     // 내용 및 평점 업데이트
     review.updateReview(request.content(), request.rating());
 
+    log.info("리뷰가 성공적으로 수정되었습니다. reviewId: {}", reviewId);
   }
 
   /**
@@ -106,20 +120,27 @@ public class BasicReviewService implements ReviewService {
   public void deleteReview(UUID reviewId, UUID userId) {
 
     Review review = reviewRepository.findById(reviewId)
-        .orElseThrow(() -> ReviewNotFoundException.withId(reviewId));
+        .orElseThrow(() -> {
+          log.warn("리뷰를 찾을 수 없습니다. reviewId: {}", reviewId);
+          return ReviewNotFoundException.withId(reviewId);
+        });
 
     // 권한 확인
     if (!review.getUserId().equals(userId)) {
+      log.warn("리뷰 삭제 권한이 없습니다. reviewId: {}, 요청 userId: {}", reviewId, userId);
       throw new ReviewForbiddenException();
     }
 
     // 이미 삭제된 리뷰인지 확인
     if (review.getDeletedAt() != null) {
+      log.warn("이미 삭제된 리뷰입니다. reviewId: {}", reviewId);
       throw ReviewAlreadyDeletedException.withId(reviewId);
     }
 
     // 물리 삭제 대신 BaseFullAuditEntity에서 제공하는 메서드로 논리 삭제 처리
     review.markAsDeleted();
+
+    log.info("리뷰가 성공적으로 삭제 처리되었습니다(논리 삭제). reviewId: {}", reviewId);
   }
 
   /**
@@ -129,9 +150,11 @@ public class BasicReviewService implements ReviewService {
   public CursorPageResponseDto<ReviewDto> getReviews(ReviewListRequest request,
       UUID currentUserId) {
 
+    log.info("리뷰 목록 조회를 요청했습니다. 요청자 userId: {}", currentUserId);
+
     Slice<Review> reviews = reviewRepository.searchReviews(request);
     Long totalElements = 0L; // 무한 스크롤이라 전체 개수는 임시로 0 처리
-    
+
     return cursorPageResponseMapper.fromSlice(
         reviews,
         review -> {
@@ -169,5 +192,8 @@ public class BasicReviewService implements ReviewService {
 
     // Book 엔티티 업데이트
     book.updateRatingAndReviewCount(finalRating, newReviewCount);
+
+    log.info("도서 통계가 업데이트되었습니다. bookId: {}, 새 평균 평점: {}, 총 리뷰 수: {}", book.getId(), finalRating,
+        newReviewCount);
   }
 }

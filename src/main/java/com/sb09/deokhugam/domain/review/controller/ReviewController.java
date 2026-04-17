@@ -1,5 +1,6 @@
 package com.sb09.deokhugam.domain.review.controller;
 
+import com.sb09.deokhugam.domain.review.controller.api.ReviewApi;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
@@ -17,7 +18,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/reviews")
 @RequiredArgsConstructor
-public class ReviewController {
+public class ReviewController implements ReviewApi {
 
   private final ReviewService reviewService;
 
@@ -73,7 +74,7 @@ public class ReviewController {
       // 헤더에서 유저 ID를 가져옵니다. (로그인 안 한 경우도 고려해 false 설정)
       @RequestHeader(value = "Deokhugam-Request-User-ID", required = false) UUID userId
   ) {
-    
+
     CursorPageResponseDto<ReviewDto> response = reviewService.getReviews(request, userId);
 
     return ResponseEntity.ok(response);
