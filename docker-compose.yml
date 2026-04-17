@@ -8,9 +8,9 @@ services:
     networks:
       - my-room
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ./postgres_data:/var/lib/postgresql/data # [추가] 데이터 보존을 위한 볼륨 설정
       - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql # [추가] 컨테이너 켜질 때 schema.sql 자동 실행
