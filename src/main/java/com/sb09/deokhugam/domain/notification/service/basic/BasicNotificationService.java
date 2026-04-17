@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional
 public class BasicNotificationService implements NotificationService {
+
   private final NotificationRepository notificationRepository;
   private final UserRepository userRepository;
   private final NotificationMapper notificationMapper;
@@ -35,24 +36,25 @@ public class BasicNotificationService implements NotificationService {
 
   @Override
   public void readAll(UUID userId) {
-    if(userId == null){
+    if (userId == null) {
       log.warn("잘못된 요청입니다.");
       throw new CustomException(ErrorCode.INVALID_REQUEST);
     }
-    if(!userRepository.existsById(userId)){
+    if (!userRepository.existsById(userId)) {
       log.warn("사용자를 찾을 수 없습니다.");
       throw new CustomException(ErrorCode.USER_NOT_FOUND);
     }
     log.info("유저ID: {} 의 모든 알림을 읽음 상태로 전환합니다.", userId);
     List<Notification> notis = notificationRepository.findByUserId(userId);
-    for (Notification n : notis){
+    for (Notification n : notis) {
       n.update();
     }
   }
 
   @Override
-  public NotificationDto updateStatus(UUID notificationId, UUID userId, NotificationUpdateRequest request) {
-    if(userId == null){
+  public NotificationDto updateStatus(UUID notificationId, UUID userId,
+      NotificationUpdateRequest request) {
+    if (userId == null) {
       log.warn("잘못된 요청입니다.");
       throw new CustomException(ErrorCode.INVALID_REQUEST);
     }
@@ -70,7 +72,7 @@ public class BasicNotificationService implements NotificationService {
           return new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND);
         });
 
-    if(!notification.getUser().equals(user)){
+    if (!notification.getUser().equals(user)) {
       log.warn("알림에 대한 접근 권한이 없습니다.");
       throw new CustomException(ErrorCode.NOTIFICATION_ACCESS_FORBIDDEN);
     }
@@ -99,7 +101,7 @@ public class BasicNotificationService implements NotificationService {
   // 위는 controller에서 호출 -----------------------------------
   // 아래는 내부 작업 -----------------------------------
   @Override
-  public Notification create(NotificationType type, Review review, Users sender){
+  public Notification create(NotificationType type, Review review, Users sender) {
     UUID userId = review.getUserId();
     Users user = userRepository.findById(userId).orElseThrow(
         () -> {
@@ -108,11 +110,10 @@ public class BasicNotificationService implements NotificationService {
         }
     );
     Notification notification;
-    if(!type.equals(NotificationType.RANKING)){
+    if (!type.equals(NotificationType.RANKING)) {
       // 좋아요 & 댓글
       notification = new Notification(type, review, sender, user);
-    }
-    else {
+    } else {
       // 랭킹
       notification = new Notification(type, review, null, user);
     }

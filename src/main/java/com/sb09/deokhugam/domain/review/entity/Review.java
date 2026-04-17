@@ -1,13 +1,12 @@
 package com.sb09.deokhugam.domain.review.entity;
 
-import com.sb09.deokhugam.global.common.entity.BaseUpdateableEntity;
+import com.sb09.deokhugam.global.common.entity.BaseFullAuditEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -22,7 +21,7 @@ import java.util.UUID;
         )
     }
 )
-public class Review extends BaseUpdateableEntity {
+public class Review extends BaseFullAuditEntity {
 
   @Column(name = "book_id", nullable = false)
   private UUID bookId;
@@ -42,10 +41,6 @@ public class Review extends BaseUpdateableEntity {
   @Column(name = "comment_count", nullable = false)
   private Integer commentCount = 0;
 
-  // 논리 삭제를 위한 필드 추가 (null이면 정상, 시간이 있으면 삭제됨)
-  @Column(name = "deleted_at")
-  private LocalDateTime deletedAt;
-
   @Builder
   public Review(UUID bookId, UUID userId, String content, Integer rating) {
     this.bookId = bookId;
@@ -54,16 +49,12 @@ public class Review extends BaseUpdateableEntity {
     this.rating = rating;
   }
 
-  
   public void updateReview(String content, Integer rating) {
     this.content = content;
     this.rating = rating;
   }
 
-  public void deleteSoftly() {
-    this.deletedAt = LocalDateTime.now();
-  }
-
+  
   public void addLikeCount() {
     this.likeCount++;
   }
