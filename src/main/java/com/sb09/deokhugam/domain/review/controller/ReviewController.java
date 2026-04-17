@@ -1,8 +1,11 @@
 package com.sb09.deokhugam.domain.review.controller;
 
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
+import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
+import com.sb09.deokhugam.domain.review.dto.response.ReviewDto;
 import com.sb09.deokhugam.domain.review.service.ReviewService;
+import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -59,5 +62,20 @@ public class ReviewController {
 
     // 성공 시 204 No Content 응답
     return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * 4. 리뷰 목록 조회 API (무한 스크롤 및 검색)
+   */
+  @GetMapping
+  public ResponseEntity<CursorPageResponseDto<ReviewDto>> getReviews(
+      @ModelAttribute ReviewListRequest request,
+      // 헤더에서 유저 ID를 가져옵니다. (로그인 안 한 경우도 고려해 false 설정)
+      @RequestHeader(value = "Deokhugam-Request-User-ID", required = false) UUID userId
+  ) {
+    
+    CursorPageResponseDto<ReviewDto> response = reviewService.getReviews(request, userId);
+
+    return ResponseEntity.ok(response);
   }
 }
