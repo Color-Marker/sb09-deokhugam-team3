@@ -8,13 +8,13 @@ import java.util.UUID;
 
 public interface UserService {
 
-  UserResponse register(UserRegisterRequest request);
+  UserResponse create(UserRegisterRequest request);
 
   UserResponse login(UserLoginRequest request);
 
-  UserResponse getUser(UUID id);
+  UserResponse findById(UUID id);
 
-  UserResponse updateNickname(UUID requestUserId, UUID targetId, UserUpdateRequest request);
+  UserResponse update(UUID requestUserId, UUID targetId, UserUpdateRequest request);
 
   void softDelete(UUID requestUserId, UUID targetId);
 

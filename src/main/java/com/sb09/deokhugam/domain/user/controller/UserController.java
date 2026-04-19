@@ -32,7 +32,7 @@ public class UserController implements UserApi {
   public ResponseEntity<UserResponse> register(
       @Valid @RequestBody UserRegisterRequest request
   ) {
-    UserResponse response = userService.register(request);
+    UserResponse response = userService.create(request);
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
@@ -48,7 +48,7 @@ public class UserController implements UserApi {
   public ResponseEntity<UserResponse> getUser(
       @PathVariable UUID userId
   ) {
-    UserResponse response = userService.getUser(userId);
+    UserResponse response = userService.findById(userId);
     return ResponseEntity.ok(response);
   }
 
@@ -58,7 +58,7 @@ public class UserController implements UserApi {
       @RequestHeader("Deokhugam-Request-User-ID") UUID requestUserId,
       @Valid @RequestBody UserUpdateRequest request
   ) {
-    UserResponse response = userService.updateNickname(requestUserId, userId, request);
+    UserResponse response = userService.update(requestUserId, userId, request);
     return ResponseEntity.ok(response);
   }
 
