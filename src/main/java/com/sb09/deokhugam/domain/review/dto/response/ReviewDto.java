@@ -6,7 +6,10 @@ import java.util.UUID;
 public record ReviewDto(
     UUID id,
     UUID bookId,
+    String bookTitle,
+    String bookThumbnailUrl,
     UUID userId,
+    String nickname,
     String content,
     Integer rating,
     Integer likeCount,

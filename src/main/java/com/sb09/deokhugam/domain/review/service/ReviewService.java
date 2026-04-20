@@ -4,6 +4,7 @@ import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
 import com.sb09.deokhugam.domain.review.dto.response.ReviewDto;
+import com.sb09.deokhugam.domain.review.dto.response.ReviewLikeDto;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import java.util.UUID;
 
@@ -20,4 +21,7 @@ public interface ReviewService {
 
   // 리뷰 목록 조회
   CursorPageResponseDto<ReviewDto> getReviews(ReviewListRequest request, UUID currentUserId);
+
+  // 리뷰 좋아요 토글
+  ReviewLikeDto toggleLike(UUID reviewId, UUID userId);
 }

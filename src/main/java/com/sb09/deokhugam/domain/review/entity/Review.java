@@ -2,6 +2,8 @@ package com.sb09.deokhugam.domain.review.entity;
 
 import com.sb09.deokhugam.global.common.entity.BaseFullAuditEntity;
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -41,6 +43,10 @@ public class Review extends BaseFullAuditEntity {
   @Column(name = "comment_count", nullable = false)
   private Integer commentCount = 0;
 
+  // Review가 삭제될 때, ReviewLike도 자동으로 모두 삭제됩니다.
+  @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<ReviewLike> likes = new ArrayList<>();
+
   @Builder
   public Review(UUID bookId, UUID userId, String content, Integer rating) {
     this.bookId = bookId;
@@ -54,7 +60,7 @@ public class Review extends BaseFullAuditEntity {
     this.rating = rating;
   }
 
-  
+
   public void addLikeCount() {
     this.likeCount++;
   }

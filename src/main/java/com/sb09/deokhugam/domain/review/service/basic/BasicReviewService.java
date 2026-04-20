@@ -6,7 +6,9 @@ import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
 import com.sb09.deokhugam.domain.review.dto.response.ReviewDto;
+import com.sb09.deokhugam.domain.review.dto.response.ReviewLikeDto;
 import com.sb09.deokhugam.domain.review.entity.Review;
+import com.sb09.deokhugam.domain.review.entity.ReviewLike;
 import com.sb09.deokhugam.domain.review.mapper.ReviewMapper;
 import com.sb09.deokhugam.domain.review.repository.ReviewLikeRepository;
 import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
@@ -23,6 +25,7 @@ import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Slice;
@@ -80,7 +83,7 @@ public class BasicReviewService implements ReviewService {
         .rating(request.rating())
         .build();
 
-    Review savedReview = reviewRepository.save(review); // 저장된 객체 받기
+    Review savedReview = reviewRepository.save(review);
 
     // 도서 통계 업데이트 로직 호출
     updateBookStats(book, request.rating());
@@ -164,28 +167,65 @@ public class BasicReviewService implements ReviewService {
 
     log.info("리뷰 목록 조회를 요청했습니다. 요청자 userId: {}", currentUserId);
 
-    Slice<Review> reviews = reviewRepository.searchReviews(request);
+    // 이제 파라미터로 currentUserId 도 같이 넘겨주어야 합니다
+    Slice<ReviewDto> reviewDtos = reviewRepository.searchReviews(request, currentUserId);
+
     Long totalElements = 0L; // 무한 스크롤이라 전체 개수는 임시로 0 처리
 
     return cursorPageResponseMapper.fromSlice(
-        reviews,
-        review -> {
-          Book book = bookRepository.findById(review.getBookId()).orElse(null);
-          Users user = userRepository.findById(review.getUserId()).orElse(null);
-
-          boolean likedByMe = false;
-          if (currentUserId != null) {
-            likedByMe = reviewLikeRepository.existsByReviewIdAndUserId(review.getId(),
-                currentUserId);
-          }
-
-          return reviewMapper.toDto(review, book, user, likedByMe);
-        },
-        Review::getId,
-        Review::getCreatedAt,
+        reviewDtos,
+        dto -> dto,
+        ReviewDto::id,
+        ReviewDto::createdAt,
         totalElements
     );
   }
+
+  /**
+   * 5. 리뷰 좋아요 토글 (Toggle) - 이미 좋아요를 눌렀다면 취소, 누르지 않았다면 추가합니다.
+   */
+  @Override
+  @Transactional
+  public ReviewLikeDto toggleLike(UUID reviewId, UUID userId) {
+
+    //  리뷰와 유저가 존재하는지 확인
+    Review review = reviewRepository.findById(reviewId)
+        .orElseThrow(() -> {
+          log.warn("좋아요 실패: 리뷰를 찾을 수 없습니다. reviewId: {}", reviewId);
+          return ReviewNotFoundException.withId(reviewId);
+        });
+
+    Users user = userRepository.findById(userId)
+        .orElseThrow(() -> {
+          log.warn("좋아요 실패: 사용자를 찾을 수 없습니다. userId: {}", userId);
+          return new CustomException(ErrorCode.USER_NOT_FOUND);
+        });
+
+    // 이미 좋아요를 누른 기록이 있는지 조회
+    Optional<ReviewLike> existingLike = reviewLikeRepository.findByReviewIdAndUserId(reviewId,
+        userId);
+
+    if (existingLike.isPresent()) {
+      // [좋아요 취소] 이미 누른 상태라면 기록을 지우고 카운트를 1 내립니다.
+      reviewLikeRepository.delete(existingLike.get());
+      review.removeLikeCount();
+      log.info("리뷰 좋아요가 취소되었습니다. reviewId: {}, userId: {}", reviewId, userId);
+
+      return new ReviewLikeDto(false, review.getLikeCount());
+    } else {
+      // [좋아요 추가] 누른 적이 없다면 새로 기록을 만들고 카운트를 1 올립니다.
+      ReviewLike newLike = ReviewLike.builder()
+          .review(review)
+          .user(user)
+          .build();
+      reviewLikeRepository.save(newLike);
+      review.addLikeCount();
+      log.info("리뷰 좋아요가 추가되었습니다. reviewId: {}, userId: {}", reviewId, userId);
+
+      return new ReviewLikeDto(true, review.getLikeCount());
+    }
+  }
+
 
   /**
    * [내부 로직] 도서 평균 평점 및 리뷰 수 계산 - Book 엔티티를 받아 공식을 적용하여 통계를 갱신합니다.

@@ -5,6 +5,7 @@ import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
 import com.sb09.deokhugam.domain.review.dto.response.ReviewDto;
+import com.sb09.deokhugam.domain.review.dto.response.ReviewLikeDto;
 import com.sb09.deokhugam.domain.review.service.ReviewService;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import jakarta.validation.Valid;
@@ -77,6 +78,21 @@ public class ReviewController implements ReviewApi {
 
     CursorPageResponseDto<ReviewDto> response = reviewService.getReviews(request, userId);
 
+    return ResponseEntity.ok(response);
+  }
+
+  /**
+   * 5. 리뷰 좋아요 토글 (추가/취소) API [POST] /api/reviews/{reviewId}/likes
+   */
+  @PostMapping("/{reviewId}/likes")
+  public ResponseEntity<ReviewLikeDto> toggleLike(
+      @PathVariable UUID reviewId,
+      @RequestHeader("X-User-Id") UUID userId // 다른 등록/수정 API와 동일하게 X-User-Id 사용!
+  ) {
+
+    ReviewLikeDto response = reviewService.toggleLike(reviewId, userId);
+
+    // 성공 시 200 OK 응답과 함께 좋아요 상태(true/false) 및 개수 반환
     return ResponseEntity.ok(response);
   }
 }
