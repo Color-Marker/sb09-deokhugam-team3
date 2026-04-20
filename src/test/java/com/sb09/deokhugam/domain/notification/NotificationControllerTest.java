@@ -17,6 +17,8 @@ import com.sb09.deokhugam.domain.notification.dto.response.NotificationDto;
 import com.sb09.deokhugam.domain.notification.service.NotificationService;
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.Exception.notification.NotificationForbiddenException;
+import com.sb09.deokhugam.global.Exception.notification.NotificationNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -121,7 +123,7 @@ public class NotificationControllerTest {
     UUID userId = UUID.randomUUID();
     NotificationUpdateRequest request = new NotificationUpdateRequest(true);
     given(notificationService.updateStatus(eq(notificationId), eq(userId), any(NotificationUpdateRequest.class)))
-        .willThrow(new CustomException(ErrorCode.NOTIFICATION_ACCESS_FORBIDDEN));
+        .willThrow(new NotificationForbiddenException(ErrorCode.NOTIFICATION_ACCESS_FORBIDDEN));
     mockMvc.perform(patch("/api/notifications/{notificationId}", notificationId)
             .header(userIdHeader, userId.toString())
             .contentType(MediaType.APPLICATION_JSON)
@@ -136,7 +138,7 @@ public class NotificationControllerTest {
     UUID userId = UUID.randomUUID();
     NotificationUpdateRequest request = new NotificationUpdateRequest(true);
     given(notificationService.updateStatus(eq(notificationId), eq(userId), any(NotificationUpdateRequest.class)))
-        .willThrow(new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND));
+        .willThrow(NotificationNotFoundException.withId(notificationId));
     mockMvc.perform(patch("/api/notifications/{notificationId}", notificationId)
             .header(userIdHeader, userId.toString())
             .contentType(MediaType.APPLICATION_JSON)
@@ -156,7 +158,7 @@ public class NotificationControllerTest {
         .willReturn(response);
 
     mockMvc.perform(get("/api/notifications")
-            .param("userId", userId.toString())
+            .param("userId", userId.randomUUID().toString())
             .param("size", "10"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content").isArray());

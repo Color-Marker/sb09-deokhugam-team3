@@ -31,7 +31,7 @@ public class NotificationController implements NotificationApi {
   @Override
   @PatchMapping("/read-all")
   public ResponseEntity<Void> readAll(
-      @RequestHeader("Deokhugam-Request-User-ID") @NotNull(message = "유저 ID는 필수입니다") UUID userId
+      @RequestHeader("Deokhugam-Request-User-ID") UUID userId
   ){
     notificationService.readAll(userId);
     return ResponseEntity.noContent().build();
@@ -40,9 +40,9 @@ public class NotificationController implements NotificationApi {
   @Override
   @PatchMapping("/{notificationId}")
   public ResponseEntity<NotificationDto> updateStatus(
-      @PathVariable @NotNull(message = "알림 ID는 필수입니다") UUID notificationId,
-      @RequestHeader("Deokhugam-Request-User-ID") @NotNull(message = "유저 ID는 필수입니다") UUID userId,
-      @Valid @RequestBody NotificationUpdateRequest request
+      @PathVariable UUID notificationId,
+      @RequestHeader("Deokhugam-Request-User-ID") UUID userId,
+      @RequestBody NotificationUpdateRequest request
   ){
     NotificationDto result = notificationService.updateStatus(notificationId, userId, request);
     return ResponseEntity.ok(result);
@@ -51,7 +51,7 @@ public class NotificationController implements NotificationApi {
   @Override
   @GetMapping
   public ResponseEntity<CursorPageResponseDto<NotificationDto>> list(
-      @Valid NotificationListRequest request){
+      NotificationListRequest request){
     CursorPageResponseDto<NotificationDto> result = notificationService.list(request);
     return ResponseEntity.ok(result);
   }

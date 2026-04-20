@@ -13,6 +13,8 @@ import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.Exception.notification.NotificationForbiddenException;
+import com.sb09.deokhugam.global.Exception.notification.NotificationNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 import java.util.List;
@@ -69,12 +71,12 @@ public class BasicNotificationService implements NotificationService {
     Notification notification = notificationRepository.findById(notificationId).
         orElseThrow(() -> {
           log.warn("알림을 찾을 수 없습니다");
-          return new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND);
+          return NotificationNotFoundException.withId(notificationId);
         });
 
     if(!notification.getUser().equals(user)){
       log.warn("알림에 대한 접근 권한이 없습니다.");
-      throw new CustomException(ErrorCode.NOTIFICATION_ACCESS_FORBIDDEN);
+      throw new NotificationForbiddenException(ErrorCode.NOTIFICATION_ACCESS_FORBIDDEN);
     }
 
     log.info("유저 {}의 알림 {}을 읽음 상태로 전환합니다.", user.getNickname(), notification.getId());

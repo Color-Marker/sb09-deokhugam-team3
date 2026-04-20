@@ -17,6 +17,10 @@ import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.Exception.comment.CommentAlreadyDeletedException;
+import com.sb09.deokhugam.global.Exception.comment.ForbiddenAuthorityException;
+import com.sb09.deokhugam.global.Exception.notification.NotificationForbiddenException;
+import com.sb09.deokhugam.global.Exception.notification.NotificationNotFoundException;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
@@ -26,6 +30,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -98,6 +103,7 @@ public class BasicNotificationServiceTest {
     assertThatThrownBy(() -> notificationService.create(type, review, sender))
         .isInstanceOf(CustomException.class)
         .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+
   }
 
   @Test
@@ -180,8 +186,10 @@ public class BasicNotificationServiceTest {
     given(notificationRepository.findById(notificationId)).willReturn(Optional.empty());
 
     assertThatThrownBy(() -> notificationService.updateStatus(notificationId, userId, request))
-        .isInstanceOf(CustomException.class)
-        .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOTIFICATION_NOT_FOUND);
+        .isInstanceOf(NotificationNotFoundException.class)
+        .satisfies(e -> Assertions.assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.NOTIFICATION_NOT_FOUND));
+
   }
 
   @Test
@@ -196,7 +204,8 @@ public class BasicNotificationServiceTest {
     given(notificationRepository.findById(notificationId)).willReturn(Optional.of(notification));
 
     assertThatThrownBy(() -> notificationService.updateStatus(notificationId, userId, request))
-        .isInstanceOf(CustomException.class)
-        .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOTIFICATION_ACCESS_FORBIDDEN);
+        .isInstanceOf(NotificationForbiddenException.class)
+        .satisfies(e -> Assertions.assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.NOTIFICATION_ACCESS_FORBIDDEN));
   }
 }

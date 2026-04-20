@@ -28,7 +28,7 @@ public interface NotificationApi {
       @ApiResponse(responseCode = "500", description = "서버 내부 오류")
   })
   ResponseEntity<Void> readAll(
-      @RequestHeader("Deokhugam-Request-User-ID") @NotNull UUID userId
+      @RequestHeader("Deokhugam-Request-User-ID")  @NotNull(message = "유저 ID는 필수입니다") UUID userId
   );
 
   @Operation(summary = "특정 알림 상태 변경", description = "특정 알림을 읽음 처리하거나 상태를 변경합니다.")
@@ -39,8 +39,8 @@ public interface NotificationApi {
       @ApiResponse(responseCode = "500", description = "서버 내부 오류")
   })
   ResponseEntity<NotificationDto> updateStatus(
-      @PathVariable @NotNull UUID notificationId,
-      @RequestHeader("Deokhugam-Request-User-ID") @NotNull UUID userId,
+      @PathVariable @NotNull(message = "알림 ID는 필수입니다") UUID notificationId,
+      @RequestHeader("Deokhugam-Request-User-ID") @NotNull(message = "유저 ID는 필수입니다") UUID userId,
       @Valid @RequestBody NotificationUpdateRequest request
   );
 
