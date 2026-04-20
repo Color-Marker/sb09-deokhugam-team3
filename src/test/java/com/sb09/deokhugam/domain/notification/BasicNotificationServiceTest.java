@@ -21,6 +21,7 @@ import com.sb09.deokhugam.global.Exception.comment.CommentAlreadyDeletedExceptio
 import com.sb09.deokhugam.global.Exception.comment.ForbiddenAuthorityException;
 import com.sb09.deokhugam.global.Exception.notification.NotificationForbiddenException;
 import com.sb09.deokhugam.global.Exception.notification.NotificationNotFoundException;
+import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
@@ -101,8 +102,9 @@ public class BasicNotificationServiceTest {
     given(userRepository.findById(userId)).willReturn(Optional.empty());
 
     assertThatThrownBy(() -> notificationService.create(type, review, sender))
-        .isInstanceOf(CustomException.class)
-        .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+        .isInstanceOf(UserNotFoundException.class)
+        .satisfies(e -> Assertions.assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.USER_NOT_FOUND));
 
   }
 
@@ -133,8 +135,9 @@ public class BasicNotificationServiceTest {
     given(userRepository.existsById(userId)).willReturn(false);
 
     assertThatThrownBy(() -> notificationService.readAll(userId))
-        .isInstanceOf(CustomException.class)
-        .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+        .isInstanceOf(UserNotFoundException.class)
+        .satisfies(e -> Assertions.assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.USER_NOT_FOUND));
   }
 
   @Test
@@ -172,8 +175,9 @@ public class BasicNotificationServiceTest {
     given(userRepository.findById(userId)).willReturn(Optional.empty());
 
     assertThatThrownBy(() -> notificationService.updateStatus(UUID.randomUUID(), userId, request))
-        .isInstanceOf(CustomException.class)
-        .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+        .isInstanceOf(UserNotFoundException.class)
+        .satisfies(e -> Assertions.assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.USER_NOT_FOUND));
   }
 
   @Test

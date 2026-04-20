@@ -19,6 +19,7 @@ import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
 import com.sb09.deokhugam.global.Exception.notification.NotificationForbiddenException;
 import com.sb09.deokhugam.global.Exception.notification.NotificationNotFoundException;
+import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -71,7 +72,7 @@ public class NotificationControllerTest {
   @DisplayName("모든 알림 읽음 처리 - 사용자 조회 실패 예외")
   void readAll_fail_userNotFound() throws Exception {
     UUID userId = UUID.randomUUID();
-    doThrow(new CustomException(ErrorCode.USER_NOT_FOUND))
+    doThrow(NotificationNotFoundException.withId(userId))
         .when(notificationService).readAll(userId);
     mockMvc.perform(patch("/api/notifications/read-all")
             .header(userIdHeader, userId.toString()))
@@ -168,7 +169,7 @@ public class NotificationControllerTest {
   @DisplayName("알림 목록 조회 - 잘못된 요청입니다. (사용자 ID 누락)")
   void list_fail_badRequest() throws Exception {
     given(notificationService.list(any(NotificationListRequest.class)))
-        .willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+        .willThrow(new CustomException(ErrorCode.INVALID_REQUEST));
     mockMvc.perform(get("/api/notifications"))
         .andExpect(status().isBadRequest());
 
@@ -178,7 +179,7 @@ public class NotificationControllerTest {
   void list_fail_userNotFound() throws Exception {
     UUID userId = UUID.randomUUID();
     given(notificationService.list(any(NotificationListRequest.class)))
-        .willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+        .willThrow(UserNotFoundException.withId(userId));
     mockMvc.perform(get("/api/notifications")
             .param("userId", userId.toString()) // userId를 인자로 넣어줘야 400을 피함
             .param("size", "10"))

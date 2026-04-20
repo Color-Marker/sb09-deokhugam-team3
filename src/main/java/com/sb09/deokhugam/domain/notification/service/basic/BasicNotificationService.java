@@ -15,6 +15,7 @@ import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
 import com.sb09.deokhugam.global.Exception.notification.NotificationForbiddenException;
 import com.sb09.deokhugam.global.Exception.notification.NotificationNotFoundException;
+import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 import java.util.List;
@@ -43,7 +44,7 @@ public class BasicNotificationService implements NotificationService {
     }
     if(!userRepository.existsById(userId)){
       log.warn("사용자를 찾을 수 없습니다.");
-      throw new CustomException(ErrorCode.USER_NOT_FOUND);
+      throw UserNotFoundException.withId(userId);
     }
     log.info("유저ID: {} 의 모든 알림을 읽음 상태로 전환합니다.", userId);
     List<Notification> notis = notificationRepository.findByUserId(userId);
@@ -64,7 +65,7 @@ public class BasicNotificationService implements NotificationService {
     Users user = userRepository.findById(userId).orElseThrow(
         () -> {
           log.warn("사용자를 찾을 수 없습니다");
-          return new CustomException(ErrorCode.USER_NOT_FOUND);
+          return UserNotFoundException.withId(userId);
         }
     );
 
@@ -109,7 +110,7 @@ public class BasicNotificationService implements NotificationService {
     Users user = userRepository.findById(userId).orElseThrow(
         () -> {
           log.warn("사용자를 찾을 수 없습니다");
-          return new CustomException(ErrorCode.USER_NOT_FOUND);
+          return UserNotFoundException.withId(userId);
         }
     );
     Notification notification;
