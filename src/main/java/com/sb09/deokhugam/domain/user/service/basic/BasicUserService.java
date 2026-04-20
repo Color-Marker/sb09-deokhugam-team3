@@ -8,8 +8,10 @@ import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.mapper.UserMapper;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.domain.user.service.UserService;
-import com.sb09.deokhugam.global.Exception.CustomException;
-import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.Exception.user.DuplicateEmailException;
+import com.sb09.deokhugam.global.Exception.user.InvalidUserCredentialsException;
+import com.sb09.deokhugam.global.Exception.user.UnauthorizedAccessException;
+import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,9 +30,9 @@ public class BasicUserService implements UserService {
 
   @Override
   @Transactional
-  public UserResponse register(UserRegisterRequest request) {
+  public UserResponse create(UserRegisterRequest request) {
     if (userRepository.existsByEmailAndDeletedAtIsNull(request.email())) {
-      throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
+      throw new DuplicateEmailException();
     }
 
     Users user = Users.builder()
@@ -45,39 +47,46 @@ public class BasicUserService implements UserService {
     return userMapper.toDto(savedUser);
   }
 
+  //세션이나 토큰을 DB에 저장하는 방식이라면 별도 테이블이 필요하지만,
+  //요구사항에서 로그인은 users 테이블에서 이메일로 조회 → 비밀번호 비교 → userId를 클라이언트에 반환만 하면 끝임
   @Override
   @Transactional(readOnly = true)
   public UserResponse login(UserLoginRequest request) {
     Users user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
-        .orElseThrow(() -> new CustomException(ErrorCode.INVALID_USER_CREDENTIALS));
+        .orElseThrow(() -> new InvalidUserCredentialsException());
 
     if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-      throw new CustomException(ErrorCode.INVALID_USER_CREDENTIALS);
+      throw new InvalidUserCredentialsException();
     }
+    log.info("사용자 로그인 완료: {}", user.getId());
 
     return userMapper.toDto(user);
   }
 
+  //단건조회이고, 조회는 자주 호출되니까 로깅 보통 생략함
+  //UserNotFoundException 생성자가 아닌 withId 메서드를 쓴 이유는
+  //어떤 유저가 없다는건지 나중에 디버깅할 때 더 많은 정보를 알려고
   @Override
   @Transactional(readOnly = true)
-  public UserResponse getUser(UUID id) {
+  public UserResponse findById(UUID id) {
     Users user = userRepository.findByIdAndDeletedAtIsNull(id)
-        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        .orElseThrow(() -> UserNotFoundException.withId(id));
 
     return userMapper.toDto(user);
   }
 
   @Override
   @Transactional
-  public UserResponse updateNickname(UUID requestUserId, UUID targetId, UserUpdateRequest request) {
+  public UserResponse update(UUID requestUserId, UUID targetId, UserUpdateRequest request) {
     if (!requestUserId.equals(targetId)) {
-      throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+      throw new UnauthorizedAccessException();
     }
 
     Users user = userRepository.findByIdAndDeletedAtIsNull(targetId)
-        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        .orElseThrow(() -> UserNotFoundException.withId(targetId));
 
     user.updateNickname(request.nickname());
+    log.info("사용자 닉네임 수정 완료: {}", targetId);
     return userMapper.toDto(user);
   }
 
@@ -85,12 +94,11 @@ public class BasicUserService implements UserService {
   @Transactional
   public void softDelete(UUID requestUserId, UUID targetId) {
     if (!requestUserId.equals(targetId)) {
-      throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+      throw new UnauthorizedAccessException();
     }
 
     Users user = userRepository.findByIdAndDeletedAtIsNull(targetId)
-        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
+        .orElseThrow(() -> UserNotFoundException.withId(targetId));
     user.markAsDeleted();
     log.info("사용자 논리 삭제 마킹 완료: {}", targetId);
   }
@@ -99,7 +107,7 @@ public class BasicUserService implements UserService {
   @Transactional
   public void hardDelete(UUID id) {
     if (!userRepository.existsById(id)) {
-      throw new CustomException(ErrorCode.USER_NOT_FOUND);
+      throw new UserNotFoundException();
     }
     userRepository.deleteById(id);
     log.info("사용자 물리 삭제 완료: {}", id);
