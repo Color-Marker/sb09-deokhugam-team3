@@ -90,9 +90,10 @@ public class BasicCommentServiceTest {
     given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
 
     assertThatThrownBy(() -> commentService.findById(commentId))
-        .isInstanceOf(CustomException.class)
+        .isInstanceOf(CommentAlreadyDeletedException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.DELETED_COMMENT));
+
   }
 
   @Test
@@ -129,7 +130,7 @@ public class BasicCommentServiceTest {
     CommentUpdateRequest request = new CommentUpdateRequest("test content");
 
     assertThatThrownBy(() -> commentService.update(commentId, otherUserId, request))
-        .isInstanceOf(CustomException.class)
+        .isInstanceOf(ForbiddenAuthorityException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.COMMENT_UPDATE_FORBIDDEN));
 
@@ -157,7 +158,7 @@ public class BasicCommentServiceTest {
 
     // when & then
     assertThatThrownBy(() -> commentService.findById(notExistId))
-        .isInstanceOf(CustomException.class)
+        .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.COMMENT_NOT_FOUND));
   }
@@ -173,7 +174,7 @@ public class BasicCommentServiceTest {
 
     // when & then
     assertThatThrownBy(() -> commentService.update(notExistId, userId, request))
-        .isInstanceOf(CustomException.class)
+        .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.COMMENT_NOT_FOUND));
   }
@@ -187,7 +188,7 @@ public class BasicCommentServiceTest {
 
     // when & then
     assertThatThrownBy(() -> commentService.softDelete(notExistId, userId))
-        .isInstanceOf(CustomException.class)
+        .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.COMMENT_NOT_FOUND));
   }
@@ -201,10 +202,9 @@ public class BasicCommentServiceTest {
 
     // when & then
     assertThatThrownBy(() -> commentService.hardDelete(notExistId, userId))
-        .isInstanceOf(CustomException.class)
+        .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.COMMENT_NOT_FOUND));
   }
-
 
 }

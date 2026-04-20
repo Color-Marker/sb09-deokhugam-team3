@@ -5,13 +5,17 @@ import com.sb09.deokhugam.domain.comment.dto.CommentDto;
 import com.sb09.deokhugam.domain.comment.dto.request.CommentCreateRequest;
 import com.sb09.deokhugam.domain.comment.dto.request.CommentUpdateRequest;
 import com.sb09.deokhugam.domain.comment.service.CommentService;
+import com.sb09.deokhugam.config.RequestTrackingFilter;
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.Exception.comment.CommentNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,7 +29,13 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(CommentController.class)
+@WebMvcTest(
+    value = CommentController.class,
+    excludeFilters = @ComponentScan.Filter(
+        type = FilterType.ASSIGNABLE_TYPE,
+        classes = RequestTrackingFilter.class
+    )
+)
 class CommentControllerTest {
 
   @Autowired
@@ -98,7 +108,7 @@ class CommentControllerTest {
   @DisplayName("댓글 단건 조회 실패 - 없는 댓글이면 404 반환")
   void getComment_notFound_returns404() throws Exception {
     given(commentService.findById(any()))
-        .willThrow(new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+        .willThrow(CommentNotFoundException.withId(commentId));
 
     mockMvc.perform(get("/api/comments/{commentId}", UUID.randomUUID()))
         .andExpect(status().isNotFound()); // 404 확인
