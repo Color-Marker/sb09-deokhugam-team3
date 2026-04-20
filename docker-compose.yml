@@ -5,6 +5,7 @@ services:
   my-db:
     image: postgres:15-alpine
     container_name: my-db
+    restart: unless-stopped  # [추가] 예기치 않은 종료 및 서버 재부팅 시 자동 복구
     networks:
       - my-room
     environment:
