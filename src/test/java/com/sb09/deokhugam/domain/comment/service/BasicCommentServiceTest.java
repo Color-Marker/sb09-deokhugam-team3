@@ -207,4 +207,35 @@ public class BasicCommentServiceTest {
             .isEqualTo(ErrorCode.COMMENT_NOT_FOUND));
   }
 
+  @Test
+  @DisplayName("댓글 정상 생성")
+  void create_success() {
+
+  }
+
+  @Test
+  @DisplayName("존재하지 않는 리뷰에 댓글 생성 - 예외 발생")
+  void create_reviewNotFound() {
+
+  }
+
+  @Test
+  @DisplayName("논리삭제된 리뷰에 댓글 생성 - 예외 발생")
+  void create_deletedReview() {
+
+  }
+
+  @Test
+  @DisplayName("존재하지 않는 유저가 댓글 생성 - 예외 발생")
+  void create_userNotFound() {
+
+  }
+
+  @Test
+  @DisplayName("논리삭제된 유저가 댓글 생성 - 예외 발생")
+  void create_deletedUser() {
+
+  }
+
+
 }
