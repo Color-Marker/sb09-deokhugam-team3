@@ -10,6 +10,5 @@ import org.springframework.data.repository.query.Param;
 
 public interface NotificationRepository extends JpaRepository<Notification, UUID>,
     NotificationRepositoryCustom {
-
   List<Notification> findByUserId(UUID userId);
 }
