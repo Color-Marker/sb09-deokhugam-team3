@@ -3,12 +3,19 @@ package com.sb09.deokhugam.domain.book.controller;
 import com.sb09.deokhugam.domain.book.controller.api.BookApi;
 import com.sb09.deokhugam.domain.book.dto.BookDto;
 import com.sb09.deokhugam.domain.book.dto.NaverBookDto;
+import com.sb09.deokhugam.domain.book.dto.PopularBookDto;
 import com.sb09.deokhugam.domain.book.dto.request.BookCreateRequest;
+import com.sb09.deokhugam.domain.book.dto.request.BookSearchCondition;
 import com.sb09.deokhugam.domain.book.dto.request.BookUpdateRequest;
 import com.sb09.deokhugam.domain.book.service.BookService;
+import com.sb09.deokhugam.domain.dashboard.entity.PeriodType;
+import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -86,5 +93,30 @@ public class BookController implements BookApi {
   ) {
     String isbn = bookService.getIsbnByImage(image);
     return ResponseEntity.ok(isbn);
+  }
+
+  @GetMapping
+  public ResponseEntity<CursorPageResponseDto<BookDto>> searchBooks(
+      @RequestParam(required = false) String keyword,
+      @RequestParam(defaultValue = "createdAt") String orderBy,
+      @RequestParam(defaultValue = "DESC") String direction,
+      @RequestParam(required = false) String cursor,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime after,
+      @RequestParam(defaultValue = "20") int limit
+  ) {
+    BookSearchCondition condition = new BookSearchCondition(
+        keyword, orderBy, direction, cursor, after, limit
+    );
+    return ResponseEntity.ok(bookService.searchBooks(condition));
+  }
+
+  @GetMapping("/popular")
+  public ResponseEntity<CursorPageResponseDto<PopularBookDto>> getPopularBooks(
+      @RequestParam PeriodType period,
+      @RequestParam(required = false) Long cursor,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime after,
+      @RequestParam(defaultValue = "20") int limit
+  ) {
+    return ResponseEntity.ok(bookService.getPopularBooks(period, cursor, after, limit));
   }
 }
