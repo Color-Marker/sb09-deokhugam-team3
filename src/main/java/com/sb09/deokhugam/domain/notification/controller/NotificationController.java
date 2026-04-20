@@ -1,5 +1,6 @@
 package com.sb09.deokhugam.domain.notification.controller;
 
+import com.sb09.deokhugam.domain.notification.controller.api.NotificationApi;
 import com.sb09.deokhugam.domain.notification.dto.request.NotificationListRequest;
 import com.sb09.deokhugam.domain.notification.dto.request.NotificationUpdateRequest;
 import com.sb09.deokhugam.domain.notification.dto.response.NotificationDto;
@@ -23,31 +24,34 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
-public class NotificationController {
+public class NotificationController implements NotificationApi {
 
   private final NotificationService notificationService;
 
+  @Override
   @PatchMapping("/read-all")
   public ResponseEntity<Void> readAll(
-      @RequestHeader("Deokhugam-Request-User-ID") @NotNull(message = "유저 ID는 필수입니다") UUID userId
+      @RequestHeader("Deokhugam-Request-User-ID") UUID userId
   ){
     notificationService.readAll(userId);
     return ResponseEntity.noContent().build();
   }
 
+  @Override
   @PatchMapping("/{notificationId}")
   public ResponseEntity<NotificationDto> updateStatus(
-      @PathVariable @NotNull(message = "알림 ID는 필수입니다") UUID notificationId,
-      @RequestHeader("Deokhugam-Request-User-ID") @NotNull(message = "유저 ID는 필수입니다") UUID userId,
-      @Valid @RequestBody NotificationUpdateRequest request
+      @PathVariable UUID notificationId,
+      @RequestHeader("Deokhugam-Request-User-ID") UUID userId,
+      @RequestBody NotificationUpdateRequest request
   ){
     NotificationDto result = notificationService.updateStatus(notificationId, userId, request);
     return ResponseEntity.ok(result);
   }
 
+  @Override
   @GetMapping
   public ResponseEntity<CursorPageResponseDto<NotificationDto>> list(
-      @Valid NotificationListRequest request){
+      NotificationListRequest request){
     CursorPageResponseDto<NotificationDto> result = notificationService.list(request);
     return ResponseEntity.ok(result);
   }
