@@ -1,4 +1,4 @@
-package com.sb09.deokhugam.domain.comment;
+package com.sb09.deokhugam.domain.comment.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

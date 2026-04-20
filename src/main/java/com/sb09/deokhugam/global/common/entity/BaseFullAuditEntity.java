@@ -1,5 +1,6 @@
 package com.sb09.deokhugam.global.common.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import java.time.LocalDateTime;
@@ -11,8 +12,9 @@ import lombok.Getter;
 public abstract class BaseFullAuditEntity extends BaseUpdateableEntity {
 
   @Column(name = "deleted_at")
+  @JsonIgnore
   private LocalDateTime deletedAt;
-  
+
   public void markAsDeleted() {
     this.deletedAt = LocalDateTime.now();
   }
