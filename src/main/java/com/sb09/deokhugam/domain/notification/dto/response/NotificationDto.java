@@ -9,7 +9,7 @@ public record NotificationDto(
     UUID reviewId,
     String reviewContent,
     String message,
-    boolean confirmed,
+    Boolean confirmed,
     LocalDateTime createdAt,
     LocalDateTime updatedAt
 ) { }

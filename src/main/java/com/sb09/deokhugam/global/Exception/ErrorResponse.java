@@ -3,6 +3,7 @@ package com.sb09.deokhugam.global.Exception;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
