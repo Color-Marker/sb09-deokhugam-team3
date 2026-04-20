@@ -9,7 +9,7 @@ public class UserAlreadyDeletedException extends UserException {
     super(ErrorCode.DELETED_USER);
   }
 
-  public UserAlreadyDeletedException withId(UUID id) {
+  public static UserAlreadyDeletedException withId(UUID id) {
     UserAlreadyDeletedException exception = new UserAlreadyDeletedException();
     exception.addDetail("userId", id);
     return exception;
