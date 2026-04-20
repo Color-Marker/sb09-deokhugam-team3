@@ -8,7 +8,9 @@ import com.sb09.deokhugam.domain.comment.entity.Comment;
 import com.sb09.deokhugam.domain.comment.mapper.CommentMapper;
 import com.sb09.deokhugam.domain.comment.repository.CommentRepository;
 import com.sb09.deokhugam.domain.comment.service.CommentService;
+import com.sb09.deokhugam.global.Exception.review.ReviewAlreadyDeletedException;
 import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
+import com.sb09.deokhugam.global.Exception.user.UserAlreadyDeletedException;
 import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
@@ -55,13 +57,13 @@ public class BasicCommentService implements CommentService {
         .orElseThrow(() -> ReviewNotFoundException.withId(reviewId));
 
     if (review.getDeletedAt() != null) {
-      throw new CustomException(ErrorCode.DELETED_REVIEW);
+      throw ReviewAlreadyDeletedException.withId(reviewId);
     }
     Users user = userRepository.findById(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
 
     if (user.getDeletedAt() != null) {
-      throw new CustomException(ErrorCode.DELETED_USER);
+      throw UserAlreadyDeletedException.withId(userId);
     }
 
     String content = request.content();
@@ -127,7 +129,7 @@ public class BasicCommentService implements CommentService {
       throw CommentAlreadyDeletedException.withId(commentId);
     }
     if (!comment.getUser().getId().equals(requestUserId)) {
-      throw new CustomException(ErrorCode.COMMENT_UPDATE_FORBIDDEN);
+      throw new ForbiddenAuthorityException(ErrorCode.COMMENT_UPDATE_FORBIDDEN);
     }
     comment.updateContent(request.content());
     log.info("댓글 수정 완료: id={}, reviewID={}", commentId, comment.getReview().getId());
