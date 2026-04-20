@@ -49,7 +49,6 @@ dependencies {
     implementation 'org.springframework.security:spring-security-crypto'
     implementation 'software.amazon.awssdk:s3:2.31.7'
     implementation "com.querydsl:querydsl-jpa:5.1.0:jakarta"
-    implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1'
 
     compileOnly 'org.projectlombok:lombok'
 
