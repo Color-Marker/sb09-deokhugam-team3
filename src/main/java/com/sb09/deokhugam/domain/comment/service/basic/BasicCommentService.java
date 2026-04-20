@@ -8,6 +8,8 @@ import com.sb09.deokhugam.domain.comment.entity.Comment;
 import com.sb09.deokhugam.domain.comment.mapper.CommentMapper;
 import com.sb09.deokhugam.domain.comment.repository.CommentRepository;
 import com.sb09.deokhugam.domain.comment.service.CommentService;
+import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
+import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 import com.sb09.deokhugam.domain.notification.entity.NotificationType;
@@ -49,16 +51,14 @@ public class BasicCommentService implements CommentService {
     UUID reviewId = request.reviewId();
     UUID userId = request.userId();
 
-    //TODO use review not found exception
     Review review = reviewRepository.findById(reviewId)
-        .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
+        .orElseThrow(() -> ReviewNotFoundException.withId(reviewId));
 
     if (review.getDeletedAt() != null) {
       throw new CustomException(ErrorCode.DELETED_REVIEW);
     }
-    //TODO use user not found exception
     Users user = userRepository.findById(userId)
-        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
 
     if (user.getDeletedAt() != null) {
       throw new CustomException(ErrorCode.DELETED_USER);
@@ -84,7 +84,7 @@ public class BasicCommentService implements CommentService {
         .orElseThrow(() -> CommentNotFoundException.withId(commentId));
 
     if (comment.getDeletedAt() != null) {
-      throw new CustomException(ErrorCode.DELETED_COMMENT);
+      throw CommentAlreadyDeletedException.withId(commentId);
     }
     return commentMapper.toDto(comment);
   }
@@ -95,13 +95,19 @@ public class BasicCommentService implements CommentService {
     PageRequest pageable = PageRequest.of(0, request.getLimit());
     Slice<Comment> slice;
     if (request.getDirection() == Sort.Direction.ASC) {
-      slice = commentRepository.findCommentsAsc(request.getReviewId(), request.getAfter(),
+      slice = commentRepository.findCommentsAsc(
+          request.getReviewId(),
+          request.getAfter(),
+          request.getCursor(),
           pageable);
     } else {
-      slice = commentRepository.findCommentsDesc(request.getReviewId(), request.getAfter(),
+      slice = commentRepository.findCommentsDesc(
+          request.getReviewId(),
+          request.getAfter(),
+          request.getCursor(),
           pageable);
     }
-    Long totalElements = commentRepository.countByReviewId(request.getReviewId());
+    Long totalElements = commentRepository.countByReviewIdAndDeletedAtIsNull(request.getReviewId());
     return cursorPageResponseMapper.fromSlice(
         slice,
         commentMapper::toDto,
@@ -118,7 +124,7 @@ public class BasicCommentService implements CommentService {
     Comment comment = commentRepository.findById(commentId)
         .orElseThrow(() -> CommentNotFoundException.withId(commentId));
     if (comment.getDeletedAt() != null) {
-      throw new CustomException(ErrorCode.DELETED_COMMENT);
+      throw CommentAlreadyDeletedException.withId(commentId);
     }
     if (!comment.getUser().getId().equals(requestUserId)) {
       throw new CustomException(ErrorCode.COMMENT_UPDATE_FORBIDDEN);
@@ -135,11 +141,11 @@ public class BasicCommentService implements CommentService {
     Comment comment = commentRepository.findById(commentId)
         .orElseThrow(() -> CommentNotFoundException.withId(commentId));
 
-    if (!comment.getUser().getId().equals(requestUserId)) {
-      throw new ForbiddenAuthorityException(ErrorCode.COMMENT_DELETE_FORBIDDEN);
-    }
     if (comment.getDeletedAt() != null) {
       throw new CommentAlreadyDeletedException();
+    }
+    if (!comment.getUser().getId().equals(requestUserId)) {
+      throw new ForbiddenAuthorityException(ErrorCode.COMMENT_DELETE_FORBIDDEN);
     }
     comment.markAsDeleted();
     comment.getReview().removeCommentCount();
@@ -153,11 +159,13 @@ public class BasicCommentService implements CommentService {
     Comment comment = commentRepository.findById(commentId)
         .orElseThrow(() -> CommentNotFoundException.withId(commentId));
 
+    if (comment.getDeletedAt() == null) {
+      comment.getReview().removeCommentCount();
+    }
     if (!comment.getUser().getId().equals(requestUserId)) {
       throw new ForbiddenAuthorityException(ErrorCode.COMMENT_DELETE_FORBIDDEN);
     }
     commentRepository.delete(comment);
-    comment.getReview().removeCommentCount();
     log.info("댓글 물리삭제 완료: id={}", commentId);
   }
 }

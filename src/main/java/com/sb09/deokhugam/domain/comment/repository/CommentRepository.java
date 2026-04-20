@@ -11,20 +11,27 @@ import org.springframework.data.repository.query.Param;
 
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
-  @Query("SELECT c FROM Comment c WHERE c.review.id = :reviewId AND c.deletedAt IS NULL "
-      + "AND (:after IS NULL OR c.createdAt < :after) "
+  @Query("SELECT c FROM Comment c "
+      + "WHERE c.review.id = :reviewId AND c.deletedAt IS NULL "
+      + "AND ((:after IS NULL OR c.createdAt < :after) "
+      + "OR (c.createdAt = :after AND c.id < :cursor)) "
       + "ORDER BY c.createdAt DESC")
-  Slice<Comment> findCommentsDesc(@Param("reviewId") UUID reviewId,
+  Slice<Comment> findCommentsDesc(
+      @Param("reviewId") UUID reviewId,
       @Param("after") LocalDateTime after,
+      @Param("cursor") UUID cursor,
       Pageable pageable);
 
-  @Query("SELECT c FROM Comment c WHERE c.review.id = :reviewId AND c.deletedAt IS NULL "
-      + "AND (:after IS NULL OR c.createdAt > :after) "
+  @Query("SELECT c FROM Comment "
+      + "c WHERE c.review.id = :reviewId AND c.deletedAt IS NULL "
+      + "AND ((:after IS NULL OR c.createdAt > :after) "
+      + "OR (c.createdAt = :after AND c.id > :cursor)) "
       + "ORDER BY c.createdAt ASC")
-  Slice<Comment> findCommentsAsc(@Param("reviewId") UUID reviewId,
+  Slice<Comment> findCommentsAsc(
+      @Param("reviewId") UUID reviewId,
       @Param("after") LocalDateTime after,
+      @Param("cursor") UUID cursor,
       Pageable pageable);
 
-  @Query("SELECT COUNT(c) FROM Comment c WHERE c.review.id = :reviewId AND c.deletedAt IS NULL")
-  Long countByReviewId(@Param("reviewId") UUID reviewId);
+  Long countByReviewIdAndDeletedAtIsNull(UUID reviewId);
 }
