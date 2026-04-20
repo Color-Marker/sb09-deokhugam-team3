@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.web.bind.annotation.RequestBody;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +28,7 @@ public interface NotificationApi {
       @ApiResponse(responseCode = "500", description = "서버 내부 오류")
   })
   ResponseEntity<Void> readAll(
-      @RequestHeader("Deokhugam-Request-User-ID") UUID userId
+      @RequestHeader("Deokhugam-Request-User-ID") @NotNull UUID userId
   );
 
   @Operation(summary = "특정 알림 상태 변경", description = "특정 알림을 읽음 처리하거나 상태를 변경합니다.")
@@ -38,8 +39,8 @@ public interface NotificationApi {
       @ApiResponse(responseCode = "500", description = "서버 내부 오류")
   })
   ResponseEntity<NotificationDto> updateStatus(
-      @PathVariable UUID notificationId,
-      @RequestHeader("Deokhugam-Request-User-ID") UUID userId,
+      @PathVariable @NotNull UUID notificationId,
+      @RequestHeader("Deokhugam-Request-User-ID") @NotNull UUID userId,
       @Valid @RequestBody NotificationUpdateRequest request
   );
 
