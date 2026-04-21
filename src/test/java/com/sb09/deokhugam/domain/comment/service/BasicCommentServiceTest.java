@@ -172,11 +172,9 @@ public class BasicCommentServiceTest {
   @Test
   @DisplayName("존재하지 않는 댓글 단건 조회 - 예외 발생")
   void findById_notExist() {
-    // given - DB에 없는 commentId 상황
     UUID notExistId = UUID.randomUUID();
     given(commentRepository.findById(notExistId)).willReturn(Optional.empty());
 
-    // when & then
     assertThatThrownBy(() -> commentService.findById(notExistId))
         .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
@@ -186,13 +184,11 @@ public class BasicCommentServiceTest {
   @Test
   @DisplayName("존재하지 않는 댓글 수정 - 예외 발생")
   void update_notExist() {
-    // given
     UUID notExistId = UUID.randomUUID();
     given(commentRepository.findById(notExistId)).willReturn(Optional.empty());
 
     CommentUpdateRequest request = new CommentUpdateRequest("수정 내용");
 
-    // when & then
     assertThatThrownBy(() -> commentService.update(notExistId, userId, request))
         .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
@@ -202,11 +198,9 @@ public class BasicCommentServiceTest {
   @Test
   @DisplayName("존재하지 않는 댓글 논리 삭제 - 예외 발생")
   void softDelete_notExist() {
-    // given
     UUID notExistId = UUID.randomUUID();
     given(commentRepository.findById(notExistId)).willReturn(Optional.empty());
 
-    // when & then
     assertThatThrownBy(() -> commentService.softDelete(notExistId, userId))
         .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
@@ -216,11 +210,9 @@ public class BasicCommentServiceTest {
   @Test
   @DisplayName("존재하지 않는 댓글 물리 삭제 - 예외 발생")
   void hardDelete_notExist() {
-    // given
     UUID notExistId = UUID.randomUUID();
     given(commentRepository.findById(notExistId)).willReturn(Optional.empty());
 
-    // when & then
     assertThatThrownBy(() -> commentService.hardDelete(notExistId, userId))
         .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
@@ -339,32 +331,65 @@ public class BasicCommentServiceTest {
 
     assertThat(result).isEqualTo(commentDto);
     verify(commentRepository).findById(commentId);
+    verify(comment).updateContent(content);
     verify(commentMapper).toDto(any(Comment.class));
   }
 
   @Test
   @DisplayName("삭제된 댓글 수정 시도 - 예외 발생")
   void update_alreadyDeleted() {
+    CommentUpdateRequest request = new CommentUpdateRequest(content);
+    given(comment.getDeletedAt()).willReturn(LocalDateTime.now());
+    given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
 
+    assertThatThrownBy(() -> commentService.update(commentId, userId, request))
+        .isInstanceOf(CommentAlreadyDeletedException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.DELETED_COMMENT));
+
+    verify(commentRepository).findById(commentId);
+    verify(comment, never()).updateContent(any());
+    verify(commentMapper, never()).toDto(any());
   }
 
   @Test
   @DisplayName("댓글 논리 삭제 - 성공")
   void softDelete_success() {
+    given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
 
+    commentService.softDelete(commentId, userId);
+
+    verify(commentRepository).findById(commentId);
+    verify(comment).markAsDeleted();
+    verify(review).removeCommentCount();
+    verify(commentMapper, never()).toDto(any());
   }
 
   @Test
-  @DisplayName("댓글 물리 수정 - 성공")
+  @DisplayName("댓글 물리 삭제 - 성공")
   void hardDelete_success() {
+    given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
 
+    commentService.hardDelete(commentId, userId);
+
+    verify(commentRepository).findById(commentId);
+    verify(commentRepository).delete(comment);
+    verify(review).removeCommentCount();
+    verify(commentMapper, never()).toDto(any());
   }
 
   @Test
   @DisplayName("논리삭제된 댓글 물리삭제 - 성공")
     //  (카운트 이중차감 방지 검증)
   void hardDelete_alreadySoftDeleted() {
+    given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+    given(comment.getDeletedAt()).willReturn(LocalDateTime.now());
 
+    commentService.hardDelete(commentId, userId);
+
+    verify(commentRepository).findById(commentId);
+    verify(commentRepository).delete(comment);
+    verify(review, never()).removeCommentCount();
   }
 
 }
