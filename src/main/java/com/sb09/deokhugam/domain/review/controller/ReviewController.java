@@ -34,7 +34,7 @@ public class ReviewController implements ReviewApi {
   @PostMapping
   public ResponseEntity<ReviewDto> createReview(@Valid @RequestBody ReviewCreateRequest request) {
     // Body에 포함된 userId를 사용하여 리뷰를 생성합니다.
-    ReviewDto response = reviewService.createReview(request, request.userId());
+    ReviewDto response = reviewService.createReview(request);
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
