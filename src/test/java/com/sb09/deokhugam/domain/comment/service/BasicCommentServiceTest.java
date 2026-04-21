@@ -315,5 +315,58 @@ public class BasicCommentServiceTest {
     verify(commentRepository, never()).save(any());
   }
 
+  @Test
+  @DisplayName("댓글 조회 - 성공")
+  void findById_success() {
+    given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+    given(commentMapper.toDto(any(Comment.class))).willReturn(commentDto);
+
+    CommentDto result = commentService.findById(commentId);
+
+    assertThat(result).isEqualTo(commentDto);
+    verify(commentRepository).findById(commentId);
+    verify(commentMapper).toDto(any(Comment.class));
+  }
+
+  @Test
+  @DisplayName("댓글 수정 - 성공")
+  void update_success() {
+    CommentUpdateRequest request = new CommentUpdateRequest(content);
+    given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+    given(commentRepository.save(any(Comment.class))).willReturn(comment);
+    given(commentMapper.toDto(any(Comment.class))).willReturn(commentDto);
+
+    CommentDto result = commentService.update(commentId, userId, request);
+
+    assertThat(result).isEqualTo(commentDto);
+    verify(commentRepository).findById(commentId);
+    verify(commentRepository).save(any(Comment.class));
+    verify(commentMapper).toDto(any(Comment.class));
+  }
+
+  @Test
+  @DisplayName("삭제된 댓글 수정 시도 - 예외 발생")
+  void update_alreadyDeleted() {
+
+  }
+
+  @Test
+  @DisplayName("댓글 논리 삭제 - 성공")
+  void softDelete_success() {
+
+  }
+
+  @Test
+  @DisplayName("댓글 물리 수정 - 성공")
+  void hardDelete_success() {
+
+  }
+
+  @Test
+  @DisplayName("논리삭제된 댓글 물리삭제 - 성공")
+    //  (카운트 이중차감 방지 검증)
+  void hardDelete_alreadySoftDeleted() {
+
+  }
 
 }
