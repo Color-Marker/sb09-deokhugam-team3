@@ -7,7 +7,7 @@ public record ReviewDto(
     UUID id,
     UUID bookId,
     String bookTitle,
-    String bookThumbnailUrl, // 썸네일
+    String bookThumbnailUrl,
     UUID userId,
     String userNickname,
     String content,

@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
 import com.sb09.deokhugam.domain.review.dto.response.ReviewDto;
+import com.sb09.deokhugam.domain.review.dto.response.ReviewLikeDto;
 import com.sb09.deokhugam.domain.review.service.ReviewService;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import java.util.List;
@@ -38,74 +39,151 @@ class ReviewControllerTest {
   @MockitoBean
   private ReviewService reviewService;
 
+  private static final String USER_ID_HEADER = "Deokhugam-Request-User-ID";
+
   @Test
   @DisplayName("리뷰 등록 API - 성공 시 201 Created 반환")
-  void createReview_success() throws Exception {
-    // given
+  void createReview_success() {
     UUID userId = UUID.randomUUID();
     UUID bookId = UUID.randomUUID();
-    ReviewCreateRequest request = new ReviewCreateRequest(bookId, "너무 재밌는 책!", 5);
-    
-    given(reviewService.createReview(any(), any())).willReturn(null);
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "내용", 5);
 
-    // when & then
-    mockMvc.perform(post("/api/reviews")
-            .header("X-User-Id", userId.toString())
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated());
+    given(reviewService.createReview(any(), eq(userId))).willReturn(null);
+
+    try {
+      mockMvc.perform(post("/api/reviews")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isCreated());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Test
   @DisplayName("리뷰 수정 API - 성공 시 200 OK 반환")
-  void updateReview_success() throws Exception {
-    // given
+  void updateReview_success() {
     UUID userId = UUID.randomUUID();
     UUID reviewId = UUID.randomUUID();
-    ReviewUpdateRequest request = new ReviewUpdateRequest("내용 수정합니다", 4);
+    ReviewUpdateRequest request = new ReviewUpdateRequest("수정", 4);
 
-    // doNothing() 대신 Dto(여기선 null)를 반환
     given(reviewService.updateReview(eq(reviewId), any(), eq(userId))).willReturn(null);
 
-    // when & then
-    mockMvc.perform(patch("/api/reviews/{reviewId}", reviewId)
-            .header("X-User-Id", userId.toString())
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isOk());
+    try {
+      mockMvc.perform(patch("/api/reviews/{reviewId}", reviewId)
+              .header(USER_ID_HEADER, userId.toString())
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isOk());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Test
   @DisplayName("리뷰 삭제 API - 성공 시 204 No Content 반환")
-  void deleteReview_success() throws Exception {
-    // given
+  void deleteReview_success() {
     UUID userId = UUID.randomUUID();
     UUID reviewId = UUID.randomUUID();
 
-    // when & then
-    mockMvc.perform(delete("/api/reviews/{reviewId}", reviewId)
-            .header("X-User-Id", userId.toString()))
-        .andExpect(status().isNoContent());
+    try {
+      mockMvc.perform(delete("/api/reviews/{reviewId}", reviewId)
+              .header(USER_ID_HEADER, userId.toString()))
+          .andExpect(status().isNoContent());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Test
   @DisplayName("리뷰 목록 조회 API - 성공 시 200 OK 반환")
-  void getReviews_success() throws Exception {
-    // given
+  void getReviews_success() {
     UUID userId = UUID.randomUUID();
-
     CursorPageResponseDto<ReviewDto> mockResponse = new CursorPageResponseDto<>(
         List.of(), null, null, 10, 0L, false
     );
 
     given(reviewService.getReviews(any(), eq(userId))).willReturn(mockResponse);
 
-    // when & then
-    mockMvc.perform(get("/api/reviews")
-            .param("limit", "10")
-            .header("Deokhugam-Request-User-ID", userId.toString())
-            .accept(MediaType.APPLICATION_JSON))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.content").isArray());
+    try {
+      mockMvc.perform(get("/api/reviews")
+              .param("orderBy", "LATEST")
+              .param("limit", "10")
+              .param("requestUserId", userId.toString())
+              .header(USER_ID_HEADER, userId.toString())
+              .accept(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content").isArray());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Test
+  @DisplayName("리뷰 좋아요 토글 API - 성공 시 200 OK 및 좋아요 상태 반환")
+  void toggleLike_success() {
+    UUID userId = UUID.randomUUID();
+    UUID reviewId = UUID.randomUUID();
+
+    ReviewLikeDto mockResponse = new ReviewLikeDto(true, 1);
+    given(reviewService.toggleLike(eq(reviewId), eq(userId))).willReturn(mockResponse);
+
+    try {
+      mockMvc.perform(post("/api/reviews/{reviewId}/likes", reviewId)
+              .header(USER_ID_HEADER, userId.toString())
+              .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.liked").value(true));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Test
+  @DisplayName("인기 리뷰 목록 조회 API - 성공 시 200 OK 및 리스트 반환")
+  void getPopularReviews_success() {
+    given(reviewService.getPopularReviews()).willReturn(List.of());
+
+    try {
+      mockMvc.perform(get("/api/reviews/popular")
+              .accept(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$").isArray());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Test
+  @DisplayName("리뷰 상세 조회 API - 성공 시 200 OK 반환")
+  void getReviewDetail_success() {
+    UUID reviewId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+
+    given(reviewService.getReviewDetail(eq(reviewId), eq(userId))).willReturn(null);
+
+    try {
+      mockMvc.perform(get("/api/reviews/{reviewId}", reviewId)
+              .header(USER_ID_HEADER, userId.toString())
+              .accept(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Test
+  @DisplayName("리뷰 물리 삭제 (하드 삭제) API - 성공 시 204 No Content 반환")
+  void hardDeleteReview_success() {
+    UUID reviewId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+
+    try {
+      mockMvc.perform(delete("/api/reviews/{reviewId}/hard", reviewId)
+              .header(USER_ID_HEADER, userId.toString()))
+          .andExpect(status().isNoContent());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 }
