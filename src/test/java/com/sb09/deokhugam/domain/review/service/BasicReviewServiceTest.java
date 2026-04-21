@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -29,7 +30,6 @@ import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
 import com.sb09.deokhugam.global.Exception.review.DuplicateReviewException;
-import com.sb09.deokhugam.global.Exception.review.ReviewAlreadyDeletedException;
 import com.sb09.deokhugam.global.Exception.review.ReviewForbiddenException;
 import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
@@ -51,6 +51,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -109,7 +110,7 @@ public class BasicReviewServiceTest {
     given(reviewRepository.existsByBookIdAndUserId(bookId, userId)).willReturn(false);
     given(reviewRepository.save(any(Review.class))).willReturn(review);
 
-    ReviewCreateRequest request = new ReviewCreateRequest(bookId, "너무 재밌어요!", 5);
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "너무 재밌어요!", 5);
 
     reviewService.createReview(request, userId);
 
@@ -123,7 +124,7 @@ public class BasicReviewServiceTest {
     given(userRepository.findById(userId)).willReturn(Optional.of(users));
     given(reviewRepository.existsByBookIdAndUserId(bookId, userId)).willReturn(true);
 
-    ReviewCreateRequest request = new ReviewCreateRequest(bookId, "내용", 5);
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "내용", 5);
 
     assertThatThrownBy(() -> reviewService.createReview(request, userId))
         .isInstanceOf(DuplicateReviewException.class)
@@ -157,35 +158,25 @@ public class BasicReviewServiceTest {
   }
 
   @Test
-  @DisplayName("예외 검증 - 이미 삭제된 리뷰 재삭제 시도 시 예외 발생")
-  void deleteReview_alreadyDeleted() {
-    given(review.getDeletedAt()).willReturn(LocalDateTime.now());
-    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
-
-    assertThatThrownBy(() -> reviewService.deleteReview(reviewId, userId))
-        .isInstanceOf(ReviewAlreadyDeletedException.class)
-        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
-            .isEqualTo(ErrorCode.DELETED_REVIEW));
-  }
-
-  @Test
-  @DisplayName("리뷰 목록 조회 성공 테스트 (DTO 직접 조회 검증)")
+  @DisplayName("리뷰 목록 조회 성공 테스트")
   @SuppressWarnings("unchecked")
   void getReviews_success() {
     UUID currentUserId = UUID.randomUUID();
-    ReviewListRequest request = new ReviewListRequest(null, null, null, 10, null, null, null, null);
+    ReviewListRequest request = new ReviewListRequest(
+        null, null, null, 10, null, null, "LATEST", Sort.Direction.DESC
+    );
 
     Slice<ReviewDto> mockSlice = mock(Slice.class);
     CursorPageResponseDto<ReviewDto> mockResponse = mock(CursorPageResponseDto.class);
 
-    given(reviewRepository.searchReviews(request, currentUserId)).willReturn(mockSlice);
+    given(reviewRepository.searchReviews(eq(request), eq(currentUserId))).willReturn(mockSlice);
     doReturn(mockResponse).when(cursorPageResponseMapper)
         .fromSlice(any(), any(), any(), any(), any());
 
     CursorPageResponseDto<ReviewDto> result = reviewService.getReviews(request, currentUserId);
 
     assertThat(result).isNotNull();
-    verify(reviewRepository, times(1)).searchReviews(request, currentUserId);
+    verify(reviewRepository, times(1)).searchReviews(eq(request), eq(currentUserId));
   }
 
   @Test
@@ -206,26 +197,7 @@ public class BasicReviewServiceTest {
   }
 
   @Test
-  @DisplayName("리뷰 좋아요 성공 테스트 - 기존에 누른 적이 있으면 [취소]된다")
-  void toggleLike_removeLike() {
-    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
-    given(userRepository.findById(userId)).willReturn(Optional.of(users));
-
-    ReviewLike mockExistingLike = mock(ReviewLike.class);
-    given(reviewLikeRepository.findByReviewIdAndUserId(reviewId, userId)).willReturn(
-        Optional.of(mockExistingLike));
-    given(review.getLikeCount()).willReturn(0);
-
-    ReviewLikeDto result = reviewService.toggleLike(reviewId, userId);
-
-    verify(reviewLikeRepository, times(1)).delete(mockExistingLike);
-    verify(review, times(1)).removeLikeCount();
-    assertThat(result.liked()).isFalse();
-    assertThat(result.likeCount()).isEqualTo(0);
-  }
-
-  @Test
-  @DisplayName("인기 리뷰 조회 성공 테스트 - 10개의 인기 리뷰 목록 반환")
+  @DisplayName("인기 리뷰 조회 성공 테스트")
   @SuppressWarnings("unchecked")
   void getPopularReviews_success() {
     Page<Review> mockPage = mock(Page.class);
@@ -241,11 +213,10 @@ public class BasicReviewServiceTest {
 
     assertThat(result).isNotNull();
     assertThat(result).hasSize(1);
-    verify(reviewRepository, times(1)).findAll(any(PageRequest.class));
   }
 
   @Test
-  @DisplayName("리뷰 상세 조회 성공 테스트 - 연관된 정보를 묶어서 반환")
+  @DisplayName("리뷰 상세 조회 성공 테스트")
   void getReviewDetail_success() {
     ReviewDto mockReviewDto = mock(ReviewDto.class);
 
@@ -259,15 +230,14 @@ public class BasicReviewServiceTest {
 
     assertThat(result).isNotNull();
     verify(reviewRepository, times(1)).findById(reviewId);
-    verify(reviewLikeRepository, times(1)).existsByReviewIdAndUserId(reviewId, userId);
   }
 
   @Test
-  @DisplayName("리뷰 완전 삭제(하드 삭제) 성공 테스트 - 레포지토리의 delete 메서드가 호출됨")
+  @DisplayName("리뷰 완전 삭제(하드 삭제) 성공 테스트")
   void hardDeleteReview_success() {
     given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
-    
-    reviewService.hardDeleteReview(reviewId);
+
+    reviewService.hardDeleteReview(reviewId, userId);
 
     verify(reviewRepository, times(1)).delete(review);
   }

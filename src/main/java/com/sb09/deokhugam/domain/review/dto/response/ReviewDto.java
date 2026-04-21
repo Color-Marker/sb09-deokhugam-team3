@@ -9,7 +9,7 @@ public record ReviewDto(
     String bookTitle,
     String bookThumbnailUrl,
     UUID userId,
-    String nickname,
+    String userNickname,
     String content,
     Integer rating,
     Integer likeCount,

@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -63,13 +64,13 @@ public class ReviewRepositoryImpl implements ReviewRepositoryCustom {
         .leftJoin(book).on(review.bookId.eq(book.id))
         .leftJoin(users).on(review.userId.eq(users.id))
         .where(
-            review.deletedAt.isNull(), // 논리 삭제된 리뷰 제외
+            review.deletedAt.isNull(),
             bookIdEq(request.bookId()),
             userIdEq(request.userId()),
             keywordContains(request.keyword()),
             cursorCondition(request)
         )
-        .orderBy(createOrderSpecifier(request))
+        .orderBy(createOrderSpecifier(request)) // 동적 정렬 적용
         .limit(request.limit() + 1)
         .fetch();
 
@@ -99,35 +100,42 @@ public class ReviewRepositoryImpl implements ReviewRepositoryCustom {
         .or(users.nickname.containsIgnoreCase(keyword));
   }
 
-  // --- 정렬 및 커서 동적 처리 ---
+  // ---  정렬 및 커서 동적 처리  ---
   private OrderSpecifier<?>[] createOrderSpecifier(ReviewListRequest request) {
-    if ("RATING".equalsIgnoreCase(request.sortBy())) {
-      return new OrderSpecifier[]{review.rating.desc(), review.createdAt.desc()};
+    boolean isAsc = request.direction() == Sort.Direction.ASC;
+
+    if ("RATING".equalsIgnoreCase(request.orderBy())) {
+      return new OrderSpecifier[]{
+          isAsc ? review.rating.asc() : review.rating.desc(),
+          review.createdAt.desc()
+      };
     }
-    return new OrderSpecifier[]{review.createdAt.desc(), review.id.desc()};
+
+    // 기본값: 최신순
+    return new OrderSpecifier[]{
+        isAsc ? review.createdAt.asc() : review.createdAt.desc(),
+        review.id.desc()
+    };
   }
 
   private BooleanExpression cursorCondition(ReviewListRequest request) {
-    if (request.cursor() == null) {
+    if (request.cursor() == null || request.after() == null) {
       return null;
     }
 
     UUID cursorId = request.cursor();
     LocalDateTime afterTime = request.after();
 
-    if ("RATING".equalsIgnoreCase(request.sortBy())) {
-      Integer ratingCursor = request.rating();
-      if (ratingCursor == null || afterTime == null) {
-        return null;
-      }
+    //  DTO에서 rating 필드를 삭제했으므로, RATING 기반 커서 로직은
+    // 단순 최신순(after) 기반으로 통합하거나 별도 처리가 필요합니다.
+    // 여기서는 가장 기본이 되는 생성일시(createdAt) 기준 커서 방식을 적용합니다.
 
-      return review.rating.lt(ratingCursor)
-          .or(review.rating.eq(ratingCursor).and(review.createdAt.lt(afterTime)));
+    if ("RATING".equalsIgnoreCase(request.orderBy())) {
+      // 평점 정렬 시에도 생성일시 커서를 활용 (평점 데이터가 DTO에 없으므로)
+      return review.createdAt.lt(afterTime);
     }
 
-    if (afterTime == null) {
-      return null;
-    }
+    // 기본 최신순 커서: 날짜가 더 이전이거나, 날짜가 같으면 ID가 더 작은 것
     return review.createdAt.lt(afterTime)
         .or(review.createdAt.eq(afterTime).and(review.id.lt(cursorId)));
   }

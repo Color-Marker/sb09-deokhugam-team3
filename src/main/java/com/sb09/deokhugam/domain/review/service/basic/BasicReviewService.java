@@ -268,7 +268,7 @@ public class BasicReviewService implements ReviewService {
    */
   @Override
   @Transactional
-  public void hardDeleteReview(UUID reviewId) {
+  public void hardDeleteReview(UUID reviewId, UUID userId) {
     Review review = reviewRepository.findById(reviewId)
         .orElseThrow(() -> ReviewNotFoundException.withId(reviewId));
 

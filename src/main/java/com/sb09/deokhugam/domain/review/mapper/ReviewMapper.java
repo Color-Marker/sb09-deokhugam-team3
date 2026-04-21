@@ -23,7 +23,7 @@ public interface ReviewMapper {
   // 타 도메인 데이터 매핑
   @Mapping(target = "bookTitle", source = "book.title")
   @Mapping(target = "bookThumbnailUrl", source = "book.thumbnailUrl")
-  @Mapping(target = "nickname", source = "user.nickname")
+  @Mapping(target = "userNickname", source = "user.nickname")
   // 내가 좋아요 눌렀는지 여부
   @Mapping(target = "likedByMe", source = "likedByMe")
   ReviewDto toDto(Review review, Book book, Users user, Boolean likedByMe);

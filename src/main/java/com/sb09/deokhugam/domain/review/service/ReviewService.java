@@ -21,7 +21,7 @@ public interface ReviewService {
   void deleteReview(UUID reviewId, UUID userId);
 
   // 리뷰 목록 조회
-  CursorPageResponseDto<ReviewDto> getReviews(ReviewListRequest request, UUID currentUserId);
+  CursorPageResponseDto<ReviewDto> getReviews(ReviewListRequest request, UUID requestUserId);
 
   // 리뷰 좋아요 토글
   ReviewLikeDto toggleLike(UUID reviewId, UUID userId);
@@ -33,5 +33,5 @@ public interface ReviewService {
   ReviewDto getReviewDetail(UUID reviewId, UUID currentUserId);
 
   // 리뷰 물리 삭제
-  void hardDeleteReview(UUID reviewId);
+  void hardDeleteReview(UUID reviewId, UUID userId);
 }
