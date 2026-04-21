@@ -26,7 +26,7 @@ import java.util.UUID;
         )
     },
     indexes = {
-        @Index(name = "idx_popular_books_period_rank", columnList = "period, base_date, rank"),
+        @Index(name = "idx_popular_books_period_rank", columnList = "period, base_date, ranking"),
         @Index(name = "idx_popular_books_created_at", columnList = "created_at")
     }
 )

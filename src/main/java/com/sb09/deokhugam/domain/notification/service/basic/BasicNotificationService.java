@@ -13,6 +13,9 @@ import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.Exception.notification.NotificationForbiddenException;
+import com.sb09.deokhugam.global.Exception.notification.NotificationNotFoundException;
+import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 import java.util.List;
@@ -28,7 +31,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional
 public class BasicNotificationService implements NotificationService {
-
   private final NotificationRepository notificationRepository;
   private final UserRepository userRepository;
   private final NotificationMapper notificationMapper;
@@ -36,25 +38,26 @@ public class BasicNotificationService implements NotificationService {
 
   @Override
   public void readAll(UUID userId) {
-    if (userId == null) {
+    if(userId == null){
       log.warn("잘못된 요청입니다.");
       throw new CustomException(ErrorCode.INVALID_REQUEST);
     }
-    if (!userRepository.existsById(userId)) {
+    if(!userRepository.existsById(userId)){
       log.warn("사용자를 찾을 수 없습니다.");
-      throw new CustomException(ErrorCode.USER_NOT_FOUND);
+      throw UserNotFoundException.withId(userId);
     }
     log.info("유저ID: {} 의 모든 알림을 읽음 상태로 전환합니다.", userId);
     List<Notification> notis = notificationRepository.findByUserId(userId);
-    for (Notification n : notis) {
+    for (Notification n : notis){
+      log.info("알람ID: {} 을 읽음 상태로 전환합니다.", n.getId());
       n.update();
     }
+    log.info("유저ID: {} 의 모든 알림 읽음 상태 전환 완료되었습니다.", userId);
   }
 
   @Override
-  public NotificationDto updateStatus(UUID notificationId, UUID userId,
-      NotificationUpdateRequest request) {
-    if (userId == null) {
+  public NotificationDto updateStatus(UUID notificationId, UUID userId, NotificationUpdateRequest request) {
+    if(userId == null || request.confirmed() != true){
       log.warn("잘못된 요청입니다.");
       throw new CustomException(ErrorCode.INVALID_REQUEST);
     }
@@ -62,19 +65,19 @@ public class BasicNotificationService implements NotificationService {
     Users user = userRepository.findById(userId).orElseThrow(
         () -> {
           log.warn("사용자를 찾을 수 없습니다");
-          return new CustomException(ErrorCode.USER_NOT_FOUND);
+          return UserNotFoundException.withId(userId);
         }
     );
 
     Notification notification = notificationRepository.findById(notificationId).
         orElseThrow(() -> {
           log.warn("알림을 찾을 수 없습니다");
-          return new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND);
+          return NotificationNotFoundException.withId(notificationId);
         });
 
-    if (!notification.getUser().equals(user)) {
+    if(!notification.getUser().equals(user)){
       log.warn("알림에 대한 접근 권한이 없습니다.");
-      throw new CustomException(ErrorCode.NOTIFICATION_ACCESS_FORBIDDEN);
+      throw new NotificationForbiddenException(ErrorCode.NOTIFICATION_ACCESS_FORBIDDEN);
     }
 
     log.info("유저 {}의 알림 {}을 읽음 상태로 전환합니다.", user.getNickname(), notification.getId());
@@ -89,6 +92,7 @@ public class BasicNotificationService implements NotificationService {
     Slice<Notification> slice = notificationRepository.searchNotification(request);
     Long totalElements = notificationRepository.countNotification(request);
     log.info("유저ID: {} 의 알림 목록을 불러옵니다.", request.getUserId());
+    log.info("유저ID {} 의 알림 {} 개를 불러옵니다.", request.getUserId(), totalElements);
     return cursorPageResponseMapper.fromSlice(
         slice,
         notificationMapper::toDto,
@@ -101,19 +105,20 @@ public class BasicNotificationService implements NotificationService {
   // 위는 controller에서 호출 -----------------------------------
   // 아래는 내부 작업 -----------------------------------
   @Override
-  public Notification create(NotificationType type, Review review, Users sender) {
+  public Notification create(NotificationType type, Review review, Users sender){
     UUID userId = review.getUserId();
     Users user = userRepository.findById(userId).orElseThrow(
         () -> {
           log.warn("사용자를 찾을 수 없습니다");
-          return new CustomException(ErrorCode.USER_NOT_FOUND);
+          return UserNotFoundException.withId(userId);
         }
     );
     Notification notification;
-    if (!type.equals(NotificationType.RANKING)) {
+    if(!type.equals(NotificationType.RANKING)){
       // 좋아요 & 댓글
       notification = new Notification(type, review, sender, user);
-    } else {
+    }
+    else {
       // 랭킹
       notification = new Notification(type, review, null, user);
     }

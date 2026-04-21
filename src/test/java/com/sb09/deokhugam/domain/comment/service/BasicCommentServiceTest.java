@@ -2,9 +2,14 @@ package com.sb09.deokhugam.domain.comment.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
+import com.sb09.deokhugam.domain.comment.dto.CommentDto;
+import com.sb09.deokhugam.domain.comment.dto.request.CommentCreateRequest;
 import com.sb09.deokhugam.domain.comment.dto.request.CommentUpdateRequest;
 import com.sb09.deokhugam.domain.comment.entity.Comment;
 import com.sb09.deokhugam.domain.comment.mapper.CommentMapper;
@@ -19,6 +24,8 @@ import com.sb09.deokhugam.global.Exception.ErrorCode;
 import com.sb09.deokhugam.global.Exception.comment.CommentAlreadyDeletedException;
 import com.sb09.deokhugam.global.Exception.comment.CommentNotFoundException;
 import com.sb09.deokhugam.global.Exception.comment.ForbiddenAuthorityException;
+import com.sb09.deokhugam.global.Exception.review.ReviewAlreadyDeletedException;
+import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -58,6 +65,7 @@ public class BasicCommentServiceTest {
   private Users users;
   private Review review;
   private Comment comment;
+  private CommentDto commentDto;
 
   @BeforeEach
   void setUp() {
@@ -81,6 +89,8 @@ public class BasicCommentServiceTest {
     given(comment.getReview()).willReturn(review);
     given(comment.getDeletedAt()).willReturn(null);
     given(comment.getContent()).willReturn(content);
+
+    commentDto = mock(CommentDto.class);
   }
 
   @Test
@@ -90,9 +100,10 @@ public class BasicCommentServiceTest {
     given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
 
     assertThatThrownBy(() -> commentService.findById(commentId))
-        .isInstanceOf(CustomException.class)
+        .isInstanceOf(CommentAlreadyDeletedException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.DELETED_COMMENT));
+
   }
 
   @Test
@@ -129,7 +140,7 @@ public class BasicCommentServiceTest {
     CommentUpdateRequest request = new CommentUpdateRequest("test content");
 
     assertThatThrownBy(() -> commentService.update(commentId, otherUserId, request))
-        .isInstanceOf(CustomException.class)
+        .isInstanceOf(ForbiddenAuthorityException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.COMMENT_UPDATE_FORBIDDEN));
 
@@ -157,7 +168,7 @@ public class BasicCommentServiceTest {
 
     // when & then
     assertThatThrownBy(() -> commentService.findById(notExistId))
-        .isInstanceOf(CustomException.class)
+        .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.COMMENT_NOT_FOUND));
   }
@@ -173,7 +184,7 @@ public class BasicCommentServiceTest {
 
     // when & then
     assertThatThrownBy(() -> commentService.update(notExistId, userId, request))
-        .isInstanceOf(CustomException.class)
+        .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.COMMENT_NOT_FOUND));
   }
@@ -187,7 +198,7 @@ public class BasicCommentServiceTest {
 
     // when & then
     assertThatThrownBy(() -> commentService.softDelete(notExistId, userId))
-        .isInstanceOf(CustomException.class)
+        .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.COMMENT_NOT_FOUND));
   }
@@ -201,9 +212,73 @@ public class BasicCommentServiceTest {
 
     // when & then
     assertThatThrownBy(() -> commentService.hardDelete(notExistId, userId))
-        .isInstanceOf(CustomException.class)
+        .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.COMMENT_NOT_FOUND));
+  }
+
+  @Test
+  @DisplayName("댓글 생성 - 성공")
+  void create_success() {
+    CommentCreateRequest request = new CommentCreateRequest(reviewId, userId, content);
+
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+    given(userRepository.findById(userId)).willReturn(Optional.of(users));
+    given(commentRepository.save(any(Comment.class))).willReturn(comment);
+    given(commentMapper.toDto(any(Comment.class))).willReturn(commentDto);
+
+    given(commentRepository.save(any(Comment.class))).willReturn(comment);
+    given(commentMapper.toDto(any(Comment.class))).willReturn(commentDto);
+
+    CommentDto result = commentService.create(request);
+
+    assertThat(result).isEqualTo(commentDto);
+    verify(reviewRepository).findById(reviewId);
+    verify(userRepository).findById(userId);
+    verify(commentRepository).save(any(Comment.class));
+    verify(commentMapper).toDto(any(Comment.class));
+  }
+
+  @Test
+  @DisplayName("존재하지 않는 리뷰에 댓글 생성 - 예외 발생")
+  void create_reviewNotFound() {
+    UUID notExistId = UUID.randomUUID();
+    CommentCreateRequest request = new CommentCreateRequest(notExistId, userId, content);
+    given(reviewRepository.findById(notExistId)).willReturn(Optional.empty());
+
+    assertThatThrownBy(() -> commentService.create(request))
+        .isInstanceOf(ReviewNotFoundException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.REVIEW_NOT_FOUND));
+    verify(reviewRepository).findById(notExistId);
+    verify((userRepository), never()).findById(userId);
+  }
+
+  @Test
+  @DisplayName("논리삭제된 리뷰에 댓글 생성 - 예외 발생")
+  void create_deletedReview() {
+    CommentCreateRequest request = new CommentCreateRequest(reviewId, userId, content);
+    given(review.getDeletedAt()).willReturn(LocalDateTime.now());
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+
+    assertThatThrownBy(() -> commentService.create(request))
+        .isInstanceOf(ReviewAlreadyDeletedException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.DELETED_REVIEW));
+    verify(reviewRepository).findById(reviewId);
+    verify(userRepository, never()).findById(any());
+  }
+
+  @Test
+  @DisplayName("존재하지 않는 유저가 댓글 생성 - 예외 발생")
+  void create_userNotFound() {
+
+  }
+
+  @Test
+  @DisplayName("논리삭제된 유저가 댓글 생성 - 예외 발생")
+  void create_deletedUser() {
+
   }
 
 

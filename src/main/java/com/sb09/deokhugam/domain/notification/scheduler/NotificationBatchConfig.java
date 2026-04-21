@@ -1,4 +1,4 @@
-package com.sb09.deokhugam.config;
+package com.sb09.deokhugam.domain.notification.scheduler;
 
 import com.sb09.deokhugam.domain.notification.repository.NotificationRepository;
 import java.time.LocalDateTime;
@@ -18,7 +18,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 @RequiredArgsConstructor
 @Slf4j
-public class BatchConfig {
+public class NotificationBatchConfig {
   private final JobRepository jobRepository;
   private final PlatformTransactionManager platformTransactionManager;
   private final NotificationRepository notificationRepository;
