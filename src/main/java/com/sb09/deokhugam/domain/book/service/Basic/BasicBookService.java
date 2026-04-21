@@ -161,7 +161,7 @@ public class BasicBookService implements BookService {
 
   @Override
   @Transactional(readOnly = true)
-  public CursorPageResponseDto<BookDto> searchBooks(BookSearchCondition condition) {
+  public CursorPageResponseDto<BookDto> getBooks(BookSearchCondition condition) {
     Slice<Book> slice = bookRepository.searchBooks(condition);
     return cursorPageResponseMapper.fromSlice(
         slice,
