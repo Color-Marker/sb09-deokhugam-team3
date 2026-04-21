@@ -71,7 +71,8 @@ CREATE TABLE reviews (
                          CONSTRAINT fk_reviews_book
                              FOREIGN KEY (book_id) REFERENCES books (id),
                          CONSTRAINT fk_reviews_user
-                             FOREIGN KEY (user_id) REFERENCES users (id),
+                             FOREIGN KEY (user_id) REFERENCES users (id) ON
+                                 DELETE CASCADE,
                          CONSTRAINT uq_reviews_book_user
                              UNIQUE (book_id, user_id),                  -- 유니크 설정으로 도서당 1개의 리뷰 제한
                          CONSTRAINT chk_reviews_rating
@@ -94,9 +95,11 @@ CREATE TABLE review_likes (
                               CONSTRAINT pk_review_likes
                                   PRIMARY KEY (id),
                               CONSTRAINT fk_review_likes_review
-                                  FOREIGN KEY (review_id) REFERENCES reviews (id),
+                                  FOREIGN KEY (review_id) REFERENCES reviews (id) ON
+                                      DELETE CASCADE,
                               CONSTRAINT fk_review_likes_user
-                                  FOREIGN KEY (user_id) REFERENCES users (id),
+                                  FOREIGN KEY (user_id) REFERENCES users (id) ON
+                                      DELETE CASCADE,
                               CONSTRAINT uq_review_likes_review_user
                                   UNIQUE (review_id, user_id)                 -- 유니크로 리뷰당 사용자 1회 좋아요
 );
@@ -116,9 +119,11 @@ CREATE TABLE comments (
                           CONSTRAINT pk_comments
                               PRIMARY KEY (id),
                           CONSTRAINT fk_comments_review
-                              FOREIGN KEY (review_id) REFERENCES reviews (id),
+                              FOREIGN KEY (review_id) REFERENCES reviews (id) ON
+                                  DELETE CASCADE,
                           CONSTRAINT fk_comments_user
-                              FOREIGN KEY (user_id) REFERENCES users (id)
+                              FOREIGN KEY (user_id) REFERENCES users (id) ON
+                                  DELETE CASCADE
 );
 
 -- =====================================================
