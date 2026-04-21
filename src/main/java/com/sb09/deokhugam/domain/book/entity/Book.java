@@ -57,12 +57,24 @@ public class Book extends BaseFullAuditEntity {
 
   public void update(String title, String author, String description, String publisher,
       LocalDate publishedDate, String thumbnailUrl) {
-    this.title = title;
-    this.author = author;
-    this.description = description;
-    this.publisher = publisher;
-    this.publishedDate = publishedDate;
-    this.thumbnailUrl = thumbnailUrl;
+    if (title != null) {
+      this.title = title;
+    }
+    if (author != null) {
+      this.author = author;
+    }
+    if (description != null) {
+      this.description = description;
+    }
+    if (publisher != null) {
+      this.publisher = publisher;
+    }
+    if (publishedDate != null) {
+      this.publishedDate = publishedDate;
+    }
+    if (thumbnailUrl != null) {
+      this.thumbnailUrl = thumbnailUrl;
+    }
   }
 
   public void updateRatingAndReviewCount(BigDecimal rating, int reviewCount) {

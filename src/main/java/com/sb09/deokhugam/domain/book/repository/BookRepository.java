@@ -1,13 +1,14 @@
 package com.sb09.deokhugam.domain.book.repository;
 
 import com.sb09.deokhugam.domain.book.entity.Book;
+import com.sb09.deokhugam.domain.book.repository.custom.CustomBookRepository;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
-public interface BookRepository extends JpaRepository<Book, UUID> {
+public interface BookRepository extends JpaRepository<Book, UUID>, CustomBookRepository {
 
   boolean existsByIsbn(String isbn);
 
