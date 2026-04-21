@@ -15,8 +15,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 @NoArgsConstructor
 @Getter
 public class CommentListRequest {
-
-  @Schema(description = "페이지 크기", defaultValue = "20", minimum = "1", maximum = "100")
+  
   @NotNull(message = "리뷰 ID는 필수입니다")
   private UUID reviewId;
 
@@ -25,6 +24,7 @@ public class CommentListRequest {
   @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'")
   private LocalDateTime after;
 
+  @Schema(description = "페이지 크기", defaultValue = "20", minimum = "1", maximum = "100")
   @Min(value = 1, message = "최소 1개 이상이어야 합니다.")
   @Max(value = 100, message = "최대 100개까지 조회 가능합니다.")
   private int limit = 20;
