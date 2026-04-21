@@ -69,7 +69,8 @@ CREATE TABLE reviews (
                          CONSTRAINT pk_reviews
                              PRIMARY KEY (id),
                          CONSTRAINT fk_reviews_book
-                             FOREIGN KEY (book_id) REFERENCES books (id),
+                             FOREIGN KEY (book_id) REFERENCES books (id)
+                             ON DELETE CASCADE,
                          CONSTRAINT fk_reviews_user
                              FOREIGN KEY (user_id) REFERENCES users (id) ON
                                  DELETE CASCADE,
@@ -174,7 +175,8 @@ CREATE TABLE popular_books (
                                CONSTRAINT pk_popular_books
                                    PRIMARY KEY (id),
                                CONSTRAINT fk_popular_books_book
-                                   FOREIGN KEY (book_id) REFERENCES books (id),
+                                   FOREIGN KEY (book_id) REFERENCES books (id)
+                                   ON DELETE CASCADE,
                                CONSTRAINT chk_popular_books_period
                                    CHECK (period IN ('DAILY', 'WEEKLY', 'MONTHLY', 'ALL_TIME')),
                                CONSTRAINT chk_popular_books_ranking
