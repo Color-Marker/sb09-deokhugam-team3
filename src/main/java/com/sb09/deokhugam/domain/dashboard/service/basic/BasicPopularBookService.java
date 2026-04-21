@@ -1,8 +1,8 @@
 package com.sb09.deokhugam.domain.dashboard.service.basic;
 
+
 import com.sb09.deokhugam.domain.book.entity.Book;
 import com.sb09.deokhugam.domain.book.repository.BookRepository;
-import com.sb09.deokhugam.domain.comment.entity.Comment;
 import com.sb09.deokhugam.domain.dashboard.dto.request.PopularBookListRequest;
 import com.sb09.deokhugam.domain.dashboard.dto.response.PopularBookDto;
 import com.sb09.deokhugam.domain.dashboard.entity.PeriodType;
@@ -11,6 +11,9 @@ import com.sb09.deokhugam.domain.dashboard.mapper.PopularBookMapper;
 import com.sb09.deokhugam.domain.dashboard.repository.PopularBookRepository;
 import com.sb09.deokhugam.domain.dashboard.service.PopularBookService;
 import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
+import com.sb09.deokhugam.global.Exception.CustomException;
+import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 import java.math.BigDecimal;
@@ -33,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BasicPopularBookService implements PopularBookService {
 
   private final PopularBookRepository popularBookRepository;
+  private final BookRepository bookRepository;
   private final ReviewRepository reviewRepository;
   private final CursorPageResponseMapper cursorPageResponseMapper;
   private final PopularBookMapper popularBookMapper;
@@ -74,13 +78,23 @@ public class BasicPopularBookService implements PopularBookService {
         long rank = 1;
         for(Object[] row : results){
           UUID bookId = (UUID) row[0];
+          Book book = bookRepository.findById(bookId).orElseThrow(
+              () -> {
+                log.warn("도서를 찾을 수 없습니다");
+                return new CustomException(ErrorCode.BOOK_NOT_FOUND);
+              }
+          );
+          if(book.getDeletedAt() != null){
+            log.warn("도서를 찾을 수 없습니다");
+            throw new CustomException(ErrorCode.BOOK_NOT_FOUND);
+          }
           Long reviewCount = (Long) row[1];
           BigDecimal avgRating = BigDecimal.valueOf((Double) row[2]);
           BigDecimal score = BigDecimal.valueOf(reviewCount).multiply(new BigDecimal("0.4"))
               .add(avgRating.multiply(new BigDecimal("0.6")));
           popularBookRepository.save(
               PopularBook.builder()
-                  .bookId(bookId)
+                  .book(book)
                   .period(period)
                   .baseDate(baseDate)
                   .ranking(rank++)

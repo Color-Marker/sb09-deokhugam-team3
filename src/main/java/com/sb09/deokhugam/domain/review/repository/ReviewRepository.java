@@ -18,6 +18,7 @@ public interface ReviewRepository extends JpaRepository<Review, UUID>, ReviewRep
     SELECT r.bookId, COUNT(r), AVG(r.rating)
     FROM Review r
     WHERE r.createdAt >= :from AND r.createdAt < :to
+    AND r.deletedAt IS NULL
     GROUP BY r.bookId
     ORDER BY (COUNT(r) * 0.4 + AVG(r.rating) * 0.6) DESC
     """)

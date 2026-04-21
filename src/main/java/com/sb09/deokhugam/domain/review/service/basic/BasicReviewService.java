@@ -54,8 +54,9 @@ public class BasicReviewService implements ReviewService {
    */
   @Override
   @Transactional
-  public ReviewDto createReview(ReviewCreateRequest request, UUID userId) { // 반환 타입 변경
+  public ReviewDto createReview(ReviewCreateRequest request) { // 반환 타입 변경
 
+    UUID userId = request.userId();
     // 도서와 유저가 실제로 DB에 존재하는지 확인 (타 도메인이므로 기존 CustomException 유지)
     Book book = bookRepository.findById(request.bookId())
         .orElseThrow(() -> {

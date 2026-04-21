@@ -14,6 +14,9 @@ public record ReviewCreateRequest(
     @NotNull(message = "도서 ID는 필수입니다.")
     UUID bookId,
 
+    @NotNull(message = "유저 ID는 필수입니다.")
+    UUID userId,
+
     @NotBlank(message = "리뷰 내용은 필수입니다.")
     String content,
 

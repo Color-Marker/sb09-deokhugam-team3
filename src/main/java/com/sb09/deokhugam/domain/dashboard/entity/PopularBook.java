@@ -37,9 +37,9 @@ public class PopularBook {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
-
-  @Column(name = "book_id", nullable = false)
-  private UUID bookId;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "book_id", columnDefinition = "uuid")
+  private Book book;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "period", nullable = false, length = 10)
@@ -65,8 +65,8 @@ public class PopularBook {
   private LocalDateTime createdAt;
 
   @Builder
-  public PopularBook(UUID bookId, PeriodType period, LocalDate baseDate, Long ranking, BigDecimal score, Long reviewCount, BigDecimal rating) {
-    this.bookId = bookId;
+  public PopularBook(Book book, PeriodType period, LocalDate baseDate, Long ranking, BigDecimal score, Long reviewCount, BigDecimal rating) {
+    this.book = book;
     this.period = period;
     this.baseDate = baseDate;
     this.ranking = ranking;

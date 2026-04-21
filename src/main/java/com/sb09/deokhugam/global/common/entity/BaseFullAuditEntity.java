@@ -10,7 +10,6 @@ import org.hibernate.annotations.SQLRestriction;
 // updatedAt + deletedAt 둘 다 필요한 엔티티가 상속받을 클래스
 @Getter
 @MappedSuperclass
-@SQLRestriction("deleted_at IS NULL")
 public abstract class BaseFullAuditEntity extends BaseUpdateableEntity {
 
   @Column(name = "deleted_at")
