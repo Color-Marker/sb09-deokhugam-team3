@@ -1,5 +1,6 @@
 package com.sb09.deokhugam.domain.review.entity;
 
+import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -22,16 +23,18 @@ import java.util.UUID;
     }
 )
 public class ReviewLike extends BaseEntity {
-  
-  @Column(name = "review_id", nullable = false)
-  private UUID reviewId;
 
-  @Column(name = "user_id", nullable = false)
-  private UUID userId;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "review_id", nullable = false)
+  private Review review;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
+  private Users user;
 
   @Builder
-  public ReviewLike(UUID reviewId, UUID userId) {
-    this.reviewId = reviewId;
-    this.userId = userId;
+  public ReviewLike(Review review, Users user) {
+    this.review = review;
+    this.user = user;
   }
 }
