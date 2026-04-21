@@ -1,5 +1,6 @@
 package com.sb09.deokhugam.domain.comment.dto.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -15,6 +16,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 @Getter
 public class CommentListRequest {
 
+  @Schema(description = "페이지 크기", defaultValue = "20", minimum = "1", maximum = "100")
   @NotNull(message = "리뷰 ID는 필수입니다")
   private UUID reviewId;
 
@@ -27,5 +29,6 @@ public class CommentListRequest {
   @Max(value = 100, message = "최대 100개까지 조회 가능합니다.")
   private int limit = 20;
 
+  @Schema(description = "정렬 방향", defaultValue = "DESC", allowableValues = {"ASC", "DESC"})
   private Sort.Direction direction = Sort.Direction.DESC;
 }
