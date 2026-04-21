@@ -129,4 +129,44 @@ class ReviewControllerTest {
         .andExpect(jsonPath("$.liked").value(true)) // JSON 응답 알맹이 검증
         .andExpect(jsonPath("$.likeCount").value(1));
   }
+
+  @Test
+  @DisplayName("인기 리뷰 목록 조회 API - 성공 시 200 OK 및 리스트 반환")
+  void getPopularReviews_success() throws Exception {
+    // given
+    given(reviewService.getPopularReviews()).willReturn(List.of());
+
+    // when & then
+    mockMvc.perform(get("/api/reviews/popular")
+            .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray());
+  }
+
+  @Test
+  @DisplayName("리뷰 상세 조회 API - 성공 시 200 OK 반환")
+  void getReviewDetail_success() throws Exception {
+    // given
+    UUID reviewId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+
+    given(reviewService.getReviewDetail(eq(reviewId), eq(userId))).willReturn(null);
+
+    // when & then
+    mockMvc.perform(get("/api/reviews/{reviewId}", reviewId)
+            .header("X-User-Id", userId.toString())
+            .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @DisplayName("리뷰 물리 삭제 (하드 삭제) API - 성공 시 204 No Content 반환")
+  void hardDeleteReview_success() throws Exception {
+    UUID reviewId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+
+    mockMvc.perform(delete("/api/reviews/{reviewId}/hard", reviewId) // /physical -> /hard 변경
+            .header("X-User-Id", userId.toString()))
+        .andExpect(status().isNoContent());
+  }
 }

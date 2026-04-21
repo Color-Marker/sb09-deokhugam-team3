@@ -226,6 +226,55 @@ public class BasicReviewService implements ReviewService {
     }
   }
 
+  /**
+   * 6. 인기 리뷰 조회: 좋아요 많은 순 상위 10개
+   */
+  @Override
+  public java.util.List<ReviewDto> getPopularReviews() {
+    org.springframework.data.domain.PageRequest pageRequest = org.springframework.data.domain.PageRequest.of(
+        0, 10,
+        org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,
+            "likeCount"));
+    return reviewRepository.findAll(pageRequest)
+        .getContent()
+        .stream()
+        .map(review -> {
+          Book book = bookRepository.findById(review.getBookId()).orElse(null);
+          Users user = userRepository.findById(review.getUserId()).orElse(null);
+          return reviewMapper.toDto(review, book, user, false);
+        })
+        .toList();
+  }
+
+  /**
+   * 7. 리뷰 상세 조회
+   */
+  @Override
+  public ReviewDto getReviewDetail(UUID reviewId, UUID currentUserId) {
+    Review review = reviewRepository.findById(reviewId)
+        .orElseThrow(() -> ReviewNotFoundException.withId(reviewId));
+
+    Book book = bookRepository.findById(review.getBookId()).orElse(null);
+    Users user = userRepository.findById(review.getUserId()).orElse(null);
+    boolean likedByMe =
+        (currentUserId != null) && reviewLikeRepository.existsByReviewIdAndUserId(reviewId,
+            currentUserId);
+
+    return reviewMapper.toDto(review, book, user, likedByMe);
+  }
+
+  /**
+   * 8. 리뷰 물리 삭제 (테스트 및 관리자용)
+   */
+  @Override
+  @Transactional
+  public void hardDeleteReview(UUID reviewId) {
+    Review review = reviewRepository.findById(reviewId)
+        .orElseThrow(() -> ReviewNotFoundException.withId(reviewId));
+
+    // 엔티티에 설정된 cascade = CascadeType.ALL 옵션으로 좋아요도 함께 물리 삭제됨
+    reviewRepository.delete(review);
+  }
 
   /**
    * [내부 로직] 도서 평균 평점 및 리뷰 수 계산 - Book 엔티티를 받아 공식을 적용하여 통계를 갱신합니다.
