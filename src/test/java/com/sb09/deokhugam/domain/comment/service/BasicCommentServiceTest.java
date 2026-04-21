@@ -15,10 +15,13 @@ import com.sb09.deokhugam.domain.comment.entity.Comment;
 import com.sb09.deokhugam.domain.comment.mapper.CommentMapper;
 import com.sb09.deokhugam.domain.comment.repository.CommentRepository;
 import com.sb09.deokhugam.domain.comment.service.basic.BasicCommentService;
+import com.sb09.deokhugam.domain.notification.service.NotificationService;
 import com.sb09.deokhugam.domain.review.entity.Review;
 import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
+import com.sb09.deokhugam.global.Exception.user.UserAlreadyDeletedException;
+import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
 import com.sb09.deokhugam.global.Exception.comment.CommentAlreadyDeletedException;
@@ -26,6 +29,7 @@ import com.sb09.deokhugam.global.Exception.comment.CommentNotFoundException;
 import com.sb09.deokhugam.global.Exception.comment.ForbiddenAuthorityException;
 import com.sb09.deokhugam.global.Exception.review.ReviewAlreadyDeletedException;
 import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
+import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,6 +58,12 @@ public class BasicCommentServiceTest {
 
   @Mock
   private ReviewRepository reviewRepository;
+
+  @Mock
+  private NotificationService notificationService;
+
+  @Mock
+  private CursorPageResponseMapper cursorPageResponseMapper;
 
   @InjectMocks
   private BasicCommentService commentService;
@@ -272,14 +282,89 @@ public class BasicCommentServiceTest {
   @Test
   @DisplayName("존재하지 않는 유저가 댓글 생성 - 예외 발생")
   void create_userNotFound() {
+    UUID notExistId = UUID.randomUUID();
+    CommentCreateRequest request = new CommentCreateRequest(reviewId, notExistId, content);
+    given(userRepository.findById(notExistId)).willReturn(Optional.empty());
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
 
+    assertThatThrownBy(() -> commentService.create(request))
+        .isInstanceOf(UserNotFoundException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.USER_NOT_FOUND));
+
+    verify(reviewRepository).findById(reviewId);
+    verify(userRepository).findById(notExistId);
+    verify(reviewRepository, never()).save(any());
   }
 
   @Test
   @DisplayName("논리삭제된 유저가 댓글 생성 - 예외 발생")
   void create_deletedUser() {
+    CommentCreateRequest request = new CommentCreateRequest(reviewId, userId, content);
+    given(users.getDeletedAt()).willReturn(LocalDateTime.now());
+    given(userRepository.findById(userId)).willReturn(Optional.of(users));
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+
+    assertThatThrownBy(() -> commentService.create(request))
+        .isInstanceOf(UserAlreadyDeletedException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.DELETED_USER));
+
+    verify(reviewRepository).findById(reviewId);
+    verify(userRepository).findById(userId);
+    verify(commentRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("댓글 조회 - 성공")
+  void findById_success() {
+    given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+    given(commentMapper.toDto(any(Comment.class))).willReturn(commentDto);
+
+    CommentDto result = commentService.findById(commentId);
+
+    assertThat(result).isEqualTo(commentDto);
+    verify(commentRepository).findById(commentId);
+    verify(commentMapper).toDto(any(Comment.class));
+  }
+
+  @Test
+  @DisplayName("댓글 수정 - 성공")
+  void update_success() {
+    CommentUpdateRequest request = new CommentUpdateRequest(content);
+    given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+    given(commentMapper.toDto(any(Comment.class))).willReturn(commentDto);
+
+    CommentDto result = commentService.update(commentId, userId, request);
+
+    assertThat(result).isEqualTo(commentDto);
+    verify(commentRepository).findById(commentId);
+    verify(commentMapper).toDto(any(Comment.class));
+  }
+
+  @Test
+  @DisplayName("삭제된 댓글 수정 시도 - 예외 발생")
+  void update_alreadyDeleted() {
 
   }
 
+  @Test
+  @DisplayName("댓글 논리 삭제 - 성공")
+  void softDelete_success() {
+
+  }
+
+  @Test
+  @DisplayName("댓글 물리 수정 - 성공")
+  void hardDelete_success() {
+
+  }
+
+  @Test
+  @DisplayName("논리삭제된 댓글 물리삭제 - 성공")
+    //  (카운트 이중차감 방지 검증)
+  void hardDelete_alreadySoftDeleted() {
+
+  }
 
 }
