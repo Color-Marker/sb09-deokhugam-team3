@@ -14,7 +14,7 @@ public record PopularBookDto(
     String thumbnailUrl,
     PeriodType period,
     LocalDate baseDate,
-    Long ranking,
+    Long rank,
     BigDecimal score,
     Long reviewCount,
     BigDecimal rating,

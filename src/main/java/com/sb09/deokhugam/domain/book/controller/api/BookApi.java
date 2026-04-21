@@ -37,6 +37,7 @@ public interface BookApi {
   @Operation(summary = "도서 상세 정보 조회", description = "도서 ID로 상세 정보를 조회합니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "도서 정보 조회 성공"),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청"),
       @ApiResponse(responseCode = "404", description = "도서 정보 없음")
   })
   ResponseEntity<BookDto> getBook(
@@ -46,6 +47,7 @@ public interface BookApi {
   @Operation(summary = "도서 정보 수정", description = "도서 정보를 수정합니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "도서 정보 수정 성공"),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청"),
       @ApiResponse(responseCode = "404", description = "도서 정보 없음")
   })
   ResponseEntity<BookDto> updateBook(
@@ -75,6 +77,7 @@ public interface BookApi {
   @Operation(summary = "ISBN으로 도서 정보 조회", description = "Naver API를 통해 ISBN으로 도서 정보를 조회합니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "도서 정보 조회 성공"),
+      @ApiResponse(responseCode = "400", description = "잘못된 ISBN 형식"),
       @ApiResponse(responseCode = "404", description = "도서 정보 없음")
   })
   ResponseEntity<NaverBookDto> getBookInfoByIsbn(
@@ -92,7 +95,9 @@ public interface BookApi {
 
   @Operation(summary = "도서 목록 검색", description = "키워드 및 조건으로 도서 목록을 조회합니다.")
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "도서 목록 조회 성공")
+      @ApiResponse(responseCode = "200", description = "도서 목록 조회 성공"),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+      @ApiResponse(responseCode = "500", description = "서버 내부 오류")
   })
   ResponseEntity<CursorPageResponseDto<BookDto>> searchBooks(
       @Parameter(description = "검색 키워드") @RequestParam(required = false) String keyword,
@@ -105,7 +110,9 @@ public interface BookApi {
 
   @Operation(summary = "인기 도서 목록 조회", description = "기간별 인기 도서 목록을 조회합니다.")
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "인기 도서 목록 조회 성공")
+      @ApiResponse(responseCode = "200", description = "인기 도서 목록 조회 성공"),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+      @ApiResponse(responseCode = "500", description = "서버 내부 오류")
   })
   ResponseEntity<CursorPageResponseDto<PopularBookDto>> getPopularBooks(
       @Parameter(description = "기간 (DAILY/WEEKLY/MONTHLY/ALL_TIME)") @RequestParam PeriodType period,
