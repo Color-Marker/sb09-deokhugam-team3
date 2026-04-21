@@ -107,7 +107,7 @@ public class BookController implements BookApi {
     BookSearchCondition condition = new BookSearchCondition(
         keyword, orderBy, direction, cursor, after, limit
     );
-    return ResponseEntity.ok(bookService.searchBooks(condition));
+    return ResponseEntity.ok(bookService.getBooks(condition));
   }
 
   @GetMapping("/popular")

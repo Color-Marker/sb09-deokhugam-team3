@@ -2,13 +2,17 @@ package com.sb09.deokhugam.domain.book.controller.api;
 
 import com.sb09.deokhugam.domain.book.dto.BookDto;
 import com.sb09.deokhugam.domain.book.dto.NaverBookDto;
+import com.sb09.deokhugam.domain.book.dto.PopularBookDto;
 import com.sb09.deokhugam.domain.book.dto.request.BookCreateRequest;
 import com.sb09.deokhugam.domain.book.dto.request.BookUpdateRequest;
+import com.sb09.deokhugam.domain.dashboard.entity.PeriodType;
+import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -84,5 +88,29 @@ public interface BookApi {
   })
   ResponseEntity<String> getIsbnByImage(
       @RequestPart MultipartFile image
+  );
+
+  @Operation(summary = "도서 목록 검색", description = "키워드 및 조건으로 도서 목록을 조회합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "도서 목록 조회 성공")
+  })
+  ResponseEntity<CursorPageResponseDto<BookDto>> searchBooks(
+      @Parameter(description = "검색 키워드") @RequestParam(required = false) String keyword,
+      @Parameter(description = "정렬 기준 (createdAt)") @RequestParam(defaultValue = "createdAt") String orderBy,
+      @Parameter(description = "정렬 방향 (ASC/DESC)") @RequestParam(defaultValue = "DESC") String direction,
+      @Parameter(description = "커서 값") @RequestParam(required = false) String cursor,
+      @Parameter(description = "커서 시간") @RequestParam(required = false) LocalDateTime after,
+      @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int limit
+  );
+
+  @Operation(summary = "인기 도서 목록 조회", description = "기간별 인기 도서 목록을 조회합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "인기 도서 목록 조회 성공")
+  })
+  ResponseEntity<CursorPageResponseDto<PopularBookDto>> getPopularBooks(
+      @Parameter(description = "기간 (DAILY/WEEKLY/MONTHLY/ALL_TIME)") @RequestParam PeriodType period,
+      @Parameter(description = "커서 값") @RequestParam(required = false) Long cursor,
+      @Parameter(description = "커서 시간") @RequestParam(required = false) LocalDateTime after,
+      @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int limit
   );
 }

@@ -33,7 +33,7 @@ public class CustomBookRepositoryImpl implements CustomBookRepository {
             cursorCondition(condition.cursor(), condition.after(), isDesc)
         )
         .orderBy(
-            isDesc ? book.createdAt.desc() : book.createdAt.asc(),
+            getOrderSpecifier(condition.orderBy(), isDesc),
             isDesc ? book.id.desc() : book.id.asc()
         )
         .limit(condition.limit() + 1)
@@ -56,7 +56,22 @@ public class CustomBookRepositoryImpl implements CustomBookRepository {
       return null;
     }
     return book.title.containsIgnoreCase(keyword)
-        .or(book.author.containsIgnoreCase(keyword));
+        .or(book.author.containsIgnoreCase(keyword))
+        .or(book.isbn.containsIgnoreCase(keyword));
+  }
+
+  private com.querydsl.core.types.OrderSpecifier<?> getOrderSpecifier(String orderBy,
+      boolean isDesc) {
+    if (orderBy == null) {
+      return isDesc ? book.createdAt.desc() : book.createdAt.asc();
+    }
+    return switch (orderBy) {
+      case "title" -> isDesc ? book.title.desc() : book.title.asc();
+      case "publishedDate" -> isDesc ? book.publishedDate.desc() : book.publishedDate.asc();
+      case "rating" -> isDesc ? book.rating.desc() : book.rating.asc();
+      case "reviewCount" -> isDesc ? book.reviewCount.desc() : book.reviewCount.asc();
+      default -> isDesc ? book.createdAt.desc() : book.createdAt.asc();
+    };
   }
 
   private BooleanExpression cursorCondition(Object cursor, LocalDateTime after, boolean isDesc) {
