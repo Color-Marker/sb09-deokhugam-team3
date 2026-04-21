@@ -333,14 +333,12 @@ public class BasicCommentServiceTest {
   void update_success() {
     CommentUpdateRequest request = new CommentUpdateRequest(content);
     given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
-    given(commentRepository.save(any(Comment.class))).willReturn(comment);
     given(commentMapper.toDto(any(Comment.class))).willReturn(commentDto);
 
     CommentDto result = commentService.update(commentId, userId, request);
 
     assertThat(result).isEqualTo(commentDto);
     verify(commentRepository).findById(commentId);
-    verify(commentRepository).save(any(Comment.class));
     verify(commentMapper).toDto(any(Comment.class));
   }
 
