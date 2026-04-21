@@ -70,7 +70,9 @@ public interface ReviewApi {
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime after,
       @Parameter(description = "정렬 기준 (LATEST 또는 RATING)") @RequestParam(defaultValue = "LATEST") String orderBy,
       @Parameter(description = "정렬 방향 (ASC 또는 DESC)") @RequestParam(defaultValue = "DESC") Sort.Direction direction,
-      @Parameter(description = "로그인 유저 ID (좋아요 확인용)") @RequestHeader(value = "Deokhugam-Request-User-ID", required = false) UUID requestUserId
+      // 수정: 쿼리 파라미터 requestUserId와 인증 헤더 headerUserId를 분리하여 인식하도록 수정
+      @Parameter(description = "요청자 ID (좋아요 확인용 쿼리 파라미터)") @RequestParam(required = false) UUID requestUserId,
+      @Parameter(description = "인증 헤더") @RequestHeader(value = "Deokhugam-Request-User-ID", required = false) UUID headerUserId
   );
 
   @Operation(summary = "리뷰 좋아요", description = "좋아요를 추가하거나 취소합니다.")

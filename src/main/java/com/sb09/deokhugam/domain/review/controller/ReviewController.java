@@ -79,7 +79,8 @@ public class ReviewController implements ReviewApi {
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime after,
       @RequestParam(defaultValue = "LATEST") String orderBy,
       @RequestParam(defaultValue = "DESC") Sort.Direction direction,
-      @RequestHeader(value = "Deokhugam-Request-User-ID", required = false) UUID requestUserId
+      @RequestParam(required = false) UUID requestUserId,
+      @RequestHeader(value = "Deokhugam-Request-User-ID", required = false) UUID headerUserId
   ) {
 
     // ReviewListRequest 내부에서도 direction을 처리할 수 있도록 생성자 확인이 필요합니다.

@@ -102,13 +102,14 @@ class ReviewControllerTest {
     CursorPageResponseDto<ReviewDto> mockResponse = new CursorPageResponseDto<>(
         List.of(), null, null, 10, 0L, false
     );
-    
+
     given(reviewService.getReviews(any(), eq(userId))).willReturn(mockResponse);
 
     try {
       mockMvc.perform(get("/api/reviews")
               .param("orderBy", "LATEST")
               .param("limit", "10")
+              .param("requestUserId", userId.toString())
               .header(USER_ID_HEADER, userId.toString())
               .accept(MediaType.APPLICATION_JSON))
           .andExpect(status().isOk())
