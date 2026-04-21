@@ -20,7 +20,6 @@ import com.sb09.deokhugam.domain.review.entity.Review;
 import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
-import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
 import com.sb09.deokhugam.global.Exception.comment.CommentAlreadyDeletedException;
 import com.sb09.deokhugam.global.Exception.comment.CommentNotFoundException;
@@ -161,11 +160,11 @@ public class BasicCommentService implements CommentService {
     Comment comment = commentRepository.findById(commentId)
         .orElseThrow(() -> CommentNotFoundException.withId(commentId));
 
-    if (comment.getDeletedAt() == null) {
-      comment.getReview().removeCommentCount();
-    }
     if (!comment.getUser().getId().equals(requestUserId)) {
       throw new ForbiddenAuthorityException(ErrorCode.COMMENT_DELETE_FORBIDDEN);
+    }
+    if (comment.getDeletedAt() == null) {
+      comment.getReview().removeCommentCount();
     }
     commentRepository.delete(comment);
     log.info("댓글 물리삭제 완료: id={}", commentId);
