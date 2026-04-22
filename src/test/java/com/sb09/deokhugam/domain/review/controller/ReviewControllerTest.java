@@ -48,7 +48,7 @@ class ReviewControllerTest {
     UUID bookId = UUID.randomUUID();
     ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "내용", 5);
 
-    given(reviewService.createReview(any(), eq(userId))).willReturn(null);
+    given(reviewService.createReview(any(ReviewCreateRequest.class))).willReturn(null);
 
     try {
       mockMvc.perform(post("/api/reviews")
@@ -67,7 +67,8 @@ class ReviewControllerTest {
     UUID reviewId = UUID.randomUUID();
     ReviewUpdateRequest request = new ReviewUpdateRequest("수정", 4);
 
-    given(reviewService.updateReview(eq(reviewId), any(), eq(userId))).willReturn(null);
+    given(reviewService.updateReview(eq(reviewId), any(ReviewUpdateRequest.class),
+        eq(userId))).willReturn(null);
 
     try {
       mockMvc.perform(patch("/api/reviews/{reviewId}", reviewId)

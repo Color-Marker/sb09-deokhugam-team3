@@ -35,7 +35,6 @@ import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -112,7 +111,7 @@ public class BasicReviewServiceTest {
 
     ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "너무 재밌어요!", 5);
 
-    reviewService.createReview(request, userId);
+    reviewService.createReview(request);
 
     verify(reviewRepository, times(1)).save(any(Review.class));
   }
@@ -126,7 +125,7 @@ public class BasicReviewServiceTest {
 
     ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "내용", 5);
 
-    assertThatThrownBy(() -> reviewService.createReview(request, userId))
+    assertThatThrownBy(() -> reviewService.createReview(request))
         .isInstanceOf(DuplicateReviewException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.DUPLICATE_REVIEW));
