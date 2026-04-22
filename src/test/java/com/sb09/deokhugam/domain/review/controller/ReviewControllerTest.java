@@ -149,7 +149,7 @@ class ReviewControllerTest {
       mockMvc.perform(get("/api/reviews/popular")
               .accept(MediaType.APPLICATION_JSON))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$").isArray());
+          .andExpect(jsonPath("$.content").isArray());
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
