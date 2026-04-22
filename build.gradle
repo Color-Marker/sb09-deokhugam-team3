@@ -19,12 +19,38 @@ test {
     finalizedBy jacocoTestReport
 }
 
+// 1. 검사에서 제외할 억울한 파일들의 패턴(이름) 목록
+def Qdomains = []
+for (qPattern in '*.QA'..'*.QZ') { // QueryDSL Q클래스 제외
+    Qdomains.add(qPattern + '*')
+}
+
+def jacocoExcludePatterns = [
+        "**/*Application*",
+        "**/*Config*",
+        "**/*Exception*",
+        "**/*Dto*",
+        "**/*Request*",
+        "**/*Response*",
+        "**/*Mapper*",
+        "**/global/**" // global 폴더 하위(인프라 세팅 등) 통째로 제외
+] + Qdomains
+
+// 2. 리포트 생성 시 제외
 jacocoTestReport {
+    dependsOn test
     reports {
         html.required = true
     }
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: jacocoExcludePatterns)
+        }))
+    }
+    finalizedBy 'jacocoTestCoverageVerification'
 }
 
+// 3. 80% 검사할 때 제외
 jacocoTestCoverageVerification {
     violationRules {
         rule {
@@ -32,19 +58,11 @@ jacocoTestCoverageVerification {
             limit {
                 counter = 'LINE'
                 value = 'COVEREDRATIO'
-                minimum = 0.80 // 👈 여기서 80% 미만이면 빌드를 고의로 실패시킵니다.
+                minimum = 0.80
             }
+            excludes = jacocoExcludePatterns // 👈 여기서 억울한 파일들을 빼줍니다!
         }
     }
-}
-
-// test가 끝난 뒤에 jacoco가 순서대로 실행되도록 설정
-test {
-    finalizedBy jacocoTestReport
-}
-jacocoTestReport {
-    dependsOn test
-    finalizedBy jacocoTestCoverageVerification
 }
 
 
