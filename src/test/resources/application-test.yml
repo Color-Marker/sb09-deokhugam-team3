@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    # 진짜 AWS RDS 주소가 아니라, 로봇 메모리에 띄우는 가짜 H2 DB 주소입니다.
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop # 테스트 시작할 때 테이블을 만들고, 끝나면 다 부숴버립니다.
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+# 만약 JWT 시크릿 키나 외부 API 키 같은 변수 에러가 또 난다면, 여기에 가짜 값을 적어줍니다.
+jwt:
+  secret: aaaaaabbbbbbccccccddddddeeeeeeffffff111111222222333333
