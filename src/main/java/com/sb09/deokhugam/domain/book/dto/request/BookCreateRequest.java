@@ -17,6 +17,7 @@ public record BookCreateRequest(
     String author,
 
     @NotBlank(message = "설명은 필수입니다.")
+    @Size(max = 1000, message = "설명은 1000자 이하여야 합니다.")
     String description,
 
     @NotBlank(message = "출판사는 필수입니다.")
@@ -27,9 +28,10 @@ public record BookCreateRequest(
     @PastOrPresent(message = "출판일은 현재 또는 과거 날짜여야 합니다.")
     LocalDate publishedDate,
 
-    // ISBN은 선택 입력 — 값이 있다면 20자 이하
+    @NotBlank(message = "ISBN은 필수입니다.")
     @Size(max = 20, message = "ISBN은 20자 이하여야 합니다.")
     String isbn
 
 ) {
+
 }
