@@ -1,5 +1,6 @@
 package com.sb09.deokhugam.domain.notification.dto.request;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ public class NotificationListRequest {
   private LocalDateTime after;
   @NotNull(message = "제한 범위는 필수입니다")
   @Min(value = 1, message = "최소 1개의 데이터 제한은 필수입니다.")
+  @Max(value = 50, message = "최대 50개의 데이터 제한은 필수입니다.")
   private int limit = 20;
   private Sort.Direction direction = Sort.Direction.DESC;
 }

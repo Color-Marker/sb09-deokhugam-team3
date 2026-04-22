@@ -13,6 +13,7 @@ import com.sb09.deokhugam.domain.notification.mapper.NotificationMapper;
 import com.sb09.deokhugam.domain.notification.repository.NotificationRepository;
 import com.sb09.deokhugam.domain.notification.service.basic.BasicNotificationService;
 import com.sb09.deokhugam.domain.review.entity.Review;
+import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.global.Exception.CustomException;
@@ -50,6 +51,8 @@ public class BasicNotificationServiceTest {
   @Mock
   private UserRepository userRepository;
   @Mock
+  private ReviewRepository reviewRepository;
+  @Mock
   private NotificationMapper notificationMapper;
   @Mock
   private CursorPageResponseMapper cursorPageResponseMapper;
@@ -80,12 +83,14 @@ public class BasicNotificationServiceTest {
     given(sender.getId()).willReturn(senderId);
     given(review.getUserId()).willReturn(userId);
     given(review.getId()).willReturn(reviewId);
+    given(user.getDeletedAt()).willReturn(null);
   }
 
   @Test
   @DisplayName("알람 생성 - 성공")
   void notification_create(){
     given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    given(reviewRepository.existsByIdAndDeletedAtIsNull(reviewId)).willReturn(true);
     Notification savedNotification = new Notification(type, review, sender, user);
     given(notificationRepository.save(any(Notification.class))).willReturn(savedNotification);
 

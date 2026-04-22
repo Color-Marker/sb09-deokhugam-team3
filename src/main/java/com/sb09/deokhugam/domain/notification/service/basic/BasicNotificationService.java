@@ -9,12 +9,14 @@ import com.sb09.deokhugam.domain.notification.mapper.NotificationMapper;
 import com.sb09.deokhugam.domain.notification.repository.NotificationRepository;
 import com.sb09.deokhugam.domain.notification.service.NotificationService;
 import com.sb09.deokhugam.domain.review.entity.Review;
+import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
 import com.sb09.deokhugam.global.Exception.notification.NotificationForbiddenException;
 import com.sb09.deokhugam.global.Exception.notification.NotificationNotFoundException;
+import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
 import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
@@ -33,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BasicNotificationService implements NotificationService {
   private final NotificationRepository notificationRepository;
   private final UserRepository userRepository;
+  private final ReviewRepository reviewRepository;
   private final NotificationMapper notificationMapper;
   private final CursorPageResponseMapper cursorPageResponseMapper;
 
@@ -91,9 +94,13 @@ public class BasicNotificationService implements NotificationService {
       throw new NotificationForbiddenException(ErrorCode.NOTIFICATION_ACCESS_FORBIDDEN);
     }
 
-    log.info("유저 {}의 알림 {}을 읽음 상태로 전환합니다.", user.getNickname(), notification.getId());
-    notification.update();
-
+    if(notification.getConfirmStatus()){
+      log.info("이미 확인한 알람입니다.");
+    }
+    else {
+      log.info("유저 {}의 알림 {}을 읽음 상태로 전환합니다.", user.getNickname(), notification.getId());
+      notification.update();
+    }
     return notificationMapper.toDto(notification);
   }
 
@@ -138,6 +145,15 @@ public class BasicNotificationService implements NotificationService {
       log.warn("사용자를 찾을 수 없습니다");
       throw UserNotFoundException.withId(userId);
     }
+    if(!reviewRepository.existsByIdAndDeletedAtIsNull(review.getId())){
+      log.warn("리뷰를 찾을 수 없습니다.");
+      throw ReviewNotFoundException.withId(review.getId());
+    }
+    if(userId.equals(sender.getId())){
+      log.info("본인 스스로에게는 알람을 생성하지 않습니다.");
+      return null;
+    }
+
     Notification notification;
     if(!type.equals(NotificationType.RANKING)){
       // 좋아요 & 댓글
