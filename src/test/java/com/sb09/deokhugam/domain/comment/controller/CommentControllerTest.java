@@ -121,7 +121,7 @@ class CommentControllerTest {
     given(commentService.update(any(), any(), any())).willReturn(commentDto);
 
     mockMvc.perform(patch("/api/comments/{commentId}", commentId)
-            .header("X-User-Id", userId.toString())
+            .header("Deokhugam-Request-User-ID", userId.toString())
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk());
@@ -135,7 +135,7 @@ class CommentControllerTest {
         .willThrow(new CustomException(ErrorCode.COMMENT_UPDATE_FORBIDDEN));
 
     mockMvc.perform(patch("/api/comments/{commentId}", commentId)
-            .header("X-User-Id", UUID.randomUUID().toString())
+            .header("Deokhugam-Request-User-ID", UUID.randomUUID().toString())
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isForbidden());
@@ -145,7 +145,7 @@ class CommentControllerTest {
   @DisplayName("댓글 논리 삭제 성공 - 204 반환")
   void softDeleteComment_success() throws Exception {
     mockMvc.perform(delete("/api/comments/{commentId}", commentId)
-            .header("X-User-Id", userId.toString()))
+            .header("Deokhugam-Request-User-ID", userId.toString()))
         .andExpect(status().isNoContent());
   }
 
@@ -156,7 +156,7 @@ class CommentControllerTest {
         .given(commentService).softDelete(any(), any());
 
     mockMvc.perform(delete("/api/comments/{commentId}", commentId)
-            .header("X-User-Id", userId.toString()))
+            .header("Deokhugam-Request-User-ID", userId.toString()))
         .andExpect(status().isGone());
   }
 
@@ -165,7 +165,7 @@ class CommentControllerTest {
   void hardDeleteComment_success() throws Exception {
     // when & then
     mockMvc.perform(delete("/api/comments/{commentId}/hard", commentId)
-            .header("X-User-Id", userId.toString()))
+            .header("Deokhugam-Request-User-ID", userId.toString()))
         .andExpect(status().isNoContent());
   }
 }
