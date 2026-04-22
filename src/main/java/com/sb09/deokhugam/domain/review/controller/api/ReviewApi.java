@@ -75,7 +75,7 @@ public interface ReviewApi {
   );
 
   @Operation(summary = "리뷰 좋아요", description = "좋아요를 추가하거나 취소합니다.")
-  @PostMapping("/{reviewId}/likes")
+  @PostMapping("/{reviewId}/like")
   ResponseEntity<ReviewLikeDto> toggleLike(
       @Parameter(description = "리뷰 ID") @PathVariable UUID reviewId,
       @Parameter(description = "인증된 유저 ID") @RequestHeader("Deokhugam-Request-User-ID") UUID userId

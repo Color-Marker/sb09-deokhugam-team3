@@ -13,6 +13,7 @@ import static org.mockito.Mockito.doReturn;
 
 import com.sb09.deokhugam.domain.book.entity.Book;
 import com.sb09.deokhugam.domain.book.repository.BookRepository;
+import com.sb09.deokhugam.domain.notification.service.NotificationService;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
@@ -56,6 +57,8 @@ import org.springframework.data.domain.Sort;
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class BasicReviewServiceTest {
 
+  @Mock
+  private NotificationService notificationService;
   @Mock
   private ReviewRepository reviewRepository;
   @Mock
@@ -106,7 +109,8 @@ public class BasicReviewServiceTest {
   void createReview_success() {
     given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
     given(userRepository.findById(userId)).willReturn(Optional.of(users));
-    given(reviewRepository.existsByBookIdAndUserId(bookId, userId)).willReturn(false);
+    given(reviewRepository.existsByBookIdAndUserIdAndDeletedAtIsNull(bookId, userId)).willReturn(
+        false);
     given(reviewRepository.save(any(Review.class))).willReturn(review);
 
     ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "너무 재밌어요!", 5);
@@ -121,7 +125,8 @@ public class BasicReviewServiceTest {
   void createReview_duplicate() {
     given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
     given(userRepository.findById(userId)).willReturn(Optional.of(users));
-    given(reviewRepository.existsByBookIdAndUserId(bookId, userId)).willReturn(true);
+    given(reviewRepository.existsByBookIdAndUserIdAndDeletedAtIsNull(bookId, userId)).willReturn(
+        true);
 
     ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "내용", 5);
 

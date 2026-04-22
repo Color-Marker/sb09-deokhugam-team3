@@ -14,15 +14,7 @@ import java.util.UUID;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(
-    name = "reviews",
-    uniqueConstraints = {
-        @UniqueConstraint(
-            name = "uk_book_user",
-            columnNames = {"book_id", "user_id"}
-        )
-    }
-)
+@Table(name = "reviews")
 public class Review extends BaseFullAuditEntity {
 
   @Column(name = "book_id", nullable = false)
