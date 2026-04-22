@@ -72,7 +72,7 @@ public class S3Service {
   private String uploadToLocal(MultipartFile file) {
     try {
       String fileName = generateFileName(file.getOriginalFilename());
-      Path uploadPath = Paths.get(localRootPath, "thumbnails");
+      Path uploadPath = Paths.get(localRootPath, "thumbnails").toAbsolutePath().normalize();
 
       if (!Files.exists(uploadPath)) {
         Files.createDirectories(uploadPath);
