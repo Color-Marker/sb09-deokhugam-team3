@@ -1,4 +1,4 @@
-package com.sb09.deokhugam.domain.dashboard.schedular;
+package com.sb09.deokhugam.domain.dashboard.scheduler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class PopularBookBatchSchedular {
+public class PopularBookBatchScheduler {
   private final JobLauncher jobLauncher;
   private final Job calculatePopularBookJob;
 
