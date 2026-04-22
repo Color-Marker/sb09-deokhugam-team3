@@ -83,7 +83,7 @@ public interface ReviewApi {
 
   @Operation(summary = "인기 리뷰 목록 조회", description = "좋아요가 많은 순으로 상위 리뷰를 조회합니다.")
   @GetMapping("/popular")
-  ResponseEntity<List<ReviewDto>> getPopularReviews();
+  ResponseEntity<?> getPopularReviews();
 
   @Operation(summary = "리뷰 상세 조회", description = "리뷰 ID로 상세 내용을 조회합니다.")
   @GetMapping("/{reviewId}")
