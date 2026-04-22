@@ -22,6 +22,8 @@ import com.sb09.deokhugam.global.Exception.comment.CommentAlreadyDeletedExceptio
 import com.sb09.deokhugam.global.Exception.comment.ForbiddenAuthorityException;
 import com.sb09.deokhugam.global.Exception.notification.NotificationForbiddenException;
 import com.sb09.deokhugam.global.Exception.notification.NotificationNotFoundException;
+import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
+import com.sb09.deokhugam.global.Exception.user.UserAlreadyDeletedException;
 import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 import static org.mockito.BDDMockito.given;
@@ -110,6 +112,33 @@ public class BasicNotificationServiceTest {
         .isInstanceOf(UserNotFoundException.class)
         .satisfies(e -> Assertions.assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.USER_NOT_FOUND));
+
+  }
+
+  @Test
+  @DisplayName("알람 생성 - 삭제된 사용자 조회 예외")
+  void notification_create_deletedUser(){
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    given(user.getDeletedAt()).willReturn(LocalDateTime.now());
+
+    assertThatThrownBy(() -> notificationService.create(type, review, sender))
+        .isInstanceOf(UserAlreadyDeletedException.class)
+        .satisfies(e -> Assertions.assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.DELETED_USER));
+
+  }
+
+  @Test
+  @DisplayName("알람 생성 - 리뷰 조회 실패 예외")
+  void notification_create_reviewNotFound(){
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    given(user.getDeletedAt()).willReturn(null);
+    given(reviewRepository.existsByIdAndDeletedAtIsNull(reviewId)).willReturn(false);
+
+    assertThatThrownBy(() -> notificationService.create(type, review, sender))
+        .isInstanceOf(ReviewNotFoundException.class)
+        .satisfies(e -> Assertions.assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.REVIEW_NOT_FOUND));
 
   }
 

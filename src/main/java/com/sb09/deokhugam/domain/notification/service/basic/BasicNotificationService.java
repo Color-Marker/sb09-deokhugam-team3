@@ -17,6 +17,7 @@ import com.sb09.deokhugam.global.Exception.ErrorCode;
 import com.sb09.deokhugam.global.Exception.notification.NotificationForbiddenException;
 import com.sb09.deokhugam.global.Exception.notification.NotificationNotFoundException;
 import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
+import com.sb09.deokhugam.global.Exception.user.UserAlreadyDeletedException;
 import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
@@ -142,8 +143,8 @@ public class BasicNotificationService implements NotificationService {
         }
     );
     if(user.getDeletedAt() != null){
-      log.warn("사용자를 찾을 수 없습니다");
-      throw UserNotFoundException.withId(userId);
+      log.warn("탈퇴한 사용자이므로 알람을 생성할 수 없습니다.");
+      throw UserAlreadyDeletedException.withId(userId);
     }
     if(!reviewRepository.existsByIdAndDeletedAtIsNull(review.getId())){
       log.warn("리뷰를 찾을 수 없습니다.");
