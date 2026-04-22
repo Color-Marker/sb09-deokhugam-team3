@@ -71,7 +71,7 @@ public class BasicReviewService implements ReviewService {
         });
 
     // 중복 작성 검증 (1인 1리뷰)
-    if (reviewRepository.existsByBookIdAndUserId(book.getId(), user.getId())) {
+    if (reviewRepository.existsByBookIdAndUserIdAndDeletedAtIsNull(book.getId(), user.getId())) {
       log.warn("이미 리뷰를 작성한 사용자입니다. bookId: {}, userId: {}", book.getId(), user.getId());
       throw new DuplicateReviewException();
     }
@@ -156,6 +156,12 @@ public class BasicReviewService implements ReviewService {
     // 물리 삭제 대신 BaseFullAuditEntity에서 제공하는 메서드로 논리 삭제 처리
     review.markAsDeleted();
 
+    // ---- 추가  ----
+    // 해당 도서를 찾아와서 통계(평점, 리뷰 수)를 차감합니다!
+    Book book = bookRepository.findById(review.getBookId()).orElse(null);
+    if (book != null) {
+      removeBookStats(book, review.getRating());
+    }
     log.info("리뷰가 성공적으로 삭제 처리되었습니다(논리 삭제). reviewId: {}", reviewId);
   }
 
@@ -278,24 +284,37 @@ public class BasicReviewService implements ReviewService {
   }
 
   /**
-   * [내부 로직] 도서 평균 평점 및 리뷰 수 계산 - Book 엔티티를 받아 공식을 적용하여 통계를 갱신합니다.
+   * [내부 로직] 도서 평균 평점 및 리뷰 수 계산 (리뷰 등록 시 더하기용)
    */
   private void updateBookStats(Book book, Integer newRatingValue) {
     int newReviewCount = book.getReviewCount() + 1;
-
-    // 기존 총점 = 기존 평균 평점 * 기존 리뷰 개수
     double currentTotal = book.getRating().doubleValue() * book.getReviewCount();
-
-    // 새로운 평균 = (기존 총점 + 새로운 평점) / 새로운 리뷰 개수
     double newAverage = (currentTotal + newRatingValue) / newReviewCount;
 
-    // 소수점 셋째 자리에서 반올림하여 둘째 자리까지 표현
     BigDecimal finalRating = BigDecimal.valueOf(newAverage).setScale(2, RoundingMode.HALF_UP);
-
-    // Book 엔티티 업데이트
     book.updateRatingAndReviewCount(finalRating, newReviewCount);
 
     log.info("도서 통계가 업데이트되었습니다. bookId: {}, 새 평균 평점: {}, 총 리뷰 수: {}", book.getId(), finalRating,
         newReviewCount);
+  }
+
+  /**
+   * [내부 로직] 도서 평균 평점 및 리뷰 수 계산 (리뷰 삭제 시 차감용)
+   */
+  private void removeBookStats(Book book, Integer deletedRatingValue) {
+    int newReviewCount = book.getReviewCount() - 1;
+    double newAverage = 0.0;
+
+    // 리뷰가 아직 남아있다면 평점 다시 계산
+    if (newReviewCount > 0) {
+      double currentTotal = book.getRating().doubleValue() * book.getReviewCount();
+      newAverage = (currentTotal - deletedRatingValue) / newReviewCount;
+    }
+
+    BigDecimal finalRating = BigDecimal.valueOf(newAverage).setScale(2, RoundingMode.HALF_UP);
+    book.updateRatingAndReviewCount(finalRating, newReviewCount);
+
+    log.info("도서 통계가 업데이트되었습니다(삭제 반영). bookId: {}, 새 평균 평점: {}, 총 리뷰 수: {}", book.getId(),
+        finalRating, newReviewCount);
   }
 }

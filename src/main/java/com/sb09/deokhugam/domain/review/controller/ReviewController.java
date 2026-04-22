@@ -96,7 +96,7 @@ public class ReviewController implements ReviewApi {
    * 5. 리뷰 좋아요 토글
    */
   @Override
-  @PostMapping("/{reviewId}/likes")
+  @PostMapping("/{reviewId}/like")
   public ResponseEntity<ReviewLikeDto> toggleLike(
       @PathVariable UUID reviewId,
       @RequestHeader("Deokhugam-Request-User-ID") UUID userId) {

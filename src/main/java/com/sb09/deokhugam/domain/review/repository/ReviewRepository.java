@@ -12,15 +12,16 @@ import org.springframework.data.repository.query.Param;
 public interface ReviewRepository extends JpaRepository<Review, UUID>, ReviewRepositoryCustom {
 
   // 리뷰 중복 검사
-  boolean existsByBookIdAndUserId(UUID bookId, UUID userId);
+  boolean existsByBookIdAndUserIdAndDeletedAtIsNull(UUID bookId, UUID userId);
 
   @Query("""
-    SELECT r.bookId, COUNT(r), AVG(r.rating)
-    FROM Review r
-    WHERE r.createdAt >= :from AND r.createdAt < :to
-    AND r.deletedAt IS NULL
-    GROUP BY r.bookId
-    ORDER BY (COUNT(r) * 0.4 + AVG(r.rating) * 0.6) DESC
-    """)
-  List<Object[]> calculateBookByPeriod(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+      SELECT r.bookId, COUNT(r), AVG(r.rating)
+      FROM Review r
+      WHERE r.createdAt >= :from AND r.createdAt < :to
+      AND r.deletedAt IS NULL
+      GROUP BY r.bookId
+      ORDER BY (COUNT(r) * 0.4 + AVG(r.rating) * 0.6) DESC
+      """)
+  List<Object[]> calculateBookByPeriod(@Param("from") LocalDateTime from,
+      @Param("to") LocalDateTime to);
 }

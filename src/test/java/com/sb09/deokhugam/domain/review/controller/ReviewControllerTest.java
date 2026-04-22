@@ -130,7 +130,7 @@ class ReviewControllerTest {
     given(reviewService.toggleLike(eq(reviewId), eq(userId))).willReturn(mockResponse);
 
     try {
-      mockMvc.perform(post("/api/reviews/{reviewId}/likes", reviewId)
+      mockMvc.perform(post("/api/reviews/{reviewId}/like", reviewId)
               .header(USER_ID_HEADER, userId.toString())
               .contentType(MediaType.APPLICATION_JSON))
           .andExpect(status().isOk())
