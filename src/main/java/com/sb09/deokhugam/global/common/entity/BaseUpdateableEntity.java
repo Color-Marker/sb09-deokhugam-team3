@@ -16,6 +16,6 @@ public abstract class BaseUpdateableEntity extends BaseEntity {
 
   @LastModifiedDate
   @Column(name = "updated_at")
-  @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul")
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul") //프론트 코드 호환을 위한 날짜형식 수정
   private LocalDateTime updatedAt;
 }
