@@ -13,7 +13,7 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
   @Query("SELECT c FROM Comment c "
       + "WHERE c.review.id = :reviewId AND c.deletedAt IS NULL "
-      + "AND ((:after IS NULL OR c.createdAt < :after) "
+      + "AND ((cast(:after as LocalDateTime) IS NULL OR c.createdAt < :after) "
       + "OR (c.createdAt = :after AND c.id < :cursor)) "
       + "ORDER BY c.createdAt DESC")
   Slice<Comment> findCommentsDesc(
@@ -24,7 +24,7 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
   @Query("SELECT c FROM Comment "
       + "c WHERE c.review.id = :reviewId AND c.deletedAt IS NULL "
-      + "AND ((:after IS NULL OR c.createdAt > :after) "
+      + "AND ((cast(:after as LocalDateTime) IS NULL OR c.createdAt > :after) "
       + "OR (c.createdAt = :after AND c.id > :cursor)) "
       + "ORDER BY c.createdAt ASC")
   Slice<Comment> findCommentsAsc(
