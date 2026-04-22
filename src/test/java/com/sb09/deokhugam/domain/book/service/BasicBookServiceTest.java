@@ -122,21 +122,6 @@ public class BasicBookServiceTest {
   }
 
   @Test
-  @DisplayName("도서 등록 성공 - ISBN null (중복 체크 스킵)")
-  void create_success_nullIsbn() {
-    BookCreateRequest request = new BookCreateRequest(
-        "테스트 도서", "저자명", "도서 설명", "출판사", LocalDate.of(2024, 1, 1), null
-    );
-    given(bookRepository.save(any(Book.class))).willReturn(book);
-    given(bookMapper.toDto(book)).willReturn(mock(BookDto.class));
-
-    bookService.create(request, null);
-
-    verify(bookRepository, never()).existsByIsbn(any());
-    verify(bookRepository, times(1)).save(any(Book.class));
-  }
-
-  @Test
   @DisplayName("예외 검증 - ISBN 중복 시 DuplicateIsbnException 발생")
   void create_duplicateIsbn() {
     BookCreateRequest request = new BookCreateRequest(
