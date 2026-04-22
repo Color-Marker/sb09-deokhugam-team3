@@ -13,6 +13,7 @@ import static org.mockito.Mockito.doReturn;
 
 import com.sb09.deokhugam.domain.book.entity.Book;
 import com.sb09.deokhugam.domain.book.repository.BookRepository;
+import com.sb09.deokhugam.domain.notification.service.NotificationService;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
@@ -56,6 +57,8 @@ import org.springframework.data.domain.Sort;
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class BasicReviewServiceTest {
 
+  @Mock
+  private NotificationService notificationService;
   @Mock
   private ReviewRepository reviewRepository;
   @Mock

@@ -2,6 +2,8 @@ package com.sb09.deokhugam.domain.review.service.basic;
 
 import com.sb09.deokhugam.domain.book.entity.Book;
 import com.sb09.deokhugam.domain.book.repository.BookRepository;
+import com.sb09.deokhugam.domain.notification.entity.NotificationType;
+import com.sb09.deokhugam.domain.notification.service.NotificationService;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
@@ -42,6 +44,7 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class BasicReviewService implements ReviewService {
 
+  private final NotificationService notificationService;
   private final ReviewRepository reviewRepository;
   private final BookRepository bookRepository;
   private final UserRepository userRepository;
@@ -228,6 +231,8 @@ public class BasicReviewService implements ReviewService {
       reviewLikeRepository.save(newLike);
       review.addLikeCount();
       log.info("리뷰 좋아요가 추가되었습니다. reviewId: {}, userId: {}", reviewId, userId);
+
+      notificationService.create(NotificationType.LIKE, review, user);
 
       return new ReviewLikeDto(true, review.getLikeCount());
     }
