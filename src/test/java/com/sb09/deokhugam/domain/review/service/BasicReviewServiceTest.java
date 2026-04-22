@@ -106,7 +106,8 @@ public class BasicReviewServiceTest {
   void createReview_success() {
     given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
     given(userRepository.findById(userId)).willReturn(Optional.of(users));
-    given(reviewRepository.existsByBookIdAndUserId(bookId, userId)).willReturn(false);
+    given(reviewRepository.existsByBookIdAndUserIdAndDeletedAtIsNull(bookId, userId)).willReturn(
+        false);
     given(reviewRepository.save(any(Review.class))).willReturn(review);
 
     ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "너무 재밌어요!", 5);
@@ -121,7 +122,8 @@ public class BasicReviewServiceTest {
   void createReview_duplicate() {
     given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
     given(userRepository.findById(userId)).willReturn(Optional.of(users));
-    given(reviewRepository.existsByBookIdAndUserId(bookId, userId)).willReturn(true);
+    given(reviewRepository.existsByBookIdAndUserIdAndDeletedAtIsNull(bookId, userId)).willReturn(
+        true);
 
     ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "내용", 5);
 
