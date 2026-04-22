@@ -13,6 +13,7 @@ import static org.mockito.Mockito.doReturn;
 
 import com.sb09.deokhugam.domain.book.entity.Book;
 import com.sb09.deokhugam.domain.book.repository.BookRepository;
+import com.sb09.deokhugam.domain.notification.entity.NotificationType;
 import com.sb09.deokhugam.domain.notification.service.NotificationService;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
@@ -36,6 +37,7 @@ import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -95,8 +97,10 @@ public class BasicReviewServiceTest {
     given(book.getId()).willReturn(bookId);
     given(book.getReviewCount()).willReturn(0);
     given(book.getRating()).willReturn(java.math.BigDecimal.ZERO);
+    given(book.getDeletedAt()).willReturn(null);
 
     given(users.getId()).willReturn(userId);
+    given(users.getDeletedAt()).willReturn(null); // 삭제 방어막 통과를 위한 설정
 
     given(review.getId()).willReturn(reviewId);
     given(review.getUserId()).willReturn(userId);
@@ -134,6 +138,20 @@ public class BasicReviewServiceTest {
         .isInstanceOf(DuplicateReviewException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.DUPLICATE_REVIEW));
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 삭제된 리뷰를 수정하려고 하면 예외 발생")
+  void updateReview_alreadyDeleted() {
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+    given(review.getDeletedAt()).willReturn(LocalDateTime.now()); // 리뷰가 삭제된 상태 재현
+
+    ReviewUpdateRequest request = new ReviewUpdateRequest("수정내용", 4);
+
+    assertThatThrownBy(() -> reviewService.updateReview(reviewId, request, userId))
+        .isInstanceOf(CustomException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.REVIEW_NOT_FOUND));
   }
 
   @Test
@@ -184,7 +202,7 @@ public class BasicReviewServiceTest {
   }
 
   @Test
-  @DisplayName("리뷰 좋아요 성공 테스트 - 기존에 누른 적이 없으면 [추가]된다")
+  @DisplayName("리뷰 좋아요 성공 테스트 - 기존에 누른 적이 없으면 [추가]되고 알림 발송")
   void toggleLike_addLike() {
     given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
     given(userRepository.findById(userId)).willReturn(Optional.of(users));
@@ -196,6 +214,10 @@ public class BasicReviewServiceTest {
 
     verify(reviewLikeRepository, times(1)).save(any(ReviewLike.class));
     verify(review, times(1)).addLikeCount();
+    //  알림 발송 로직이 제대로 실행되었는지 검증
+    verify(notificationService, times(1)).create(any(NotificationType.class), eq(review),
+        eq(users));
+
     assertThat(result.liked()).isTrue();
     assertThat(result.likeCount()).isEqualTo(1);
   }
