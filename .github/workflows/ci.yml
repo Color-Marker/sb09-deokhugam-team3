@@ -9,6 +9,13 @@ jobs:
   test:
     runs-on: ubuntu-latest # 로봇이 사용할 가상의 컴퓨터 환경
 
+      # 깃허브 비밀 금고(Secrets)에서 값을 꺼내와서 로봇에게 쥐어줍니다!
+    env:
+      NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+      NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+      OCR_API_KEY: ${{ secrets.OCR_API_KEY }}
+      SPRING_PROFILES_ACTIVE: ${{ secrets.SPRING_PROFILES_ACTIVE }}
+
     steps:
       # 1. 깃허브 저장소에 있는 내 코드를 로봇 컴퓨터로 가져옵니다.
       - name: Checkout repository
