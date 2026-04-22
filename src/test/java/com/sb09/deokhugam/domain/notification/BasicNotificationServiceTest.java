@@ -111,7 +111,8 @@ public class BasicNotificationServiceTest {
   @Test
   @DisplayName("모든 알림 확인 - 성공")
   void notification_readAll(){
-    given(userRepository.existsById(userId)).willReturn(true);
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    given(user.getDeletedAt()).willReturn(null);
     Notification noti1 = new Notification(type, review, sender, user);
     Notification noti2 = new Notification(type, review, sender, user);
     given(notificationRepository.findByUserId(userId)).willReturn(List.of(noti1, noti2));

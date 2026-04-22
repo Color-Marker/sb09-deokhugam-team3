@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import java.time.LocalDateTime;
 import lombok.Getter;
+import org.hibernate.annotations.SQLRestriction;
 
 // updatedAt + deletedAt 둘 다 필요한 엔티티가 상속받을 클래스
 @Getter

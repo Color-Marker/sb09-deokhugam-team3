@@ -1,4 +1,4 @@
-package com.sb09.deokhugam.domain.notification.scheduler;
+package com.sb09.deokhugam.domain.notification.scheduler.config;
 
 import com.sb09.deokhugam.domain.notification.repository.NotificationRepository;
 import java.time.LocalDateTime;

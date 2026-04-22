@@ -42,8 +42,15 @@ public class BasicNotificationService implements NotificationService {
       log.warn("잘못된 요청입니다.");
       throw new CustomException(ErrorCode.INVALID_REQUEST);
     }
-    if(!userRepository.existsById(userId)){
-      log.warn("사용자를 찾을 수 없습니다.");
+
+    Users user = userRepository.findById(userId).orElseThrow(
+        () -> {
+          log.warn("사용자를 찾을 수 없습니다");
+          return UserNotFoundException.withId(userId);
+        }
+    );
+    if(user.getDeletedAt() != null){
+      log.warn("사용자를 찾을 수 없습니다");
       throw UserNotFoundException.withId(userId);
     }
     log.info("유저ID: {} 의 모든 알림을 읽음 상태로 전환합니다.", userId);
@@ -68,6 +75,10 @@ public class BasicNotificationService implements NotificationService {
           return UserNotFoundException.withId(userId);
         }
     );
+    if(user.getDeletedAt() != null){
+      log.warn("사용자를 찾을 수 없습니다");
+      throw UserNotFoundException.withId(userId);
+    }
 
     Notification notification = notificationRepository.findById(notificationId).
         orElseThrow(() -> {
@@ -89,6 +100,16 @@ public class BasicNotificationService implements NotificationService {
   @Transactional(readOnly = true)
   @Override
   public CursorPageResponseDto<NotificationDto> list(NotificationListRequest request) {
+    Users user = userRepository.findById(request.getUserId()).orElseThrow(
+        () -> {
+          log.warn("사용자를 찾을 수 없습니다");
+          return UserNotFoundException.withId(request.getUserId());
+        }
+    );
+    if(user.getDeletedAt() != null){
+      log.warn("사용자를 찾을 수 없습니다");
+      throw UserNotFoundException.withId(request.getUserId());
+    }
     Slice<Notification> slice = notificationRepository.searchNotification(request);
     Long totalElements = notificationRepository.countNotification(request);
     log.info("유저ID: {} 의 알림 목록을 불러옵니다.", request.getUserId());
@@ -113,6 +134,10 @@ public class BasicNotificationService implements NotificationService {
           return UserNotFoundException.withId(userId);
         }
     );
+    if(user.getDeletedAt() != null){
+      log.warn("사용자를 찾을 수 없습니다");
+      throw UserNotFoundException.withId(userId);
+    }
     Notification notification;
     if(!type.equals(NotificationType.RANKING)){
       // 좋아요 & 댓글

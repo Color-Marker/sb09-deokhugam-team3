@@ -1,5 +1,6 @@
 package com.sb09.deokhugam.domain.dashboard.entity;
 
+import com.sb09.deokhugam.domain.book.entity.Book;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
