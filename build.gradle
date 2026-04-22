@@ -20,11 +20,31 @@ test {
 }
 
 jacocoTestReport {
-    dependsOn test
     reports {
-        xml.required = true
         html.required = true
     }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            element = 'CLASS'
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.80 // 👈 여기서 80% 미만이면 빌드를 고의로 실패시킵니다.
+            }
+        }
+    }
+}
+
+// test가 끝난 뒤에 jacoco가 순서대로 실행되도록 설정
+test {
+    finalizedBy jacocoTestReport
+}
+jacocoTestReport {
+    dependsOn test
+    finalizedBy jacocoTestCoverageVerification
 }
 
 
