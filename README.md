@@ -1,4 +1,5 @@
 # SB09-DEOKHUGAM-TEAM3
+![Coverage](.github/badges/jacoco.svg)
 
 ### https://www.notion.so/Spring-7213bb75a7708284aaf901e6bf1ffd8c
 
