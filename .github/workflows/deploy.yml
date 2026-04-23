@@ -3,6 +3,11 @@ name: 2. CD (Deploy to Public ECR)
 on:
   push:
     branches: [ "main", "dev" ]
+    paths-ignore:
+      - '**.md'           # README.md 등 모든 마크다운 파일 무시
+      - '.gitignore'      # 깃 무시 파일 변경 무시
+      - 'docs/**'         # 문서 폴더 하위의 모든 변경 무시
+      - 'scripts/**'      # 배포와 상관없는 스크립트 무시
 
 jobs:
   deploy:
