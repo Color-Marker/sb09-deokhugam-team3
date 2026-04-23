@@ -14,6 +14,8 @@ public interface BookRepository extends JpaRepository<Book, UUID>, CustomBookRep
 
   Optional<Book> findByIsbn(String isbn);
 
+  Optional<Book> findFirstByIsbnAndDeletedAtIsNotNullOrderByDeletedAtDesc(String isbn);
+
   @Modifying
   @Query("DELETE FROM Book b WHERE b.id = :id")
   void hardDeleteById(UUID id);
