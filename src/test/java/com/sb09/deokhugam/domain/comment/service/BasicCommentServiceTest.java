@@ -411,4 +411,14 @@ public class BasicCommentServiceTest {
     verify(review, never()).removeCommentCount();
   }
 
+  @Test
+  @DisplayName("댓글 목록 조회 - DESC 성공")
+  void findAllByReviewId_desc_success() {
+
+  }
+
+  @Test
+  @DisplayName("댓글 목록 조회 - ASC 성공")
+  void findAllByReviewId_asc_success() {
+  }
 }
