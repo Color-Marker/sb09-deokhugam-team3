@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 
 import com.sb09.deokhugam.domain.comment.dto.CommentDto;
 import com.sb09.deokhugam.domain.comment.dto.request.CommentCreateRequest;
+import com.sb09.deokhugam.domain.comment.dto.request.CommentListRequest;
 import com.sb09.deokhugam.domain.comment.dto.request.CommentUpdateRequest;
 import com.sb09.deokhugam.domain.comment.entity.Comment;
 import com.sb09.deokhugam.domain.comment.mapper.CommentMapper;
@@ -21,6 +22,7 @@ import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.global.Exception.user.UserAlreadyDeletedException;
+import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
@@ -76,6 +78,8 @@ public class BasicCommentServiceTest {
   private Review review;
   private Comment comment;
   private CommentDto commentDto;
+  private CommentListRequest request;
+  private CursorPageResponseDto<CommentDto> cursorPageResponseDto;
 
   @BeforeEach
   void setUp() {
@@ -88,6 +92,9 @@ public class BasicCommentServiceTest {
     review = mock(Review.class);
     comment = mock(Comment.class);
 
+    request = mock(CommentListRequest.class);
+    cursorPageResponseDto = mock(CursorPageResponseDto.class);
+
     given(users.getId()).willReturn(userId);
     given(users.getDeletedAt()).willReturn(null);
 
@@ -99,6 +106,11 @@ public class BasicCommentServiceTest {
     given(comment.getReview()).willReturn(review);
     given(comment.getDeletedAt()).willReturn(null);
     given(comment.getContent()).willReturn(content);
+
+    given(request.getReviewId()).willReturn(reviewId);
+    given(request.getLimit()).willReturn(10);
+    given(request.getAfter()).willReturn(null);
+    given(request.getCursor()).willReturn(null);
 
     commentDto = mock(CommentDto.class);
   }
@@ -345,26 +357,58 @@ public class BasicCommentServiceTest {
   @Test
   @DisplayName("삭제된 댓글 수정 시도 - 예외 발생")
   void update_alreadyDeleted() {
+    CommentUpdateRequest request = new CommentUpdateRequest(content);
+    given(comment.getDeletedAt()).willReturn(LocalDateTime.now());
+    given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
 
+    assertThatThrownBy(() -> commentService.update(commentId, userId, request))
+        .isInstanceOf(CommentAlreadyDeletedException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.DELETED_COMMENT));
+
+    verify(commentRepository).findById(commentId);
+    verify(comment, never()).updateContent(any());
+    verify(commentMapper, never()).toDto(any());
   }
 
   @Test
   @DisplayName("댓글 논리 삭제 - 성공")
   void softDelete_success() {
+    given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
 
+    commentService.softDelete(commentId, userId);
+
+    verify(commentRepository).findById(commentId);
+    verify(comment).markAsDeleted();
+    verify(review).removeCommentCount();
+    verify(commentMapper, never()).toDto(any());
   }
 
   @Test
   @DisplayName("댓글 물리 수정 - 성공")
   void hardDelete_success() {
+    given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
 
+    commentService.hardDelete(commentId, userId);
+
+    verify(commentRepository).findById(commentId);
+    verify(commentRepository).delete(comment);
+    verify(review).removeCommentCount();
+    verify(commentMapper, never()).toDto(any());
   }
 
   @Test
   @DisplayName("논리삭제된 댓글 물리삭제 - 성공")
     //  (카운트 이중차감 방지 검증)
   void hardDelete_alreadySoftDeleted() {
+    given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+    given(comment.getDeletedAt()).willReturn(LocalDateTime.now());
 
+    commentService.hardDelete(commentId, userId);
+
+    verify(commentRepository).findById(commentId);
+    verify(commentRepository).delete(comment);
+    verify(review, never()).removeCommentCount();
   }
 
 }
