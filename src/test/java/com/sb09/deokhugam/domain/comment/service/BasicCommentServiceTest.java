@@ -3,7 +3,9 @@ package com.sb09.deokhugam.domain.comment.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -44,6 +46,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -414,11 +419,56 @@ public class BasicCommentServiceTest {
   @Test
   @DisplayName("댓글 목록 조회 - DESC 성공")
   void findAllByReviewId_desc_success() {
+    Slice<Comment> slice = mock(Slice.class);
+    given(request.getDirection()).willReturn(Sort.Direction.DESC);
+    given(commentRepository.findCommentsDesc(
+        request.getReviewId(),
+        request.getAfter(),
+        request.getCursor(),
+        PageRequest.of(0, request.getLimit())
+    )).willReturn(slice);
+    given(commentRepository.countByReviewIdAndDeletedAtIsNull(reviewId)).willReturn(1L);
+    doReturn(cursorPageResponseDto).when(cursorPageResponseMapper).fromSlice(
+        eq(slice), any(), any(), any(), eq(1L));
 
+    CursorPageResponseDto<CommentDto> result = commentService.findAllByReviewId(request);
+
+    assertThat(result).isEqualTo(cursorPageResponseDto);
+    verify(commentRepository).findCommentsDesc(
+        request.getReviewId(),
+        request.getAfter(),
+        request.getCursor(),
+        PageRequest.of(0, request.getLimit())
+    );
+    verify(commentRepository, never()).findCommentsAsc(any(), any(), any(), any());
+    verify(commentRepository).countByReviewIdAndDeletedAtIsNull(reviewId);
   }
 
   @Test
   @DisplayName("댓글 목록 조회 - ASC 성공")
   void findAllByReviewId_asc_success() {
+    Slice<Comment> slice = mock(Slice.class);
+    given(request.getDirection()).willReturn(Sort.Direction.ASC);
+    given(commentRepository.findCommentsAsc(
+        request.getReviewId(),
+        request.getAfter(),
+        request.getCursor(),
+        PageRequest.of(0, request.getLimit())
+    )).willReturn(slice);
+    given(commentRepository.countByReviewIdAndDeletedAtIsNull(reviewId)).willReturn(1L);
+    doReturn(cursorPageResponseDto).when(cursorPageResponseMapper).fromSlice(
+        eq(slice), any(), any(), any(), eq(1L));
+
+    CursorPageResponseDto<CommentDto> result = commentService.findAllByReviewId(request);
+
+    assertThat(result).isEqualTo(cursorPageResponseDto);
+    verify(commentRepository).findCommentsAsc(
+        request.getReviewId(),
+        request.getAfter(),
+        request.getCursor(),
+        PageRequest.of(0, request.getLimit())
+    );
+    verify(commentRepository, never()).findCommentsDesc(any(), any(), any(), any());
+    verify(commentRepository).countByReviewIdAndDeletedAtIsNull(reviewId);
   }
 }
