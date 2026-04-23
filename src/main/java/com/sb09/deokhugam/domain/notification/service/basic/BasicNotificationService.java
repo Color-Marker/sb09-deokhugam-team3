@@ -150,20 +150,17 @@ public class BasicNotificationService implements NotificationService {
       log.warn("리뷰를 찾을 수 없습니다.");
       throw ReviewNotFoundException.withId(review.getId());
     }
-    if(userId.equals(sender.getId())){
-      log.info("본인 스스로에게는 알람을 생성하지 않습니다.");
-      return null;
-    }
 
     Notification notification;
-    if(!type.equals(NotificationType.RANKING)){
+    if(!type.equals(NotificationType.RANKING) && sender != null){
+      if(userId.equals(sender.getId())){
+        log.info("본인 스스로에게는 알람을 생성하지 않습니다.");
+        return null;
+      }
+    }
       // 좋아요 & 댓글
       notification = new Notification(type, review, sender, user);
-    }
-    else {
-      // 랭킹
-      notification = new Notification(type, review, null, user);
-    }
+
     Notification result = notificationRepository.save(notification);
     log.info("타입: {} 인 알람: {} 이 생성되었습니다.", result.getType().toString(), result.getId());
     return result;

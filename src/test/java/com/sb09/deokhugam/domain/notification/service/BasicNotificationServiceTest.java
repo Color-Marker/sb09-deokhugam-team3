@@ -160,7 +160,7 @@ public class BasicNotificationServiceTest {
   }
 
   @Test
-  @DisplayName("알람 생성 - RANKING 타입(sender 없음) 성공")
+  @DisplayName("알람 생성 - RANKING 타입 sender null 성공")
   void notification_create_rankingType() {
     type = NotificationType.RANKING;
     given(userRepository.findById(userId)).willReturn(Optional.of(user));
@@ -168,7 +168,7 @@ public class BasicNotificationServiceTest {
     Notification savedNotification = new Notification(type, review, null, user);
     given(notificationRepository.save(any(Notification.class))).willReturn(savedNotification);
 
-    Notification result = notificationService.create(type, review, sender);
+    Notification result = notificationService.create(type, review, null);
 
     assertThat(result).isNotNull();
     assertThat(result.getType()).isEqualTo(NotificationType.RANKING);
