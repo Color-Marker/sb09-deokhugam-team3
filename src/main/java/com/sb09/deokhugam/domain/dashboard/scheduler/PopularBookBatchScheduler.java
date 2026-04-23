@@ -16,7 +16,7 @@ public class PopularBookBatchScheduler {
   private final JobLauncher jobLauncher;
   private final Job calculatePopularBookJob;
 
-  @Scheduled(cron = "0 0 14 * * *")
+  @Scheduled(cron = "0 0 2 * * *")
 //  @Scheduled(cron = "0 */10 * * * *") // 테스트용입니다.
   public void calculatePopularBook(){
     try{
