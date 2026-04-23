@@ -142,6 +142,7 @@ public class BasicBookServiceTest {
     verify(book, times(1)).markAsRestored();
     verify(book, times(1)).update(any(), any(), any(), any(), any(), any());
     verify(bookRepository, never()).save(any(Book.class));
+    verify(s3Service, never()).upload(any());
   }
 
   @Test

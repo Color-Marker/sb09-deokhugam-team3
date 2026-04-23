@@ -62,13 +62,8 @@ public class BasicBookService implements BookService {
       if (deletedBook.isPresent()) {
         Book book = deletedBook.get();
 
-        String thumbnailUrl = book.getThumbnailUrl();
-        if (thumbnailImage != null && !thumbnailImage.isEmpty()) {
-          thumbnailUrl = s3Service.upload(thumbnailImage);
-        }
-
         book.update(request.title(), request.author(), request.description(),
-            request.publisher(), request.publishedDate(), thumbnailUrl);
+            request.publisher(), request.publishedDate(), book.getThumbnailUrl());
         book.markAsRestored();
         log.info("논리삭제된 도서 복구 완료: ID={}", book.getId());
         return bookMapper.toDto(book);
