@@ -1,4 +1,4 @@
-package com.sb09.deokhugam.domain.notification;
+package com.sb09.deokhugam.domain.notification.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -10,7 +10,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sb09.deokhugam.config.RequestTrackingFilter;
-import com.sb09.deokhugam.domain.notification.controller.NotificationController;
 import com.sb09.deokhugam.domain.notification.dto.request.NotificationListRequest;
 import com.sb09.deokhugam.domain.notification.dto.request.NotificationUpdateRequest;
 import com.sb09.deokhugam.domain.notification.dto.response.NotificationDto;

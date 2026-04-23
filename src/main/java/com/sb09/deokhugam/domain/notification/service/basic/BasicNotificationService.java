@@ -54,8 +54,8 @@ public class BasicNotificationService implements NotificationService {
         }
     );
     if(user.getDeletedAt() != null){
-      log.warn("사용자를 찾을 수 없습니다");
-      throw UserNotFoundException.withId(userId);
+      log.warn("탈퇴한 사용자이므로 알람을 생성할 수 없습니다.");
+      throw UserAlreadyDeletedException.withId(userId);
     }
     log.info("유저ID: {} 의 모든 알림을 읽음 상태로 전환합니다.", userId);
     List<Notification> notis = notificationRepository.findByUserId(userId);
@@ -80,8 +80,8 @@ public class BasicNotificationService implements NotificationService {
         }
     );
     if(user.getDeletedAt() != null){
-      log.warn("사용자를 찾을 수 없습니다");
-      throw UserNotFoundException.withId(userId);
+      log.warn("탈퇴한 사용자이므로 알람을 생성할 수 없습니다.");
+      throw UserAlreadyDeletedException.withId(userId);
     }
 
     Notification notification = notificationRepository.findById(notificationId).
@@ -115,8 +115,8 @@ public class BasicNotificationService implements NotificationService {
         }
     );
     if(user.getDeletedAt() != null){
-      log.warn("사용자를 찾을 수 없습니다");
-      throw UserNotFoundException.withId(request.getUserId());
+      log.warn("탈퇴한 사용자이므로 알람을 생성할 수 없습니다.");
+      throw UserAlreadyDeletedException.withId(user.getId());
     }
     Slice<Notification> slice = notificationRepository.searchNotification(request);
     Long totalElements = notificationRepository.countNotification(request);

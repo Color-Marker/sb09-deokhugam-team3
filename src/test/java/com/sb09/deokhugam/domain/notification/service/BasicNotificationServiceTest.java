@@ -1,10 +1,13 @@
-package com.sb09.deokhugam.domain.notification;
+package com.sb09.deokhugam.domain.notification.service;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
+import com.sb09.deokhugam.domain.notification.dto.request.NotificationListRequest;
 import com.sb09.deokhugam.domain.notification.dto.request.NotificationUpdateRequest;
 import com.sb09.deokhugam.domain.notification.dto.response.NotificationDto;
 import com.sb09.deokhugam.domain.notification.entity.Notification;
@@ -18,13 +21,12 @@ import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.global.Exception.CustomException;
 import com.sb09.deokhugam.global.Exception.ErrorCode;
-import com.sb09.deokhugam.global.Exception.comment.CommentAlreadyDeletedException;
-import com.sb09.deokhugam.global.Exception.comment.ForbiddenAuthorityException;
 import com.sb09.deokhugam.global.Exception.notification.NotificationForbiddenException;
 import com.sb09.deokhugam.global.Exception.notification.NotificationNotFoundException;
 import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
 import com.sb09.deokhugam.global.Exception.user.UserAlreadyDeletedException;
 import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
+import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
@@ -44,6 +46,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -143,6 +147,35 @@ public class BasicNotificationServiceTest {
   }
 
   @Test
+  @DisplayName("알람 생성 - 본인에게는 알람 생성 안 함 (null 반환)")
+  void notification_create_selfNotification() {
+    given(sender.getId()).willReturn(userId);
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    given(reviewRepository.existsByIdAndDeletedAtIsNull(reviewId)).willReturn(true);
+
+    Notification result = notificationService.create(type, review, sender);
+
+    assertThat(result).isNull();
+    verify(notificationRepository, times(0)).save(any(Notification.class));
+  }
+
+  @Test
+  @DisplayName("알람 생성 - RANKING 타입(sender 없음) 성공")
+  void notification_create_rankingType() {
+    type = NotificationType.RANKING;
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    given(reviewRepository.existsByIdAndDeletedAtIsNull(reviewId)).willReturn(true);
+    Notification savedNotification = new Notification(type, review, null, user);
+    given(notificationRepository.save(any(Notification.class))).willReturn(savedNotification);
+
+    Notification result = notificationService.create(type, review, sender);
+
+    assertThat(result).isNotNull();
+    assertThat(result.getType()).isEqualTo(NotificationType.RANKING);
+    verify(notificationRepository, times(1)).save(any(Notification.class));
+  }
+
+  @Test
   @DisplayName("모든 알림 확인 - 성공")
   void notification_readAll(){
     given(userRepository.findById(userId)).willReturn(Optional.of(user));
@@ -176,6 +209,18 @@ public class BasicNotificationServiceTest {
   }
 
   @Test
+  @DisplayName("모든 알림 확인 - 삭제된 사용자 예외")
+  void notification_readAll_deletedUser() {
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    given(user.getDeletedAt()).willReturn(LocalDateTime.now());
+
+    assertThatThrownBy(() -> notificationService.readAll(userId))
+        .isInstanceOf(UserAlreadyDeletedException.class)
+        .satisfies(e -> Assertions.assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.DELETED_USER));
+  }
+
+  @Test
   @DisplayName("특정 알림 확인 - 성공")
   void notification_read(){
     UUID notificationId = UUID.randomUUID();
@@ -204,6 +249,16 @@ public class BasicNotificationServiceTest {
   }
 
   @Test
+  @DisplayName("특정 알림 확인 - confirmed=false 잘못된 요청 예외")
+  void notification_read_invalidRequest_confirmedFalse() {
+    NotificationUpdateRequest request = new NotificationUpdateRequest(false);
+
+    assertThatThrownBy(() -> notificationService.updateStatus(UUID.randomUUID(), userId, request))
+        .isInstanceOf(CustomException.class)
+        .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REQUEST);
+  }
+
+  @Test
   @DisplayName("특정 알림 확인 - 사용자 조회 실패 예외")
   void notification_read_userNotFound(){
     NotificationUpdateRequest request = new NotificationUpdateRequest(true);
@@ -213,6 +268,19 @@ public class BasicNotificationServiceTest {
         .isInstanceOf(UserNotFoundException.class)
         .satisfies(e -> Assertions.assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.USER_NOT_FOUND));
+  }
+
+  @Test
+  @DisplayName("특정 알림 확인 - 삭제된 사용자 예외")
+  void notification_read_deletedUser() {
+    NotificationUpdateRequest request = new NotificationUpdateRequest(true);
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    given(user.getDeletedAt()).willReturn(LocalDateTime.now());
+
+    assertThatThrownBy(() -> notificationService.updateStatus(UUID.randomUUID(), userId, request))
+        .isInstanceOf(UserAlreadyDeletedException.class)
+        .satisfies(e -> Assertions.assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.DELETED_USER));
   }
 
   @Test
@@ -246,5 +314,74 @@ public class BasicNotificationServiceTest {
         .isInstanceOf(NotificationForbiddenException.class)
         .satisfies(e -> Assertions.assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.NOTIFICATION_ACCESS_FORBIDDEN));
+  }
+
+  @Test
+  @DisplayName("알림 목록 조회 - 성공")
+  void notification_list_success() {
+    // given
+    NotificationListRequest request = mock(NotificationListRequest.class);
+    given(request.getUserId()).willReturn(userId);
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    given(user.getDeletedAt()).willReturn(null);
+
+    Notification noti1 = new Notification(type, review, sender, user);
+    Notification noti2 = new Notification(type, review, sender, user);
+
+    Slice<Notification> slice = new SliceImpl<>(List.of(noti1, noti2));
+    given(notificationRepository.searchNotification(request)).willReturn(slice);
+    given(notificationRepository.countNotification(request)).willReturn(2L);
+
+    NotificationDto dto1 = new NotificationDto(
+        UUID.randomUUID(), userId, reviewId, "리뷰1", "메시지1", false, LocalDateTime.now(), LocalDateTime.now()
+    );
+    NotificationDto dto2 = new NotificationDto(
+        UUID.randomUUID(), userId, reviewId, "리뷰2", "메시지2", false, LocalDateTime.now(), LocalDateTime.now()
+    );
+
+    CursorPageResponseDto<NotificationDto> expectedResponse = new CursorPageResponseDto<>(
+        List.of(dto1, dto2), null, null, 2, 2L, false
+    );
+    doReturn(expectedResponse)
+        .when(cursorPageResponseMapper)
+        .fromSlice(any(), any(), any(), any(), eq(2L));
+
+    // when
+    CursorPageResponseDto<NotificationDto> result = notificationService.list(request);
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.totalElements()).isEqualTo(2L);
+    assertThat(result.size()).isEqualTo(2);
+    assertThat(result.hasNext()).isFalse();
+    verify(notificationRepository, times(1)).searchNotification(request);
+    verify(notificationRepository, times(1)).countNotification(request);
+  }
+
+  @Test
+  @DisplayName("알림 목록 조회 - 사용자 조회 실패 예외")
+  void notification_list_userNotFound() {
+    NotificationListRequest request = mock(NotificationListRequest.class);
+    given(request.getUserId()).willReturn(userId);
+    given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+    assertThatThrownBy(() -> notificationService.list(request))
+        .isInstanceOf(UserNotFoundException.class)
+        .satisfies(e -> Assertions.assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.USER_NOT_FOUND));
+  }
+
+  @Test
+  @DisplayName("알림 목록 조회 - 삭제된 사용자 예외")
+  void notification_list_deletedUser() {
+    NotificationListRequest request = mock(NotificationListRequest.class);
+    given(request.getUserId()).willReturn(userId);
+    given(userRepository.findById(userId)).willReturn(Optional.of(user));
+    given(user.getDeletedAt()).willReturn(LocalDateTime.now());
+
+    assertThatThrownBy(() -> notificationService.list(request))
+        .isInstanceOf(UserAlreadyDeletedException.class)
+        .satisfies(e -> Assertions.assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.DELETED_USER));
   }
 }
