@@ -72,9 +72,7 @@ public class BasicUserService implements UserService {
   public UserResponse findById(UUID id) {
     Users user = userRepository.findByIdAndDeletedAtIsNull(id)
         .orElseThrow(() -> UserNotFoundException.withId(id));
-    if (user.getDeletedAt() != null) {
-      throw UserNotFoundException.withId(user.getId());
-    }
+
     return userMapper.toDto(user);
   }
 
@@ -87,10 +85,6 @@ public class BasicUserService implements UserService {
 
     Users user = userRepository.findByIdAndDeletedAtIsNull(targetId)
         .orElseThrow(() -> UserNotFoundException.withId(targetId));
-
-    if (user.getDeletedAt() != null) {
-      throw UserNotFoundException.withId(user.getId());
-    }
 
     user.updateNickname(request.nickname());
     log.info("사용자 닉네임 수정 완료: {}", targetId);
@@ -106,10 +100,6 @@ public class BasicUserService implements UserService {
 
     Users user = userRepository.findByIdAndDeletedAtIsNull(targetId)
         .orElseThrow(() -> UserNotFoundException.withId(targetId));
-
-    if (user.getDeletedAt() != null) {
-      throw UserNotFoundException.withId(user.getId());
-    }
 
     user.markAsDeleted();
     log.info("사용자 논리 삭제 마킹 완료: {}", targetId);
