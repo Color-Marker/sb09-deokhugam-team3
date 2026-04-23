@@ -93,6 +93,8 @@ public class BasicBookServiceTest {
         "테스트 도서", "저자명", "도서 설명", "출판사", LocalDate.of(2024, 1, 1), "9791140712496"
     );
     given(bookRepository.existsByIsbnAndDeletedAtIsNull(request.isbn())).willReturn(false);
+    given(bookRepository.findFirstByIsbnAndDeletedAtIsNotNullOrderByDeletedAtDesc(
+        request.isbn())).willReturn(Optional.empty());
     given(bookRepository.save(any(Book.class))).willReturn(book);
     given(bookMapper.toDto(book)).willReturn(mock(BookDto.class));
 
@@ -111,6 +113,8 @@ public class BasicBookServiceTest {
     MultipartFile thumbnail = mock(MultipartFile.class);
     given(thumbnail.isEmpty()).willReturn(false);
     given(bookRepository.existsByIsbnAndDeletedAtIsNull(request.isbn())).willReturn(false);
+    given(bookRepository.findFirstByIsbnAndDeletedAtIsNotNullOrderByDeletedAtDesc(
+        request.isbn())).willReturn(Optional.empty());
     given(s3Service.upload(thumbnail)).willReturn("https://s3.example.com/thumb.jpg");
     given(bookRepository.save(any(Book.class))).willReturn(book);
     given(bookMapper.toDto(book)).willReturn(mock(BookDto.class));
@@ -119,6 +123,25 @@ public class BasicBookServiceTest {
 
     verify(s3Service, times(1)).upload(thumbnail);
     verify(bookRepository, times(1)).save(any(Book.class));
+  }
+
+  @Test
+  @DisplayName("도서 등록 성공 - 논리삭제된 도서 복구")
+  void create_restoreDeletedBook() {
+    BookCreateRequest request = new BookCreateRequest(
+        "테스트 도서", "저자명", "도서 설명", "출판사", LocalDate.of(2024, 1, 1), "9791140712496"
+    );
+    given(book.getDeletedAt()).willReturn(LocalDateTime.now());
+    given(bookRepository.existsByIsbnAndDeletedAtIsNull(request.isbn())).willReturn(false);
+    given(bookRepository.findFirstByIsbnAndDeletedAtIsNotNullOrderByDeletedAtDesc(request.isbn()))
+        .willReturn(Optional.of(book));
+    given(bookMapper.toDto(book)).willReturn(mock(BookDto.class));
+
+    bookService.create(request, null);
+
+    verify(book, times(1)).markAsRestored();
+    verify(book, times(1)).update(any(), any(), any(), any(), any(), any());
+    verify(bookRepository, never()).save(any(Book.class));
   }
 
   @Test
