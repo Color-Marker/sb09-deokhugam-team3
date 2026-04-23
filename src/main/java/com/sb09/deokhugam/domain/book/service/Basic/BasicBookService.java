@@ -50,7 +50,7 @@ public class BasicBookService implements BookService {
   @Transactional
   public BookDto create(BookCreateRequest request, MultipartFile thumbnailImage) {
     // ISBN 중복 체크
-    if (request.isbn() != null && bookRepository.existsByIsbn(request.isbn())) {
+    if (request.isbn() != null && bookRepository.existsByIsbnAndDeletedAtIsNull(request.isbn())) {
       throw DuplicateIsbnException.withIsbn(request.isbn());
     }
 

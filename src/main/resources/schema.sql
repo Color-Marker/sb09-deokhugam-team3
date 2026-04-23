@@ -43,8 +43,7 @@ CREATE TABLE books (
 
                        CONSTRAINT pk_books
                            PRIMARY KEY (id),
-                       CONSTRAINT uq_books_isbn
-                           UNIQUE (isbn),                              -- ISBN 중복 불가 (NULL은 중복 허용)
+                       CREATE UNIQUE INDEX uq_books_isbn_active ON books(isbn) WHERE deleted_at IS NULL AND isbn IS NOT NULL;
                        CONSTRAINT chk_books_rating
                            CHECK (rating >= 0.0 AND rating <= 5.0),
                        CONSTRAINT chk_books_review_count

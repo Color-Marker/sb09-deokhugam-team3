@@ -92,7 +92,7 @@ public class BasicBookServiceTest {
     BookCreateRequest request = new BookCreateRequest(
         "테스트 도서", "저자명", "도서 설명", "출판사", LocalDate.of(2024, 1, 1), "9791140712496"
     );
-    given(bookRepository.existsByIsbn(request.isbn())).willReturn(false);
+    given(bookRepository.existsByIsbnAndDeletedAtIsNull(request.isbn())).willReturn(false);
     given(bookRepository.save(any(Book.class))).willReturn(book);
     given(bookMapper.toDto(book)).willReturn(mock(BookDto.class));
 
@@ -110,7 +110,7 @@ public class BasicBookServiceTest {
     );
     MultipartFile thumbnail = mock(MultipartFile.class);
     given(thumbnail.isEmpty()).willReturn(false);
-    given(bookRepository.existsByIsbn(request.isbn())).willReturn(false);
+    given(bookRepository.existsByIsbnAndDeletedAtIsNull(request.isbn())).willReturn(false);
     given(s3Service.upload(thumbnail)).willReturn("https://s3.example.com/thumb.jpg");
     given(bookRepository.save(any(Book.class))).willReturn(book);
     given(bookMapper.toDto(book)).willReturn(mock(BookDto.class));
@@ -127,7 +127,7 @@ public class BasicBookServiceTest {
     BookCreateRequest request = new BookCreateRequest(
         "테스트 도서", "저자명", "도서 설명", "출판사", LocalDate.of(2024, 1, 1), "9791140712496"
     );
-    given(bookRepository.existsByIsbn(request.isbn())).willReturn(true);
+    given(bookRepository.existsByIsbnAndDeletedAtIsNull(request.isbn())).willReturn(true);
 
     assertThatThrownBy(() -> bookService.create(request, null))
         .isInstanceOf(DuplicateIsbnException.class)
