@@ -1,7 +1,7 @@
-package com.sb09.deokhugam.global.Exception.book;
+package com.sb09.deokhugam.global.exception.book;
 
-import com.sb09.deokhugam.global.Exception.CustomException;
-import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.exception.CustomException;
+import com.sb09.deokhugam.global.exception.ErrorCode;
 
 public class BookException extends CustomException {
 

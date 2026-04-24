@@ -1,6 +1,6 @@
-package com.sb09.deokhugam.global.Exception.comment;
+package com.sb09.deokhugam.global.exception.comment;
 
-import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.exception.ErrorCode;
 
 public class ForbiddenAuthorityException extends CommentException {
 
