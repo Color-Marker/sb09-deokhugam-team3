@@ -11,7 +11,6 @@ import com.sb09.deokhugam.domain.user.service.UserService;
 import com.sb09.deokhugam.global.Exception.user.DuplicateEmailException;
 import com.sb09.deokhugam.global.Exception.user.InvalidUserCredentialsException;
 import com.sb09.deokhugam.global.Exception.user.UnauthorizedAccessException;
-import com.sb09.deokhugam.global.Exception.user.UserAlreadyDeletedException;
 import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

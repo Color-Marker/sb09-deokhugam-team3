@@ -46,3 +46,5 @@ out/
 # Docker local data volumes (도커 로컬 테스트용 데이터 무시)
 postgres_data/
 local_images/
+
+CLAUDE.md
