@@ -158,6 +158,19 @@ public class BasicCommentServiceTest {
   }
 
   @Test
+  @DisplayName("논리 삭제 검증 - 타인 댓글 삭제시도 - 예외 발생")
+  void softDelete_notOwner_throwsException() {
+    UUID otherUserId = UUID.randomUUID();
+    given(comment.getUser().getId()).willReturn(userId);
+    given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+
+    assertThatThrownBy(() -> commentService.softDelete(commentId, otherUserId))
+        .isInstanceOf(CustomException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.COMMENT_DELETE_FORBIDDEN));
+  }
+
+  @Test
   @DisplayName("권한 검증 - 타인 댓글 수정 - 예외 발생")
   void update_notOwner() {
     UUID otherUserId = UUID.randomUUID();
@@ -335,6 +348,14 @@ public class BasicCommentServiceTest {
     assertThat(result).isEqualTo(commentDto);
     verify(commentRepository).findById(commentId);
     verify(commentMapper).toDto(any(Comment.class));
+  }
+
+  @Test
+  @DisplayName("댓글 내용 수정 성공 - 엔티티 메서드 테스트")
+  void updateContent_success() {
+    Comment realComment = new Comment(review, users, "원본 내용");
+    realComment.updateContent("수정된 내용");
+    assertThat(realComment.getContent()).isEqualTo("수정된 내용");
   }
 
   @Test

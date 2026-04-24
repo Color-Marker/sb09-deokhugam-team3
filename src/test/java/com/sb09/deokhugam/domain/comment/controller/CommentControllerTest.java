@@ -6,9 +6,11 @@ import com.sb09.deokhugam.domain.comment.dto.request.CommentCreateRequest;
 import com.sb09.deokhugam.domain.comment.dto.request.CommentUpdateRequest;
 import com.sb09.deokhugam.domain.comment.service.CommentService;
 import com.sb09.deokhugam.config.RequestTrackingFilter;
+import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.exception.CustomException;
 import com.sb09.deokhugam.global.exception.ErrorCode;
 import com.sb09.deokhugam.global.exception.comment.CommentNotFoundException;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -97,13 +99,25 @@ class CommentControllerTest {
   @Test
   @DisplayName("댓글 생성 실패 - reviewId 누락 - 400")
   void createComment_nullReviewId_returns400() throws Exception {
+    CommentCreateRequest request = new CommentCreateRequest(null, userId, "테스트 댓글 내용");
 
+    mockMvc.perform(post("/api/comments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
   @DisplayName("댓글 생성 실패 - 존재하지 않는 리뷰 - 404")
   void createComment_reviewNotFound_returns404() throws Exception {
+    CommentCreateRequest request = new CommentCreateRequest(reviewId, userId, "테스트 댓글 내용");
+    given(commentService.create(any()))
+        .willThrow(new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
+    mockMvc.perform(post("/api/comments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isNotFound());
   }
 
   @Test
@@ -129,30 +143,44 @@ class CommentControllerTest {
   @Test
   @DisplayName("댓글 단건 조회 실패 - 논리삭제된 댓글 - 410")
   void getComment_alreadyDeleted_returns410() throws Exception {
+    given(commentService.findById(any()))
+        .willThrow(new CustomException(ErrorCode.DELETED_COMMENT));
 
+    mockMvc.perform(get("/api/comments/{commentId}", commentId))
+        .andExpect(status().isGone());
   }
 
   @Test
   @DisplayName("댓글 목록 조회 성공 - 200")
   void getComments_success() throws Exception {
+    CursorPageResponseDto<CommentDto> response = new CursorPageResponseDto<>(
+        List.of(commentDto), null, null, 1, 1L, false
+    );
+    given(commentService.findAllByReviewId(any())).willReturn(response);
 
+    mockMvc.perform(get("/api/comments")
+            .param("reviewId", reviewId.toString()))
+        .andExpect(status().isOk());
   }
 
   @Test
   @DisplayName("댓글 목록 조회 실패 - reviewId 누락 - 400")
   void getComments_nullReviewId_returns400() throws Exception {
-
+    mockMvc.perform(get("/api/comments"))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
   @DisplayName("댓글 목록 조회 실패 - limit 0 - 400")
   void getComments_zeroLimit_returns400() throws Exception {
-
+    mockMvc.perform(get("/api/comments")
+            .param("reviewId", reviewId.toString())
+            .param("limit", "0"))
+        .andExpect(status().isBadRequest());
   }
 
-
   @Test
-  @DisplayName("댓글 수정 성공 - 200 반환")
+  @DisplayName("댓글 수정 성공(DTO) - 200 반환")
   void updateComment_success() throws Exception {
     CommentUpdateRequest request = new CommentUpdateRequest("수정된 내용");
     given(commentService.update(any(), any(), any())).willReturn(commentDto);
