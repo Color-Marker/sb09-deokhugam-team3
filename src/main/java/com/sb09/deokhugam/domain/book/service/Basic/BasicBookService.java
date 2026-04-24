@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -49,18 +50,32 @@ public class BasicBookService implements BookService {
   @Override
   @Transactional
   public BookDto create(BookCreateRequest request, MultipartFile thumbnailImage) {
-    // ISBN 중복 체크
+    // 활성 도서 ISBN 중복 체크
     if (request.isbn() != null && bookRepository.existsByIsbnAndDeletedAtIsNull(request.isbn())) {
       throw DuplicateIsbnException.withIsbn(request.isbn());
     }
 
-    // 썸네일 이미지 S3 업로드(오류 때문에 미리 작성해둔거, 나중에 수정할수도)
+// 논리삭제된 동일 ISBN 도서가 있으면 복구
+    if (request.isbn() != null) {
+      Optional<Book> deletedBook = bookRepository
+          .findFirstByIsbnAndDeletedAtIsNotNullOrderByDeletedAtDesc(request.isbn());
+      if (deletedBook.isPresent()) {
+        Book book = deletedBook.get();
+
+        book.update(request.title(), request.author(), request.description(),
+            request.publisher(), request.publishedDate(), book.getThumbnailUrl());
+        book.markAsRestored();
+        log.info("논리삭제된 도서 복구 완료: ID={}", book.getId());
+        return bookMapper.toDto(book);
+      }
+    }
+
+// 기존 도서 없으면 새로 생성
     String thumbnailUrl = null;
     if (thumbnailImage != null && !thumbnailImage.isEmpty()) {
       thumbnailUrl = s3Service.upload(thumbnailImage);
     }
 
-    // Entity 생성 및 저장
     Book book = new Book(
         request.title(),
         request.author(),
