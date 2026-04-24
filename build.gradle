@@ -38,7 +38,8 @@ jacocoTestReport {
     dependsOn test
     reports {
         html.required = true
-        csv.required = true
+        csv.required = false
+        xml.required = true
     }
     afterEvaluate {
         classDirectories.setFrom(files(classDirectories.files.collect {
