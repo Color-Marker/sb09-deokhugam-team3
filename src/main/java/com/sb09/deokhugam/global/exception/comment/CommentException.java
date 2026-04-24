@@ -1,7 +1,7 @@
-package com.sb09.deokhugam.global.Exception.comment;
+package com.sb09.deokhugam.global.exception.comment;
 
-import com.sb09.deokhugam.global.Exception.CustomException;
-import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.exception.CustomException;
+import com.sb09.deokhugam.global.exception.ErrorCode;
 
 public class CommentException extends CustomException {
 

@@ -1,6 +1,6 @@
-package com.sb09.deokhugam.global.Exception.book;
+package com.sb09.deokhugam.global.exception.book;
 
-import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.exception.ErrorCode;
 import java.util.UUID;
 
 public class BookNotFoundException extends BookException {
