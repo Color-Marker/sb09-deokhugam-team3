@@ -19,15 +19,13 @@ import com.sb09.deokhugam.domain.review.entity.Review;
 import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
-import com.sb09.deokhugam.global.Exception.CustomException;
-import com.sb09.deokhugam.global.Exception.ErrorCode;
-import com.sb09.deokhugam.global.Exception.notification.NotificationForbiddenException;
-import com.sb09.deokhugam.global.Exception.notification.NotificationNotFoundException;
-import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
-import com.sb09.deokhugam.global.Exception.user.UserAlreadyDeletedException;
-import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
-import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
+import com.sb09.deokhugam.global.exception.CustomException;
+import com.sb09.deokhugam.global.exception.ErrorCode;
+import com.sb09.deokhugam.global.exception.notification.NotificationForbiddenException;
+import com.sb09.deokhugam.global.exception.notification.NotificationNotFoundException;
+import com.sb09.deokhugam.global.exception.user.UserNotFoundException;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
+
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -52,6 +50,7 @@ import org.springframework.data.domain.SliceImpl;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class BasicNotificationServiceTest {
+
   @Mock
   private NotificationRepository notificationRepository;
   @Mock
@@ -75,7 +74,7 @@ public class BasicNotificationServiceTest {
   private UUID userId;
 
   @BeforeEach
-  void setUp(){
+  void setUp() {
     userId = UUID.randomUUID();
     senderId = UUID.randomUUID();
     reviewId = UUID.randomUUID();
@@ -94,7 +93,7 @@ public class BasicNotificationServiceTest {
 
   @Test
   @DisplayName("알람 생성 - 성공")
-  void notification_create(){
+  void notification_create() {
     given(userRepository.findById(userId)).willReturn(Optional.of(user));
     given(reviewRepository.existsByIdAndDeletedAtIsNull(reviewId)).willReturn(true);
     Notification savedNotification = new Notification(type, review, sender, user);
@@ -109,7 +108,7 @@ public class BasicNotificationServiceTest {
 
   @Test
   @DisplayName("알람 생성 - 사용자 조회 실패 예외")
-  void notification_create_userNotFound(){
+  void notification_create_userNotFound() {
     given(userRepository.findById(userId)).willReturn(Optional.empty());
 
     assertThatThrownBy(() -> notificationService.create(type, review, sender))
@@ -177,7 +176,7 @@ public class BasicNotificationServiceTest {
 
   @Test
   @DisplayName("모든 알림 확인 - 성공")
-  void notification_readAll(){
+  void notification_readAll() {
     given(userRepository.findById(userId)).willReturn(Optional.of(user));
     given(user.getDeletedAt()).willReturn(null);
     Notification noti1 = new Notification(type, review, sender, user);
@@ -189,9 +188,10 @@ public class BasicNotificationServiceTest {
     assertThat(noti1.getConfirmStatus()).isTrue();
     assertThat(noti2.getConfirmStatus()).isTrue();
   }
+
   @Test
   @DisplayName("모든 알림 확인 - 잘못된 요청 예외")
-  void notification_readAll_invalidRequest(){
+  void notification_readAll_invalidRequest() {
     assertThatThrownBy(() -> notificationService.readAll(null))
         .isInstanceOf(CustomException.class)
         .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REQUEST);
@@ -199,7 +199,7 @@ public class BasicNotificationServiceTest {
 
   @Test
   @DisplayName("모든 알림 확인 - 사용자 조회 실패 예외")
-  void notification_readAll_userNotFound(){
+  void notification_readAll_userNotFound() {
     given(userRepository.existsById(userId)).willReturn(false);
 
     assertThatThrownBy(() -> notificationService.readAll(userId))
@@ -222,12 +222,13 @@ public class BasicNotificationServiceTest {
 
   @Test
   @DisplayName("특정 알림 확인 - 성공")
-  void notification_read(){
+  void notification_read() {
     UUID notificationId = UUID.randomUUID();
     Notification notification = new Notification(type, review, sender, user);
     NotificationUpdateRequest request = new NotificationUpdateRequest(true);
     NotificationDto responseDto = new NotificationDto(
-        notificationId, userId, reviewId, "리뷰 내용", "메시지", true, LocalDateTime.now(), LocalDateTime.now()
+        notificationId, userId, reviewId, "리뷰 내용", "메시지", true, LocalDateTime.now(),
+        LocalDateTime.now()
     );
 
     given(userRepository.findById(userId)).willReturn(Optional.of(user));
@@ -242,7 +243,7 @@ public class BasicNotificationServiceTest {
 
   @Test
   @DisplayName("특정 알림 확인 - 잘못된 요청 예외")
-  void notification_read_invalidRequest(){
+  void notification_read_invalidRequest() {
     assertThatThrownBy(() -> notificationService.updateStatus(UUID.randomUUID(), null, null))
         .isInstanceOf(CustomException.class)
         .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REQUEST);
@@ -260,7 +261,7 @@ public class BasicNotificationServiceTest {
 
   @Test
   @DisplayName("특정 알림 확인 - 사용자 조회 실패 예외")
-  void notification_read_userNotFound(){
+  void notification_read_userNotFound() {
     NotificationUpdateRequest request = new NotificationUpdateRequest(true);
     given(userRepository.findById(userId)).willReturn(Optional.empty());
 
@@ -285,7 +286,7 @@ public class BasicNotificationServiceTest {
 
   @Test
   @DisplayName("특정 알림 확인 - 알림 조회 실패 예외")
-  void notification_read_notificationNotFound(){
+  void notification_read_notificationNotFound() {
     UUID notificationId = UUID.randomUUID();
     NotificationUpdateRequest request = new NotificationUpdateRequest(true);
 
@@ -301,7 +302,7 @@ public class BasicNotificationServiceTest {
 
   @Test
   @DisplayName("특정 알림 확인 - 권한 없음 예외")
-  void notification_read_forbidden(){
+  void notification_read_forbidden() {
     UUID notificationId = UUID.randomUUID();
     Users anotherUser = mock(Users.class);
     Notification notification = new Notification(type, review, sender, anotherUser);

@@ -29,11 +29,11 @@ import com.sb09.deokhugam.domain.review.service.basic.BasicReviewService;
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 
-import com.sb09.deokhugam.global.Exception.CustomException;
-import com.sb09.deokhugam.global.Exception.ErrorCode;
-import com.sb09.deokhugam.global.Exception.review.DuplicateReviewException;
-import com.sb09.deokhugam.global.Exception.review.ReviewForbiddenException;
-import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
+import com.sb09.deokhugam.global.exception.CustomException;
+import com.sb09.deokhugam.global.exception.ErrorCode;
+import com.sb09.deokhugam.global.exception.review.DuplicateReviewException;
+import com.sb09.deokhugam.global.exception.review.ReviewForbiddenException;
+import com.sb09.deokhugam.global.exception.review.ReviewNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 

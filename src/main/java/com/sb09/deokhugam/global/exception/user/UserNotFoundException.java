@@ -1,6 +1,6 @@
-package com.sb09.deokhugam.global.Exception.user;
+package com.sb09.deokhugam.global.exception.user;
 
-import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.exception.ErrorCode;
 import java.util.UUID;
 
 public class UserNotFoundException extends UserException {

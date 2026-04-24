@@ -1,4 +1,4 @@
-package com.sb09.deokhugam.global.Exception;
+package com.sb09.deokhugam.global.exception;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -6,7 +6,6 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -43,7 +42,8 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(MissingRequestHeaderException.class)
-  public ResponseEntity<ErrorResponse> handleMissingHeaderException(MissingRequestHeaderException e){
+  public ResponseEntity<ErrorResponse> handleMissingHeaderException(
+      MissingRequestHeaderException e) {
     log.error("필수 해더 누락: message={}", e.getMessage());
     Map<String, Object> headerErrors = new HashMap<>();
     ErrorResponse response = new ErrorResponse(

@@ -23,17 +23,17 @@ import com.sb09.deokhugam.domain.review.entity.Review;
 import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
-import com.sb09.deokhugam.global.Exception.user.UserAlreadyDeletedException;
+import com.sb09.deokhugam.global.exception.user.UserAlreadyDeletedException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
-import com.sb09.deokhugam.global.Exception.CustomException;
-import com.sb09.deokhugam.global.Exception.ErrorCode;
-import com.sb09.deokhugam.global.Exception.comment.CommentAlreadyDeletedException;
-import com.sb09.deokhugam.global.Exception.comment.CommentNotFoundException;
-import com.sb09.deokhugam.global.Exception.comment.ForbiddenAuthorityException;
-import com.sb09.deokhugam.global.Exception.review.ReviewAlreadyDeletedException;
-import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
-import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
+import com.sb09.deokhugam.global.exception.CustomException;
+import com.sb09.deokhugam.global.exception.ErrorCode;
+import com.sb09.deokhugam.global.exception.comment.CommentAlreadyDeletedException;
+import com.sb09.deokhugam.global.exception.comment.CommentNotFoundException;
+import com.sb09.deokhugam.global.exception.comment.ForbiddenAuthorityException;
+import com.sb09.deokhugam.global.exception.review.ReviewAlreadyDeletedException;
+import com.sb09.deokhugam.global.exception.review.ReviewNotFoundException;
+import com.sb09.deokhugam.global.exception.user.UserNotFoundException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -158,6 +158,19 @@ public class BasicCommentServiceTest {
   }
 
   @Test
+  @DisplayName("논리 삭제 검증 - 타인 댓글 삭제시도 - 예외 발생")
+  void softDelete_notOwner_throwsException() {
+    UUID otherUserId = UUID.randomUUID();
+    given(comment.getUser().getId()).willReturn(userId);
+    given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+
+    assertThatThrownBy(() -> commentService.softDelete(commentId, otherUserId))
+        .isInstanceOf(CustomException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.COMMENT_DELETE_FORBIDDEN));
+  }
+
+  @Test
   @DisplayName("권한 검증 - 타인 댓글 수정 - 예외 발생")
   void update_notOwner() {
     UUID otherUserId = UUID.randomUUID();
@@ -189,11 +202,9 @@ public class BasicCommentServiceTest {
   @Test
   @DisplayName("존재하지 않는 댓글 단건 조회 - 예외 발생")
   void findById_notExist() {
-    // given - DB에 없는 commentId 상황
     UUID notExistId = UUID.randomUUID();
     given(commentRepository.findById(notExistId)).willReturn(Optional.empty());
 
-    // when & then
     assertThatThrownBy(() -> commentService.findById(notExistId))
         .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
@@ -203,13 +214,11 @@ public class BasicCommentServiceTest {
   @Test
   @DisplayName("존재하지 않는 댓글 수정 - 예외 발생")
   void update_notExist() {
-    // given
     UUID notExistId = UUID.randomUUID();
     given(commentRepository.findById(notExistId)).willReturn(Optional.empty());
 
     CommentUpdateRequest request = new CommentUpdateRequest("수정 내용");
 
-    // when & then
     assertThatThrownBy(() -> commentService.update(notExistId, userId, request))
         .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
@@ -219,11 +228,9 @@ public class BasicCommentServiceTest {
   @Test
   @DisplayName("존재하지 않는 댓글 논리 삭제 - 예외 발생")
   void softDelete_notExist() {
-    // given
     UUID notExistId = UUID.randomUUID();
     given(commentRepository.findById(notExistId)).willReturn(Optional.empty());
 
-    // when & then
     assertThatThrownBy(() -> commentService.softDelete(notExistId, userId))
         .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
@@ -233,11 +240,9 @@ public class BasicCommentServiceTest {
   @Test
   @DisplayName("존재하지 않는 댓글 물리 삭제 - 예외 발생")
   void hardDelete_notExist() {
-    // given
     UUID notExistId = UUID.randomUUID();
     given(commentRepository.findById(notExistId)).willReturn(Optional.empty());
 
-    // when & then
     assertThatThrownBy(() -> commentService.hardDelete(notExistId, userId))
         .isInstanceOf(CommentNotFoundException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
@@ -346,6 +351,14 @@ public class BasicCommentServiceTest {
   }
 
   @Test
+  @DisplayName("댓글 내용 수정 성공 - 엔티티 메서드 테스트")
+  void updateContent_success() {
+    Comment realComment = new Comment(review, users, "원본 내용");
+    realComment.updateContent("수정된 내용");
+    assertThat(realComment.getContent()).isEqualTo("수정된 내용");
+  }
+
+  @Test
   @DisplayName("댓글 수정 - 성공")
   void update_success() {
     CommentUpdateRequest request = new CommentUpdateRequest(content);
@@ -356,6 +369,7 @@ public class BasicCommentServiceTest {
 
     assertThat(result).isEqualTo(commentDto);
     verify(commentRepository).findById(commentId);
+    verify(comment).updateContent(content);
     verify(commentMapper).toDto(any(Comment.class));
   }
 
@@ -390,7 +404,7 @@ public class BasicCommentServiceTest {
   }
 
   @Test
-  @DisplayName("댓글 물리 수정 - 성공")
+  @DisplayName("댓글 물리 삭제 - 성공")
   void hardDelete_success() {
     given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
 

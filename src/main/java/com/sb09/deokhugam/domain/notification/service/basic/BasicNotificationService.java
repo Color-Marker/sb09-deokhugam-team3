@@ -12,13 +12,11 @@ import com.sb09.deokhugam.domain.review.entity.Review;
 import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
-import com.sb09.deokhugam.global.Exception.CustomException;
-import com.sb09.deokhugam.global.Exception.ErrorCode;
-import com.sb09.deokhugam.global.Exception.notification.NotificationForbiddenException;
-import com.sb09.deokhugam.global.Exception.notification.NotificationNotFoundException;
-import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
-import com.sb09.deokhugam.global.Exception.user.UserAlreadyDeletedException;
-import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
+import com.sb09.deokhugam.global.exception.CustomException;
+import com.sb09.deokhugam.global.exception.ErrorCode;
+import com.sb09.deokhugam.global.exception.notification.NotificationForbiddenException;
+import com.sb09.deokhugam.global.exception.notification.NotificationNotFoundException;
+import com.sb09.deokhugam.global.exception.user.UserNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 import java.util.List;
@@ -34,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional
 public class BasicNotificationService implements NotificationService {
+
   private final NotificationRepository notificationRepository;
   private final UserRepository userRepository;
   private final ReviewRepository reviewRepository;
@@ -42,7 +41,7 @@ public class BasicNotificationService implements NotificationService {
 
   @Override
   public void readAll(UUID userId) {
-    if(userId == null){
+    if (userId == null) {
       log.warn("잘못된 요청입니다.");
       throw new CustomException(ErrorCode.INVALID_REQUEST);
     }
@@ -59,7 +58,7 @@ public class BasicNotificationService implements NotificationService {
     }
     log.info("유저ID: {} 의 모든 알림을 읽음 상태로 전환합니다.", userId);
     List<Notification> notis = notificationRepository.findByUserId(userId);
-    for (Notification n : notis){
+    for (Notification n : notis) {
       log.info("알람ID: {} 을 읽음 상태로 전환합니다.", n.getId());
       n.update();
     }
@@ -67,8 +66,9 @@ public class BasicNotificationService implements NotificationService {
   }
 
   @Override
-  public NotificationDto updateStatus(UUID notificationId, UUID userId, NotificationUpdateRequest request) {
-    if(userId == null || request.confirmed() != true){
+  public NotificationDto updateStatus(UUID notificationId, UUID userId,
+      NotificationUpdateRequest request) {
+    if (userId == null || request.confirmed() != true) {
       log.warn("잘못된 요청입니다.");
       throw new CustomException(ErrorCode.INVALID_REQUEST);
     }
@@ -90,7 +90,7 @@ public class BasicNotificationService implements NotificationService {
           return NotificationNotFoundException.withId(notificationId);
         });
 
-    if(!notification.getUser().equals(user)){
+    if (!notification.getUser().equals(user)) {
       log.warn("알림에 대한 접근 권한이 없습니다.");
       throw new NotificationForbiddenException(ErrorCode.NOTIFICATION_ACCESS_FORBIDDEN);
     }
@@ -134,7 +134,7 @@ public class BasicNotificationService implements NotificationService {
   // 위는 controller에서 호출 -----------------------------------
   // 아래는 내부 작업 -----------------------------------
   @Override
-  public Notification create(NotificationType type, Review review, Users sender){
+  public Notification create(NotificationType type, Review review, Users sender) {
     UUID userId = review.getUserId();
     Users user = userRepository.findById(userId).orElseThrow(
         () -> {

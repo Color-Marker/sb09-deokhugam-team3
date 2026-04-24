@@ -1,6 +1,6 @@
-package com.sb09.deokhugam.global.Exception.review;
+package com.sb09.deokhugam.global.exception.review;
 
-import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.exception.ErrorCode;
 
 public class ReviewForbiddenException extends ReviewException {
 
