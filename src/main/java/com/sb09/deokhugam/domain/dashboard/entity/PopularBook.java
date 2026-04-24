@@ -1,6 +1,5 @@
 package com.sb09.deokhugam.domain.dashboard.entity;
 
-import com.sb09.deokhugam.domain.book.entity.Book;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -64,7 +63,8 @@ public class PopularBook {
   private LocalDateTime createdAt;
 
   @Builder
-  public PopularBook(UUID bookId, PeriodType period, LocalDate baseDate, Long ranking, BigDecimal score, Long reviewCount, BigDecimal rating) {
+  public PopularBook(UUID bookId, PeriodType period, LocalDate baseDate, Long ranking,
+      BigDecimal score, Long reviewCount, BigDecimal rating) {
     this.bookId = bookId;
     this.period = period;
     this.baseDate = baseDate;

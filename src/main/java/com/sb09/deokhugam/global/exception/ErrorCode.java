@@ -1,4 +1,4 @@
-package com.sb09.deokhugam.global.Exception;
+package com.sb09.deokhugam.global.exception;
 
 import lombok.Getter;
 import org.springframework.http.HttpStatus;

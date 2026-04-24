@@ -1,9 +1,9 @@
-package com.sb09.deokhugam.global.Exception.notification;
+package com.sb09.deokhugam.global.exception.notification;
 
-import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.exception.ErrorCode;
 import java.util.UUID;
 
-public class NotificationNotFoundException extends NotificationException{
+public class NotificationNotFoundException extends NotificationException {
 
   public NotificationNotFoundException() {
     super(ErrorCode.NOTIFICATION_NOT_FOUND);
