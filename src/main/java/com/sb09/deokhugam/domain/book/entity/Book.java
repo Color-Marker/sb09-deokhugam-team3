@@ -31,7 +31,7 @@ public class Book extends BaseFullAuditEntity {
   @Column(name = "published_date", nullable = false)
   private LocalDate publishedDate;
 
-  @Column(name = "isbn", unique = true, length = 20)
+  @Column(name = "isbn", length = 20)
   private String isbn;
 
   @Column(name = "thumbnail_url", length = 2048)

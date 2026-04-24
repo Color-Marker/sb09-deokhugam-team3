@@ -13,8 +13,8 @@ import com.sb09.deokhugam.domain.dashboard.repository.PopularBookRepository;
 import com.sb09.deokhugam.domain.book.service.BookService;
 import com.sb09.deokhugam.domain.dashboard.entity.PeriodType;
 import com.sb09.deokhugam.domain.dashboard.entity.PopularBook;
-import com.sb09.deokhugam.global.Exception.book.BookNotFoundException;
-import com.sb09.deokhugam.global.Exception.book.DuplicateIsbnException;
+import com.sb09.deokhugam.global.exception.book.BookNotFoundException;
+import com.sb09.deokhugam.global.exception.book.DuplicateIsbnException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 import com.sb09.deokhugam.global.infrastructure.NaverBookClient;
@@ -50,7 +50,7 @@ public class BasicBookService implements BookService {
   @Transactional
   public BookDto create(BookCreateRequest request, MultipartFile thumbnailImage) {
     // ISBN 중복 체크
-    if (request.isbn() != null && bookRepository.existsByIsbn(request.isbn())) {
+    if (request.isbn() != null && bookRepository.existsByIsbnAndDeletedAtIsNull(request.isbn())) {
       throw DuplicateIsbnException.withIsbn(request.isbn());
     }
 

@@ -9,7 +9,6 @@ import org.hibernate.annotations.SQLRestriction;
 
 @Getter
 @MappedSuperclass
-@SQLRestriction("deleted_at IS NULL")
 public abstract class BaseDeleteableEntity extends BaseEntity {
 
   @Column(name = "deleted_at")

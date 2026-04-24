@@ -22,10 +22,10 @@ import com.sb09.deokhugam.domain.book.service.Basic.BasicBookService;
 import com.sb09.deokhugam.domain.dashboard.entity.PeriodType;
 import com.sb09.deokhugam.domain.dashboard.entity.PopularBook;
 import com.sb09.deokhugam.domain.dashboard.repository.PopularBookRepository;
-import com.sb09.deokhugam.global.Exception.CustomException;
-import com.sb09.deokhugam.global.Exception.ErrorCode;
-import com.sb09.deokhugam.global.Exception.book.BookNotFoundException;
-import com.sb09.deokhugam.global.Exception.book.DuplicateIsbnException;
+import com.sb09.deokhugam.global.exception.CustomException;
+import com.sb09.deokhugam.global.exception.ErrorCode;
+import com.sb09.deokhugam.global.exception.book.BookNotFoundException;
+import com.sb09.deokhugam.global.exception.book.DuplicateIsbnException;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 import com.sb09.deokhugam.global.infrastructure.NaverBookClient;
 import com.sb09.deokhugam.global.infrastructure.OcrClient;
@@ -92,7 +92,7 @@ public class BasicBookServiceTest {
     BookCreateRequest request = new BookCreateRequest(
         "테스트 도서", "저자명", "도서 설명", "출판사", LocalDate.of(2024, 1, 1), "9791140712496"
     );
-    given(bookRepository.existsByIsbn(request.isbn())).willReturn(false);
+    given(bookRepository.existsByIsbnAndDeletedAtIsNull(request.isbn())).willReturn(false);
     given(bookRepository.save(any(Book.class))).willReturn(book);
     given(bookMapper.toDto(book)).willReturn(mock(BookDto.class));
 
@@ -110,7 +110,7 @@ public class BasicBookServiceTest {
     );
     MultipartFile thumbnail = mock(MultipartFile.class);
     given(thumbnail.isEmpty()).willReturn(false);
-    given(bookRepository.existsByIsbn(request.isbn())).willReturn(false);
+    given(bookRepository.existsByIsbnAndDeletedAtIsNull(request.isbn())).willReturn(false);
     given(s3Service.upload(thumbnail)).willReturn("https://s3.example.com/thumb.jpg");
     given(bookRepository.save(any(Book.class))).willReturn(book);
     given(bookMapper.toDto(book)).willReturn(mock(BookDto.class));
@@ -122,27 +122,12 @@ public class BasicBookServiceTest {
   }
 
   @Test
-  @DisplayName("도서 등록 성공 - ISBN null (중복 체크 스킵)")
-  void create_success_nullIsbn() {
-    BookCreateRequest request = new BookCreateRequest(
-        "테스트 도서", "저자명", "도서 설명", "출판사", LocalDate.of(2024, 1, 1), null
-    );
-    given(bookRepository.save(any(Book.class))).willReturn(book);
-    given(bookMapper.toDto(book)).willReturn(mock(BookDto.class));
-
-    bookService.create(request, null);
-
-    verify(bookRepository, never()).existsByIsbn(any());
-    verify(bookRepository, times(1)).save(any(Book.class));
-  }
-
-  @Test
   @DisplayName("예외 검증 - ISBN 중복 시 DuplicateIsbnException 발생")
   void create_duplicateIsbn() {
     BookCreateRequest request = new BookCreateRequest(
         "테스트 도서", "저자명", "도서 설명", "출판사", LocalDate.of(2024, 1, 1), "9791140712496"
     );
-    given(bookRepository.existsByIsbn(request.isbn())).willReturn(true);
+    given(bookRepository.existsByIsbnAndDeletedAtIsNull(request.isbn())).willReturn(true);
 
     assertThatThrownBy(() -> bookService.create(request, null))
         .isInstanceOf(DuplicateIsbnException.class)

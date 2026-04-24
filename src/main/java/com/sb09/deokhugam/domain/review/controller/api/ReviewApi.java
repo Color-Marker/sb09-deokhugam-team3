@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -70,13 +69,12 @@ public interface ReviewApi {
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime after,
       @Parameter(description = "정렬 기준 (LATEST 또는 RATING)") @RequestParam(defaultValue = "LATEST") String orderBy,
       @Parameter(description = "정렬 방향 (ASC 또는 DESC)") @RequestParam(defaultValue = "DESC") Sort.Direction direction,
-      // 수정: 쿼리 파라미터 requestUserId와 인증 헤더 headerUserId를 분리하여 인식하도록 수정
       @Parameter(description = "요청자 ID (좋아요 확인용 쿼리 파라미터)") @RequestParam(required = false) UUID requestUserId,
       @Parameter(description = "인증 헤더") @RequestHeader(value = "Deokhugam-Request-User-ID", required = false) UUID headerUserId
   );
 
   @Operation(summary = "리뷰 좋아요", description = "좋아요를 추가하거나 취소합니다.")
-  @PostMapping("/{reviewId}/likes")
+  @PostMapping("/{reviewId}/like")
   ResponseEntity<ReviewLikeDto> toggleLike(
       @Parameter(description = "리뷰 ID") @PathVariable UUID reviewId,
       @Parameter(description = "인증된 유저 ID") @RequestHeader("Deokhugam-Request-User-ID") UUID userId
@@ -84,7 +82,7 @@ public interface ReviewApi {
 
   @Operation(summary = "인기 리뷰 목록 조회", description = "좋아요가 많은 순으로 상위 리뷰를 조회합니다.")
   @GetMapping("/popular")
-  ResponseEntity<List<ReviewDto>> getPopularReviews();
+  ResponseEntity<?> getPopularReviews();
 
   @Operation(summary = "리뷰 상세 조회", description = "리뷰 ID로 상세 내용을 조회합니다.")
   @GetMapping("/{reviewId}")

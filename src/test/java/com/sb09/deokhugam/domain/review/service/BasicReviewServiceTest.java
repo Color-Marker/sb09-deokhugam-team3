@@ -13,6 +13,8 @@ import static org.mockito.Mockito.doReturn;
 
 import com.sb09.deokhugam.domain.book.entity.Book;
 import com.sb09.deokhugam.domain.book.repository.BookRepository;
+import com.sb09.deokhugam.domain.notification.entity.NotificationType;
+import com.sb09.deokhugam.domain.notification.service.NotificationService;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
@@ -27,11 +29,11 @@ import com.sb09.deokhugam.domain.review.service.basic.BasicReviewService;
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 
-import com.sb09.deokhugam.global.Exception.CustomException;
-import com.sb09.deokhugam.global.Exception.ErrorCode;
-import com.sb09.deokhugam.global.Exception.review.DuplicateReviewException;
-import com.sb09.deokhugam.global.Exception.review.ReviewForbiddenException;
-import com.sb09.deokhugam.global.Exception.review.ReviewNotFoundException;
+import com.sb09.deokhugam.global.exception.CustomException;
+import com.sb09.deokhugam.global.exception.ErrorCode;
+import com.sb09.deokhugam.global.exception.review.DuplicateReviewException;
+import com.sb09.deokhugam.global.exception.review.ReviewForbiddenException;
+import com.sb09.deokhugam.global.exception.review.ReviewNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 
@@ -57,6 +59,8 @@ import org.springframework.data.domain.Sort;
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class BasicReviewServiceTest {
 
+  @Mock
+  private NotificationService notificationService;
   @Mock
   private ReviewRepository reviewRepository;
   @Mock
@@ -93,8 +97,10 @@ public class BasicReviewServiceTest {
     given(book.getId()).willReturn(bookId);
     given(book.getReviewCount()).willReturn(0);
     given(book.getRating()).willReturn(java.math.BigDecimal.ZERO);
+    given(book.getDeletedAt()).willReturn(null);
 
     given(users.getId()).willReturn(userId);
+    given(users.getDeletedAt()).willReturn(null); // 삭제 방어막 통과를 위한 설정
 
     given(review.getId()).willReturn(reviewId);
     given(review.getUserId()).willReturn(userId);
@@ -107,12 +113,13 @@ public class BasicReviewServiceTest {
   void createReview_success() {
     given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
     given(userRepository.findById(userId)).willReturn(Optional.of(users));
-    given(reviewRepository.existsByBookIdAndUserId(bookId, userId)).willReturn(false);
+    given(reviewRepository.existsByBookIdAndUserIdAndDeletedAtIsNull(bookId, userId)).willReturn(
+        false);
     given(reviewRepository.save(any(Review.class))).willReturn(review);
 
     ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "너무 재밌어요!", 5);
 
-    reviewService.createReview(request, userId);
+    reviewService.createReview(request);
 
     verify(reviewRepository, times(1)).save(any(Review.class));
   }
@@ -122,14 +129,29 @@ public class BasicReviewServiceTest {
   void createReview_duplicate() {
     given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
     given(userRepository.findById(userId)).willReturn(Optional.of(users));
-    given(reviewRepository.existsByBookIdAndUserId(bookId, userId)).willReturn(true);
+    given(reviewRepository.existsByBookIdAndUserIdAndDeletedAtIsNull(bookId, userId)).willReturn(
+        true);
 
     ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "내용", 5);
 
-    assertThatThrownBy(() -> reviewService.createReview(request, userId))
+    assertThatThrownBy(() -> reviewService.createReview(request))
         .isInstanceOf(DuplicateReviewException.class)
         .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
             .isEqualTo(ErrorCode.DUPLICATE_REVIEW));
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 삭제된 리뷰를 수정하려고 하면 예외 발생")
+  void updateReview_alreadyDeleted() {
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+    given(review.getDeletedAt()).willReturn(LocalDateTime.now()); // 리뷰가 삭제된 상태 재현
+
+    ReviewUpdateRequest request = new ReviewUpdateRequest("수정내용", 4);
+
+    assertThatThrownBy(() -> reviewService.updateReview(reviewId, request, userId))
+        .isInstanceOf(CustomException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.REVIEW_NOT_FOUND));
   }
 
   @Test
@@ -180,7 +202,7 @@ public class BasicReviewServiceTest {
   }
 
   @Test
-  @DisplayName("리뷰 좋아요 성공 테스트 - 기존에 누른 적이 없으면 [추가]된다")
+  @DisplayName("리뷰 좋아요 성공 테스트 - 기존에 누른 적이 없으면 [추가]되고 알림 발송")
   void toggleLike_addLike() {
     given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
     given(userRepository.findById(userId)).willReturn(Optional.of(users));
@@ -192,6 +214,10 @@ public class BasicReviewServiceTest {
 
     verify(reviewLikeRepository, times(1)).save(any(ReviewLike.class));
     verify(review, times(1)).addLikeCount();
+    //  알림 발송 로직이 제대로 실행되었는지 검증
+    verify(notificationService, times(1)).create(any(NotificationType.class), eq(review),
+        eq(users));
+
     assertThat(result.liked()).isTrue();
     assertThat(result.likeCount()).isEqualTo(1);
   }

@@ -6,13 +6,13 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.UUID;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @NoArgsConstructor
-@Getter
+@Data
 public class CommentListRequest {
 
   @NotNull(message = "리뷰 ID는 필수입니다")

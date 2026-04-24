@@ -4,7 +4,7 @@
   <!-- 수업 노션 자료 일부 수정 -->
   <!-- 변수 정의 -->
   <property name="LOG_PATTERN"
-    value="%d{yy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [traceId:%X{traceId} | userIp:%X{userIp} | %X{sessionId} | - %msg%n"/>
+    value="%d{yy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [traceId:%X{traceId} | userIp:%X{userIp} | %X{sessionId}] - %msg%n"/>
   <property name="LOG_PATH" value="${LOG_PATH:-./.logs}"/>
 
   <!-- Console Appender -->

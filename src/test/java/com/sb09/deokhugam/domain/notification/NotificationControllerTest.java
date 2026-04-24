@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sb09.deokhugam.config.RequestTrackingFilter;
 import com.sb09.deokhugam.domain.notification.controller.NotificationController;
@@ -15,11 +16,11 @@ import com.sb09.deokhugam.domain.notification.dto.request.NotificationListReques
 import com.sb09.deokhugam.domain.notification.dto.request.NotificationUpdateRequest;
 import com.sb09.deokhugam.domain.notification.dto.response.NotificationDto;
 import com.sb09.deokhugam.domain.notification.service.NotificationService;
-import com.sb09.deokhugam.global.Exception.CustomException;
-import com.sb09.deokhugam.global.Exception.ErrorCode;
-import com.sb09.deokhugam.global.Exception.notification.NotificationForbiddenException;
-import com.sb09.deokhugam.global.Exception.notification.NotificationNotFoundException;
-import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
+import com.sb09.deokhugam.global.exception.CustomException;
+import com.sb09.deokhugam.global.exception.ErrorCode;
+import com.sb09.deokhugam.global.exception.notification.NotificationForbiddenException;
+import com.sb09.deokhugam.global.exception.notification.NotificationNotFoundException;
+import com.sb09.deokhugam.global.exception.user.UserNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -42,6 +43,7 @@ import org.springframework.test.web.servlet.MockMvc;
     )
 )
 public class NotificationControllerTest {
+
   @Autowired
   private MockMvc mockMvc;
   @Autowired
@@ -86,10 +88,12 @@ public class NotificationControllerTest {
     UUID userId = UUID.randomUUID();
     NotificationUpdateRequest request = new NotificationUpdateRequest(true);
     NotificationDto response = new NotificationDto(
-        notificationId, userId, UUID.randomUUID(), "리뷰 내용", "메시지", true, LocalDateTime.now(), LocalDateTime.now()
+        notificationId, userId, UUID.randomUUID(), "리뷰 내용", "메시지", true, LocalDateTime.now(),
+        LocalDateTime.now()
     );
 
-    given(notificationService.updateStatus(eq(notificationId), eq(userId), any(NotificationUpdateRequest.class)))
+    given(notificationService.updateStatus(eq(notificationId), eq(userId),
+        any(NotificationUpdateRequest.class)))
         .willReturn(response);
 
     mockMvc.perform(patch("/api/notifications/{notificationId}", notificationId)
@@ -107,13 +111,14 @@ public class NotificationControllerTest {
     UUID notificationId = UUID.randomUUID();
     UUID userId = UUID.randomUUID();
     String badRequest = "{\"confirmed\": false }";
-    given(notificationService.updateStatus(eq(notificationId), eq(userId), any(NotificationUpdateRequest.class)))
+    given(notificationService.updateStatus(eq(notificationId), eq(userId),
+        any(NotificationUpdateRequest.class)))
         .willThrow(new CustomException(ErrorCode.INVALID_REQUEST));
 
     mockMvc.perform(patch("/api/notifications/{notificationId}", notificationId)
-        .header(userIdHeader, userId.toString())
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(badRequest))
+            .header(userIdHeader, userId.toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(badRequest))
         .andExpect(status().isBadRequest());
   }
 
@@ -123,7 +128,8 @@ public class NotificationControllerTest {
     UUID notificationId = UUID.randomUUID();
     UUID userId = UUID.randomUUID();
     NotificationUpdateRequest request = new NotificationUpdateRequest(true);
-    given(notificationService.updateStatus(eq(notificationId), eq(userId), any(NotificationUpdateRequest.class)))
+    given(notificationService.updateStatus(eq(notificationId), eq(userId),
+        any(NotificationUpdateRequest.class)))
         .willThrow(new NotificationForbiddenException(ErrorCode.NOTIFICATION_ACCESS_FORBIDDEN));
     mockMvc.perform(patch("/api/notifications/{notificationId}", notificationId)
             .header(userIdHeader, userId.toString())
@@ -138,7 +144,8 @@ public class NotificationControllerTest {
     UUID notificationId = UUID.randomUUID();
     UUID userId = UUID.randomUUID();
     NotificationUpdateRequest request = new NotificationUpdateRequest(true);
-    given(notificationService.updateStatus(eq(notificationId), eq(userId), any(NotificationUpdateRequest.class)))
+    given(notificationService.updateStatus(eq(notificationId), eq(userId),
+        any(NotificationUpdateRequest.class)))
         .willThrow(NotificationNotFoundException.withId(notificationId));
     mockMvc.perform(patch("/api/notifications/{notificationId}", notificationId)
             .header(userIdHeader, userId.toString())
@@ -174,6 +181,7 @@ public class NotificationControllerTest {
         .andExpect(status().isBadRequest());
 
   }
+
   @Test
   @DisplayName("알림 목록 조회 - 사용자 조회 실패 예외")
   void list_fail_userNotFound() throws Exception {

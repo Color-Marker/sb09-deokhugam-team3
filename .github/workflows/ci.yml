@@ -1,0 +1,48 @@
+name: 1. CI (Test on PR)
+
+# 언제 이 로봇이 작동할지 정의합니다.
+on:
+  pull_request:
+    branches: [ "main", "dev" ] # main 브랜치로 PR이 열릴 때만 작동
+
+jobs:
+  test:
+    runs-on: ubuntu-latest # 로봇이 사용할 가상의 컴퓨터 환경
+
+      # 깃허브 비밀 금고(Secrets)에서 값을 꺼내와서 로봇에게 쥐어줍니다!
+    env:
+      NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+      NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+      OCR_API_KEY: ${{ secrets.OCR_API_KEY }}
+      SPRING_PROFILES_ACTIVE: ${{ secrets.SPRING_PROFILES_ACTIVE }}
+
+    steps:
+      # 1. 깃허브 저장소에 있는 내 코드를 로봇 컴퓨터로 가져옵니다.
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. 자바 17 버전을 로봇 컴퓨터에 설치합니다.
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'corretto' # AWS 환경과 맞추기 위해 corretto 사용
+
+      # 3. (캐싱 최적화) 로봇이 매번 라이브러리를 다운받지 않게 저장해둡니다.
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 4. gradlew 파일에 실행 권한을 줍니다.
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 5. 테스트를 실행합니다. (이 과정에서 에러가 나면 봇이 PR에 빨간 엑스표를 칩니다!)
+      - name: Run Tests
+        run: ./gradlew test --no-daemon
