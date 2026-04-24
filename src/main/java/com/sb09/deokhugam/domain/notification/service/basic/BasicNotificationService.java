@@ -120,8 +120,8 @@ public class BasicNotificationService implements NotificationService {
     }
     Slice<Notification> slice = notificationRepository.searchNotification(request);
     Long totalElements = notificationRepository.countNotification(request);
-    log.info("유저ID: {} 의 알림 목록을 불러옵니다.", request.getUserId());
-    log.info("유저ID {} 의 알림 {} 개를 불러옵니다.", request.getUserId(), totalElements);
+    log.debug("유저ID: {} 의 알림 목록을 불러옵니다.", request.getUserId());
+    log.debug("유저ID {} 의 알림 {} 개를 불러옵니다.", request.getUserId(), totalElements);
     return cursorPageResponseMapper.fromSlice(
         slice,
         notificationMapper::toDto,
