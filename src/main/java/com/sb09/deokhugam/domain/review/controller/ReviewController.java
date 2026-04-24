@@ -34,7 +34,7 @@ public class ReviewController implements ReviewApi {
   @PostMapping
   public ResponseEntity<ReviewDto> createReview(@Valid @RequestBody ReviewCreateRequest request) {
     // Body에 포함된 userId를 사용하여 리뷰를 생성합니다.
-    ReviewDto response = reviewService.createReview(request, request.userId());
+    ReviewDto response = reviewService.createReview(request);
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
@@ -96,7 +96,7 @@ public class ReviewController implements ReviewApi {
    * 5. 리뷰 좋아요 토글
    */
   @Override
-  @PostMapping("/{reviewId}/likes")
+  @PostMapping("/{reviewId}/like")
   public ResponseEntity<ReviewLikeDto> toggleLike(
       @PathVariable UUID reviewId,
       @RequestHeader("Deokhugam-Request-User-ID") UUID userId) {
@@ -110,8 +110,11 @@ public class ReviewController implements ReviewApi {
    */
   @Override
   @GetMapping("/popular")
-  public ResponseEntity<List<ReviewDto>> getPopularReviews() {
-    return ResponseEntity.ok(reviewService.getPopularReviews());
+  public ResponseEntity<?> getPopularReviews() {
+    List<ReviewDto> popularReviews = reviewService.getPopularReviews();
+
+    // 프론트엔드 맞춰 "content"라는 구조로 반환
+    return ResponseEntity.ok(java.util.Map.of("content", popularReviews));
   }
 
   /**

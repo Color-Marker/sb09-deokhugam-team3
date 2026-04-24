@@ -12,7 +12,7 @@ import java.util.List;
 public interface ReviewService {
 
   // 리뷰 등록
-  ReviewDto createReview(ReviewCreateRequest request, UUID userId);
+  ReviewDto createReview(ReviewCreateRequest request);
 
   // 리뷰 수정
   ReviewDto updateReview(UUID reviewId, ReviewUpdateRequest request, UUID userId);

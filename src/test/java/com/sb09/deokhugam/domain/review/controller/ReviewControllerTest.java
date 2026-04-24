@@ -48,7 +48,7 @@ class ReviewControllerTest {
     UUID bookId = UUID.randomUUID();
     ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "내용", 5);
 
-    given(reviewService.createReview(any(), eq(userId))).willReturn(null);
+    given(reviewService.createReview(any(ReviewCreateRequest.class))).willReturn(null);
 
     try {
       mockMvc.perform(post("/api/reviews")
@@ -67,7 +67,8 @@ class ReviewControllerTest {
     UUID reviewId = UUID.randomUUID();
     ReviewUpdateRequest request = new ReviewUpdateRequest("수정", 4);
 
-    given(reviewService.updateReview(eq(reviewId), any(), eq(userId))).willReturn(null);
+    given(reviewService.updateReview(eq(reviewId), any(ReviewUpdateRequest.class),
+        eq(userId))).willReturn(null);
 
     try {
       mockMvc.perform(patch("/api/reviews/{reviewId}", reviewId)
@@ -129,7 +130,7 @@ class ReviewControllerTest {
     given(reviewService.toggleLike(eq(reviewId), eq(userId))).willReturn(mockResponse);
 
     try {
-      mockMvc.perform(post("/api/reviews/{reviewId}/likes", reviewId)
+      mockMvc.perform(post("/api/reviews/{reviewId}/like", reviewId)
               .header(USER_ID_HEADER, userId.toString())
               .contentType(MediaType.APPLICATION_JSON))
           .andExpect(status().isOk())
@@ -148,7 +149,7 @@ class ReviewControllerTest {
       mockMvc.perform(get("/api/reviews/popular")
               .accept(MediaType.APPLICATION_JSON))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$").isArray());
+          .andExpect(jsonPath("$.content").isArray());
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

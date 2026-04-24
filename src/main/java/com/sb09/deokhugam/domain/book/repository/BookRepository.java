@@ -10,9 +10,11 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface BookRepository extends JpaRepository<Book, UUID>, CustomBookRepository {
 
-  boolean existsByIsbn(String isbn);
+  boolean existsByIsbnAndDeletedAtIsNull(String isbn);
 
   Optional<Book> findByIsbn(String isbn);
+
+  Optional<Book> findFirstByIsbnAndDeletedAtIsNotNullOrderByDeletedAtDesc(String isbn);
 
   @Modifying
   @Query("DELETE FROM Book b WHERE b.id = :id")

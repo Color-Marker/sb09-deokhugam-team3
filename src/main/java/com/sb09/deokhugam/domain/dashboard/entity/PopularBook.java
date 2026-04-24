@@ -63,7 +63,8 @@ public class PopularBook {
   private LocalDateTime createdAt;
 
   @Builder
-  public PopularBook(UUID bookId, PeriodType period, LocalDate baseDate, Long ranking, BigDecimal score, Long reviewCount, BigDecimal rating) {
+  public PopularBook(UUID bookId, PeriodType period, LocalDate baseDate, Long ranking,
+      BigDecimal score, Long reviewCount, BigDecimal rating) {
     this.bookId = bookId;
     this.period = period;
     this.baseDate = baseDate;

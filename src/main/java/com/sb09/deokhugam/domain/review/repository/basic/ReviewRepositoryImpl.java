@@ -100,21 +100,22 @@ public class ReviewRepositoryImpl implements ReviewRepositoryCustom {
         .or(users.nickname.containsIgnoreCase(keyword));
   }
 
-  // ---  정렬 및 커서 동적 처리  ---
+  // ---  정렬 및 커서 동적 처리 (수정) ---
   private OrderSpecifier<?>[] createOrderSpecifier(ReviewListRequest request) {
     boolean isAsc = request.direction() == Sort.Direction.ASC;
 
     if ("RATING".equalsIgnoreCase(request.orderBy())) {
       return new OrderSpecifier[]{
           isAsc ? review.rating.asc() : review.rating.desc(),
-          review.createdAt.desc()
+          isAsc ? review.createdAt.asc() : review.createdAt.desc(),
+          isAsc ? review.id.asc() : review.id.desc()
       };
     }
 
-    // 기본값: 최신순
+    // 기본값: 최신순 (LATEST)
     return new OrderSpecifier[]{
         isAsc ? review.createdAt.asc() : review.createdAt.desc(),
-        review.id.desc()
+        isAsc ? review.id.asc() : review.id.desc() // 시간 방향과 ID 방향을 일치시켜야 꼬이지 않음
     };
   }
 
@@ -125,18 +126,21 @@ public class ReviewRepositoryImpl implements ReviewRepositoryCustom {
 
     UUID cursorId = request.cursor();
     LocalDateTime afterTime = request.after();
-
-    //  DTO에서 rating 필드를 삭제했으므로, RATING 기반 커서 로직은
-    // 단순 최신순(after) 기반으로 통합하거나 별도 처리가 필요합니다.
-    // 여기서는 가장 기본이 되는 생성일시(createdAt) 기준 커서 방식을 적용합니다.
+    boolean isAsc = request.direction() == Sort.Direction.ASC;
 
     if ("RATING".equalsIgnoreCase(request.orderBy())) {
-      // 평점 정렬 시에도 생성일시 커서를 활용 (평점 데이터가 DTO에 없으므로)
-      return review.createdAt.lt(afterTime);
+      return isAsc ? review.createdAt.gt(afterTime) : review.createdAt.lt(afterTime);
     }
 
-    // 기본 최신순 커서: 날짜가 더 이전이거나, 날짜가 같으면 ID가 더 작은 것
-    return review.createdAt.lt(afterTime)
-        .or(review.createdAt.eq(afterTime).and(review.id.lt(cursorId)));
+    // 기본 최신순 커서 로직 (방향에 따라 완벽하게 대칭되도록 수정)
+    if (isAsc) {
+      // 오름차순(오래된 순): 시간이 더 미래이거나, 시간이 같으면 ID가 더 큰 것
+      return review.createdAt.gt(afterTime)
+          .or(review.createdAt.eq(afterTime).and(review.id.gt(cursorId)));
+    } else {
+      // 내림차순(최신순): 시간이 더 과거이거나, 시간이 같으면 ID가 더 작은 것
+      return review.createdAt.lt(afterTime)
+          .or(review.createdAt.eq(afterTime).and(review.id.lt(cursorId)));
+    }
   }
 }

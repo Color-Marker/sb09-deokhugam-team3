@@ -19,11 +19,51 @@ test {
     finalizedBy jacocoTestReport
 }
 
+def jacocoExcludePatterns = [
+        "**/*Application.class",
+        "**/*Config.class",
+        "**/*Exception.class",
+        "**/*Dto.class",
+        "**/*Request.class",
+        "**/*Response.class",
+        "**/*Mapper.class",
+        "**/*MapperImpl.class",
+        "**/global/**/*.class", // global 하위 폴더 전체 제외
+        "**/infrastructure/**/*.class", // 외부 API 연동 등 제외
+        "**/scheduler/**/*.class", // 스케줄러 제외
+        "**/Q*.class" // QueryDSL Q클래스 제외
+]
+
 jacocoTestReport {
     dependsOn test
     reports {
-        xml.required = true
         html.required = true
+        csv.required = true
+    }
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: jacocoExcludePatterns)
+        }))
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            element = 'CLASS'
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                //
+                minimum = 0.80
+            }
+        }
+    }
+    // 핵심: 리포트뿐만 아니라 80% 검사할 때도 동일하게 제외 패턴을 적용합니다!
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: jacocoExcludePatterns)
+        }))
     }
 }
 
