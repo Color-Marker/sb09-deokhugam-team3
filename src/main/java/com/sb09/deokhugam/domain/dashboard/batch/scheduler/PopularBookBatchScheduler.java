@@ -1,4 +1,4 @@
-package com.sb09.deokhugam.domain.dashboard.scheduler;
+package com.sb09.deokhugam.domain.dashboard.batch.scheduler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
