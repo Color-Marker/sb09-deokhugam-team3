@@ -16,6 +16,8 @@ import com.sb09.deokhugam.global.exception.CustomException;
 import com.sb09.deokhugam.global.exception.ErrorCode;
 import com.sb09.deokhugam.global.exception.notification.NotificationForbiddenException;
 import com.sb09.deokhugam.global.exception.notification.NotificationNotFoundException;
+import com.sb09.deokhugam.global.exception.review.ReviewNotFoundException;
+import com.sb09.deokhugam.global.exception.user.UserAlreadyDeletedException;
 import com.sb09.deokhugam.global.exception.user.UserNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
