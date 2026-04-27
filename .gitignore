@@ -8,6 +8,7 @@ build/
 .logs/
 *.log
 .env
+./storage
 /storage/
 deokhugam.env
 gradlew
