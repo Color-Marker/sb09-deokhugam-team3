@@ -29,15 +29,15 @@ public class GlobalExceptionHandler {
 
     ErrorResponse response = new ErrorResponse(
         Instant.now(),
-        "VALIDATION_ERROR",
-        "요청 데이터 유효성 검사에 실패했습니다",
+        ErrorCode.VALIDATION_ERROR.name(),
+        ErrorCode.VALIDATION_ERROR.getMessage(),
         validationErrors,
         ex.getClass().getSimpleName(),
-        HttpStatus.BAD_REQUEST.value()
+        ErrorCode.VALIDATION_ERROR.getStatus().value()
     );
 
     return ResponseEntity
-        .status(HttpStatus.BAD_REQUEST)
+        .status(ErrorCode.VALIDATION_ERROR.getStatus())
         .body(response);
   }
 
