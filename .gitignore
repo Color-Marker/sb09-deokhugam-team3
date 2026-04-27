@@ -9,6 +9,7 @@ build/
 *.log
 .env
 ./storage
+/storage/
 deokhugam.env
 gradlew
 .dockerignore

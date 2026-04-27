@@ -143,7 +143,7 @@ class ReviewControllerTest {
   @Test
   @DisplayName("인기 리뷰 목록 조회 API - 성공 시 200 OK 및 리스트 반환")
   void getPopularReviews_success() {
-    given(reviewService.getPopularReviews()).willReturn(List.of());
+    given(reviewService.getPopularReviews("ALL")).willReturn(List.of());
 
     try {
       mockMvc.perform(get("/api/reviews/popular")
