@@ -102,7 +102,7 @@ public class DashboardQueryRepository {
     );
 
     // 4) 최종 파워 유저 점수 계산
-    NumberExpression<Double> totalScore = reviewScoreSum.multiply(0.5)
+    NumberExpression<Double> totalScore = reviewScoreSum.doubleValue().multiply(0.5)
         .add(periodLikes.doubleValue().multiply(0.2))
         .add(periodComments.doubleValue().multiply(0.3));
 
