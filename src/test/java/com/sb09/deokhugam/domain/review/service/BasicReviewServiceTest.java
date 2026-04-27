@@ -267,6 +267,50 @@ public class BasicReviewServiceTest {
   }
 
   @Test
+  @DisplayName("인기 리뷰 조회 성공 테스트 - 특정 기간(WEEKLY)")
+  @SuppressWarnings("unchecked")
+  void getPopularReviews_weekly_success() {
+    Page<Review> mockPage = mock(Page.class);
+    given(mockPage.getContent()).willReturn(List.of(review));
+    given(reviewRepository.findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
+        any(PageRequest.class))).willReturn(mockPage);
+
+    ReviewDto mockReviewDto = mock(ReviewDto.class);
+    given(bookRepository.findById(any())).willReturn(Optional.of(book));
+    given(userRepository.findById(any())).willReturn(Optional.of(users));
+    given(reviewMapper.toDto(any(), any(), any(), anyBoolean())).willReturn(mockReviewDto);
+
+    List<ReviewDto> result = reviewService.getPopularReviews("WEEKLY");
+
+    assertThat(result).isNotNull();
+    assertThat(result).hasSize(1);
+    verify(reviewRepository, times(1)).findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
+        any(PageRequest.class));
+  }
+
+  @Test
+  @DisplayName("인기 리뷰 조회 성공 테스트 - 특정 기간(MONTHLY)")
+  @SuppressWarnings("unchecked")
+  void getPopularReviews_monthly_success() {
+    Page<Review> mockPage = mock(Page.class);
+    given(mockPage.getContent()).willReturn(List.of(review));
+    given(reviewRepository.findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
+        any(PageRequest.class))).willReturn(mockPage);
+
+    ReviewDto mockReviewDto = mock(ReviewDto.class);
+    given(bookRepository.findById(any())).willReturn(Optional.of(book));
+    given(userRepository.findById(any())).willReturn(Optional.of(users));
+    given(reviewMapper.toDto(any(), any(), any(), anyBoolean())).willReturn(mockReviewDto);
+
+    List<ReviewDto> result = reviewService.getPopularReviews("MONTHLY");
+
+    assertThat(result).isNotNull();
+    assertThat(result).hasSize(1);
+    verify(reviewRepository, times(1)).findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
+        any(PageRequest.class));
+  }
+
+  @Test
   @DisplayName("리뷰 상세 조회 성공 테스트")
   void getReviewDetail_success() {
     ReviewDto mockReviewDto = mock(ReviewDto.class);
