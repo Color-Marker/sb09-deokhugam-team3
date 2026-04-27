@@ -9,12 +9,15 @@ import com.sb09.deokhugam.domain.notification.mapper.NotificationMapper;
 import com.sb09.deokhugam.domain.notification.repository.NotificationRepository;
 import com.sb09.deokhugam.domain.notification.service.NotificationService;
 import com.sb09.deokhugam.domain.review.entity.Review;
+import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.global.exception.CustomException;
 import com.sb09.deokhugam.global.exception.ErrorCode;
 import com.sb09.deokhugam.global.exception.notification.NotificationForbiddenException;
 import com.sb09.deokhugam.global.exception.notification.NotificationNotFoundException;
+import com.sb09.deokhugam.global.exception.review.ReviewNotFoundException;
+import com.sb09.deokhugam.global.exception.user.UserAlreadyDeletedException;
 import com.sb09.deokhugam.global.exception.user.UserNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
@@ -34,6 +37,7 @@ public class BasicNotificationService implements NotificationService {
 
   private final NotificationRepository notificationRepository;
   private final UserRepository userRepository;
+  private final ReviewRepository reviewRepository;
   private final NotificationMapper notificationMapper;
   private final CursorPageResponseMapper cursorPageResponseMapper;
 
@@ -50,9 +54,9 @@ public class BasicNotificationService implements NotificationService {
           return UserNotFoundException.withId(userId);
         }
     );
-    if (user.getDeletedAt() != null) {
-      log.warn("사용자를 찾을 수 없습니다");
-      throw UserNotFoundException.withId(userId);
+    if(user.getDeletedAt() != null){
+      log.warn("탈퇴한 사용자이므로 알람을 생성할 수 없습니다.");
+      throw UserAlreadyDeletedException.withId(userId);
     }
     log.info("유저ID: {} 의 모든 알림을 읽음 상태로 전환합니다.", userId);
     List<Notification> notis = notificationRepository.findByUserId(userId);
@@ -77,9 +81,9 @@ public class BasicNotificationService implements NotificationService {
           return UserNotFoundException.withId(userId);
         }
     );
-    if (user.getDeletedAt() != null) {
-      log.warn("사용자를 찾을 수 없습니다");
-      throw UserNotFoundException.withId(userId);
+    if(user.getDeletedAt() != null){
+      log.warn("탈퇴한 사용자이므로 알람을 생성할 수 없습니다.");
+      throw UserAlreadyDeletedException.withId(userId);
     }
 
     Notification notification = notificationRepository.findById(notificationId).
@@ -93,9 +97,13 @@ public class BasicNotificationService implements NotificationService {
       throw new NotificationForbiddenException(ErrorCode.NOTIFICATION_ACCESS_FORBIDDEN);
     }
 
-    log.info("유저 {}의 알림 {}을 읽음 상태로 전환합니다.", user.getNickname(), notification.getId());
-    notification.update();
-
+    if(notification.getConfirmStatus()){
+      log.info("이미 확인한 알람입니다.");
+    }
+    else {
+      log.info("유저 {}의 알림 {}을 읽음 상태로 전환합니다.", user.getNickname(), notification.getId());
+      notification.update();
+    }
     return notificationMapper.toDto(notification);
   }
 
@@ -108,14 +116,14 @@ public class BasicNotificationService implements NotificationService {
           return UserNotFoundException.withId(request.getUserId());
         }
     );
-    if (user.getDeletedAt() != null) {
-      log.warn("사용자를 찾을 수 없습니다");
-      throw UserNotFoundException.withId(request.getUserId());
+    if(user.getDeletedAt() != null){
+      log.warn("탈퇴한 사용자이므로 알람을 생성할 수 없습니다.");
+      throw UserAlreadyDeletedException.withId(user.getId());
     }
     Slice<Notification> slice = notificationRepository.searchNotification(request);
     Long totalElements = notificationRepository.countNotification(request);
-    log.info("유저ID: {} 의 알림 목록을 불러옵니다.", request.getUserId());
-    log.info("유저ID {} 의 알림 {} 개를 불러옵니다.", request.getUserId(), totalElements);
+    log.debug("유저ID: {} 의 알림 목록을 불러옵니다.", request.getUserId());
+    log.debug("유저ID {} 의 알림 {} 개를 불러옵니다.", request.getUserId(), totalElements);
     return cursorPageResponseMapper.fromSlice(
         slice,
         notificationMapper::toDto,
@@ -136,18 +144,25 @@ public class BasicNotificationService implements NotificationService {
           return UserNotFoundException.withId(userId);
         }
     );
-    if (user.getDeletedAt() != null) {
-      log.warn("사용자를 찾을 수 없습니다");
-      throw UserNotFoundException.withId(userId);
+    if(user.getDeletedAt() != null){
+      log.warn("탈퇴한 사용자이므로 알람을 생성할 수 없습니다.");
+      throw UserAlreadyDeletedException.withId(userId);
     }
+    if(!reviewRepository.existsByIdAndDeletedAtIsNull(review.getId())){
+      log.warn("리뷰를 찾을 수 없습니다.");
+      throw ReviewNotFoundException.withId(review.getId());
+    }
+
     Notification notification;
-    if (!type.equals(NotificationType.RANKING)) {
+    if(!type.equals(NotificationType.RANKING) && sender != null){
+      if(userId.equals(sender.getId())){
+        log.info("본인 스스로에게는 알람을 생성하지 않습니다.");
+        return null;
+      }
+    }
       // 좋아요 & 댓글
       notification = new Notification(type, review, sender, user);
-    } else {
-      // 랭킹
-      notification = new Notification(type, review, null, user);
-    }
+
     Notification result = notificationRepository.save(notification);
     log.info("타입: {} 인 알람: {} 이 생성되었습니다.", result.getType().toString(), result.getId());
     return result;

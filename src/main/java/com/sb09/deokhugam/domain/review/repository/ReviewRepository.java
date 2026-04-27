@@ -33,4 +33,6 @@ public interface ReviewRepository extends JpaRepository<Review, UUID>, ReviewRep
 
   // 2. 전체 기간(ALL) + 삭제되지 않은 리뷰 조회 (기존 findAll 대체용)
   Page<Review> findByDeletedAtIsNull(Pageable pageable);
+
+  boolean existsByIdAndDeletedAtIsNull(UUID id);
 }
