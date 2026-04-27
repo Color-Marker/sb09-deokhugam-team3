@@ -110,8 +110,11 @@ public class ReviewController implements ReviewApi {
    */
   @Override
   @GetMapping("/popular")
-  public ResponseEntity<?> getPopularReviews() {
-    List<ReviewDto> popularReviews = reviewService.getPopularReviews();
+  public ResponseEntity<?> getPopularReviews(
+      @RequestParam(defaultValue = "ALL") String period
+  ) {
+    // 서비스 호출할 때 period 값을 넘겨주도록 수정
+    List<ReviewDto> popularReviews = reviewService.getPopularReviews(period);
 
     // 프론트엔드 맞춰 "content"라는 구조로 반환
     return ResponseEntity.ok(java.util.Map.of("content", popularReviews));

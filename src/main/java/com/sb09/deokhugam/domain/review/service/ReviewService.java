@@ -27,7 +27,7 @@ public interface ReviewService {
   ReviewLikeDto toggleLike(UUID reviewId, UUID userId);
 
   // 인기 리뷰 조회
-  List<ReviewDto> getPopularReviews();
+  List<ReviewDto> getPopularReviews(String period);
 
   // 리뷰 상세 조회
   ReviewDto getReviewDetail(UUID reviewId, UUID currentUserId);
