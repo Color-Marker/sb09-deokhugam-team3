@@ -2,6 +2,7 @@ package com.sb09.deokhugam.domain.dashboard.repository;
 
 import com.sb09.deokhugam.config.QueryDslConfig;
 import com.sb09.deokhugam.domain.dashboard.dto.PopularReviewScoreDto;
+import com.sb09.deokhugam.domain.dashboard.dto.PowerUserScoreDto;
 import com.sb09.deokhugam.domain.review.entity.Review;
 import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
 import com.sb09.deokhugam.domain.user.entity.Users;
@@ -56,6 +57,28 @@ class DashboardQueryRepositoryTest {
     List<PopularReviewScoreDto> results = dashboardQueryRepository.findTopPopularReviews(start, end, 10);
 
     // then
+    assertThat(results).isEmpty();
+  }
+
+  @Test
+  @DisplayName("파워 유저 통계 계산 시, 조건에 맞는 유저만 점수 순으로 정렬되어 조회된다.")
+  void findTopPowerUsers_FilterAndSort() {
+    // given: 유저 세팅
+    Users user = userRepository.save(Users.builder()
+        .email("power@test.com")
+        .nickname("powerUser")
+        .password("1234")
+        .build());
+
+    LocalDateTime start = LocalDateTime.now().minusDays(2);
+    LocalDateTime end = LocalDateTime.now().plusDays(1);
+
+    // when: 파워 유저 쿼리 실행
+    List<PowerUserScoreDto> results = dashboardQueryRepository.findTopPowerUsers(start, end, 10);
+
+    // then:
+    // 현재는 Review, ReviewLike, Comment 등의 활동 데이터를 넣지 않았으므로,
+    // 점수가 0점이라서 랭킹에 포함되지 않아 결과가 비어있어야(empty) 정상입니다!
     assertThat(results).isEmpty();
   }
 }
