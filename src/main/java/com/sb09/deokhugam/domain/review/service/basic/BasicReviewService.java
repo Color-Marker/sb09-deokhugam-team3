@@ -263,13 +263,37 @@ public class BasicReviewService implements ReviewService {
    * 6. 인기 리뷰 조회: 좋아요 많은 순 상위 10개
    */
   @Override
-  public java.util.List<ReviewDto> getPopularReviews() {
+  public java.util.List<ReviewDto> getPopularReviews(String period) {
+    // 페이징 및 정렬 조건 세팅 (좋아요 내림차순 상위 10개)
     org.springframework.data.domain.PageRequest pageRequest = org.springframework.data.domain.PageRequest.of(
         0, 10,
         org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,
-            "likeCount"));
+            "likeCount")
+    );
 
-    return reviewRepository.findAll(pageRequest)
+    // 현재 시간을 기준으로 기간 계산
+    java.time.LocalDateTime now = java.time.LocalDateTime.now();
+    java.time.LocalDateTime startDate = null;
+
+    if ("DAILY".equalsIgnoreCase(period)) {
+      startDate = now.minusDays(1);   // 하루 전
+    } else if ("WEEKLY".equalsIgnoreCase(period)) {
+      startDate = now.minusWeeks(1);  // 일주일 전
+    } else if ("MONTHLY".equalsIgnoreCase(period)) {
+      startDate = now.minusMonths(1); // 한 달 전
+    }
+
+    // 기간 조건에 따라 DB 조회 (ALL 이거나 잘못된 값이면 전체 조회)
+    org.springframework.data.domain.Page<Review> popularReviews;
+    if (startDate == null || "ALL".equalsIgnoreCase(period)) {
+      popularReviews = reviewRepository.findByDeletedAtIsNull(pageRequest); // 논리 삭제된 리뷰 제외
+    } else {
+      popularReviews = reviewRepository.findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(startDate,
+          pageRequest);
+    }
+
+    // DTO 변환 후 반환
+    return popularReviews
         .getContent()
         .stream()
         .map(review -> {
