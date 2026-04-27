@@ -625,4 +625,70 @@ public class BasicReviewServiceTest {
     assertThat(result).isNotNull();
     verify(reviewRepository, times(1)).searchReviews(eq(request), eq(null));
   }
+
+  @Test
+  @DisplayName("예외 검증 - 리뷰 등록 시 내용이 null인 경우 (부분 커버리지 보완)")
+  void createReview_contentIsNull() {
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, null, 5); // 내용만 null
+    assertThatThrownBy(() -> reviewService.createReview(request))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 리뷰 등록 시 내용이 띄어쓰기(공백)만 있는 경우 (부분 커버리지 보완)")
+  void createReview_contentIsBlank() {
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "   ", 5); // 공백만 전달
+    assertThatThrownBy(() -> reviewService.createReview(request))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 리뷰 등록 시 평점이 5점을 초과하는 경우 (부분 커버리지 보완)")
+  void createReview_ratingTooHigh() {
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "정상적인 내용", 6); // 6점 전달
+    assertThatThrownBy(() -> reviewService.createReview(request))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 리뷰 등록 시 내용이 1000자를 초과하는 경우 (부분 커버리지 보완)")
+  void createReview_contentTooLong() {
+    String longContent = "a".repeat(1001); // 'a'를 1001번 반복해서 아주 긴 텍스트 생성
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, longContent, 5);
+    assertThatThrownBy(() -> reviewService.createReview(request))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 목록 조회 시 존재하지 않는 도서 ID로 필터링 시도")
+  void getReviews_bookNotFound() {
+    UUID fakeBookId = UUID.randomUUID();
+    ReviewListRequest request = new ReviewListRequest(fakeBookId, null, null, 10, null, null,
+        "LATEST", Sort.Direction.DESC);
+
+    // Repository가 빈 값을 반환하도록 모킹
+    given(bookRepository.findById(fakeBookId)).willReturn(Optional.empty());
+
+    assertThatThrownBy(() -> reviewService.getReviews(request, userId))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  @DisplayName("성공 테스트 - 목록 조회 시 정렬 조건이 RATING 인 경우 (부분 커버리지 보완)")
+  @SuppressWarnings("unchecked")
+  void getReviews_orderByRating() {
+    ReviewListRequest request = new ReviewListRequest(null, null, null, 10, null, null, "RATING",
+        Sort.Direction.DESC);
+    Slice<ReviewDto> mockSlice = mock(Slice.class);
+    CursorPageResponseDto<ReviewDto> mockResponse = mock(CursorPageResponseDto.class);
+
+    given(reviewRepository.searchReviews(eq(request), eq(userId))).willReturn(mockSlice);
+    doReturn(mockResponse).when(cursorPageResponseMapper)
+        .fromSlice(any(), any(), any(), any(), any());
+
+    CursorPageResponseDto<ReviewDto> result = reviewService.getReviews(request, userId);
+
+    assertThat(result).isNotNull();
+  }
+
 }
