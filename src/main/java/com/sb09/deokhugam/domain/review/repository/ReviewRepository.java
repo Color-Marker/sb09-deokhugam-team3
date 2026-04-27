@@ -24,4 +24,5 @@ public interface ReviewRepository extends JpaRepository<Review, UUID>, ReviewRep
       """)
   List<Object[]> calculateBookByPeriod(@Param("from") LocalDateTime from,
       @Param("to") LocalDateTime to);
+  boolean existsByIdAndDeletedAtIsNull(UUID id);
 }
