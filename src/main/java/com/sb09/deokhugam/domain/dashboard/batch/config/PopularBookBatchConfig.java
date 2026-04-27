@@ -1,4 +1,4 @@
-package com.sb09.deokhugam.domain.dashboard.scheduler.config;
+package com.sb09.deokhugam.domain.dashboard.batch.config;
 
 import com.sb09.deokhugam.domain.dashboard.service.PopularBookService;
 import java.time.LocalDate;
