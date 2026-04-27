@@ -8,11 +8,10 @@ import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.mapper.UserMapper;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.domain.user.service.UserService;
-import com.sb09.deokhugam.global.Exception.user.DuplicateEmailException;
-import com.sb09.deokhugam.global.Exception.user.InvalidUserCredentialsException;
-import com.sb09.deokhugam.global.Exception.user.UnauthorizedAccessException;
-import com.sb09.deokhugam.global.Exception.user.UserAlreadyDeletedException;
-import com.sb09.deokhugam.global.Exception.user.UserNotFoundException;
+import com.sb09.deokhugam.global.exception.user.DuplicateEmailException;
+import com.sb09.deokhugam.global.exception.user.InvalidUserCredentialsException;
+import com.sb09.deokhugam.global.exception.user.UnauthorizedAccessException;
+import com.sb09.deokhugam.global.exception.user.UserNotFoundException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -72,9 +71,7 @@ public class BasicUserService implements UserService {
   public UserResponse findById(UUID id) {
     Users user = userRepository.findByIdAndDeletedAtIsNull(id)
         .orElseThrow(() -> UserNotFoundException.withId(id));
-    if (user.getDeletedAt() != null) {
-      throw UserNotFoundException.withId(user.getId());
-    }
+
     return userMapper.toDto(user);
   }
 
@@ -87,10 +84,6 @@ public class BasicUserService implements UserService {
 
     Users user = userRepository.findByIdAndDeletedAtIsNull(targetId)
         .orElseThrow(() -> UserNotFoundException.withId(targetId));
-
-    if (user.getDeletedAt() != null) {
-      throw UserNotFoundException.withId(user.getId());
-    }
 
     user.updateNickname(request.nickname());
     log.info("사용자 닉네임 수정 완료: {}", targetId);
@@ -106,10 +99,6 @@ public class BasicUserService implements UserService {
 
     Users user = userRepository.findByIdAndDeletedAtIsNull(targetId)
         .orElseThrow(() -> UserNotFoundException.withId(targetId));
-
-    if (user.getDeletedAt() != null) {
-      throw UserNotFoundException.withId(user.getId());
-    }
 
     user.markAsDeleted();
     log.info("사용자 논리 삭제 마킹 완료: {}", targetId);

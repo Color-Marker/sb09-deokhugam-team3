@@ -1,8 +1,8 @@
 package com.sb09.deokhugam.global.infrastructure;
 
 import com.sb09.deokhugam.domain.book.dto.NaverBookDto;
-import com.sb09.deokhugam.global.Exception.CustomException;
-import com.sb09.deokhugam.global.Exception.ErrorCode;
+import com.sb09.deokhugam.global.exception.CustomException;
+import com.sb09.deokhugam.global.exception.ErrorCode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
