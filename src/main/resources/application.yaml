@@ -43,13 +43,13 @@ deokhugam:
 
 naver:
   api:
-    client-id: ${NAVER_CLIENT_ID}
-    client-secret: ${NAVER_CLIENT_SECRET}
+    client-id: ${NAVER_CLIENT_ID:}
+    client-secret: ${NAVER_CLIENT_SECRET:}
     book-search-url: https://openapi.naver.com/v1/search/book.json
 
 ocr:
   api:
-    key: ${OCR_API_KEY}
+    key: ${OCR_API_KEY:}
     url: https://api.ocr.space/parse/image
 
 logging:
