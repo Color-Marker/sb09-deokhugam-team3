@@ -8,7 +8,7 @@ public enum ErrorCode {
 
   // User
   USER_NOT_FOUND("사용자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-  DUPLICATE_EMAIL("이미 사용 중인 이메일입니다.", HttpStatus.CONFLICT),
+  DUPLICATE_EMAIL("이미 존재하는 이메일입니다.", HttpStatus.CONFLICT),
   INVALID_USER_CREDENTIALS("이메일 또는 비밀번호가 올바르지 않습니다.", HttpStatus.UNAUTHORIZED),
   UNAUTHORIZED_ACCESS("접근 권한이 없습니다.", HttpStatus.FORBIDDEN),
   DELETED_USER("탈퇴한 사용자입니다.", HttpStatus.GONE),
