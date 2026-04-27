@@ -38,7 +38,7 @@ class PopularBookServiceTest {
   private BasicPopularBookService popularBookService;
 
   @Test
-  @DisplayName("이미 배치가 수행된 날짜면 저장 없이 바로 리턴한다")
+  @DisplayName("이미 배치 수행된 날짜 - 저장 없이 바로 리턴")
   void calculatePopularBook_alreadyExists_skip() {
     // given
     LocalDate baseDate = LocalDate.of(2024, 1, 1);
@@ -53,7 +53,7 @@ class PopularBookServiceTest {
   }
 
   @Test
-  @DisplayName("리뷰가 없는 기간은 PopularBook을 저장하지 않는다")
+  @DisplayName("기간 내 리뷰가 없음 - 인기 도서를 저장 X")
   void calculatePopularBook_noReviews_nothingSaved() {
     // given
     LocalDate baseDate = LocalDate.of(2024, 1, 1);
@@ -68,7 +68,7 @@ class PopularBookServiceTest {
   }
 
   @Test
-  @DisplayName("정상적으로 PopularBook을 계산하고 저장한다")
+  @DisplayName("인기 도서 저장")
   void calculatePopularBook_success() {
     // given
     LocalDate baseDate = LocalDate.of(2024, 1, 1);
@@ -90,7 +90,7 @@ class PopularBookServiceTest {
   }
 
   @Test
-  @DisplayName("스코어 계산이 올바르게 된다 (reviewCount * 0.4 + avgRating * 0.6)")
+  @DisplayName("정상적인 스코어 계산")
   void calculatePopularBook_scoreCalculation_correct() {
     // given
     LocalDate baseDate = LocalDate.of(2024, 1, 1);
@@ -123,7 +123,7 @@ class PopularBookServiceTest {
   }
 
   @Test
-  @DisplayName("여러 도서가 있을 때 랭킹이 순서대로 부여된다")
+  @DisplayName("도서 랭킹 부여")
   void calculatePopularBook_multipleBooks_rankingAssignedInOrder() {
     // given
     LocalDate baseDate = LocalDate.of(2024, 1, 1);
@@ -151,7 +151,7 @@ class PopularBookServiceTest {
   }
 
   @Test
-  @DisplayName("ALL_TIME은 2000년 1월 1일부터 집계한다")
+  @DisplayName("ALL_TIME의 경우 2000년 1월 1일(대충 먼 이전 날짜 고름)부터 계산")
   void calculatePopularBook_allTimePeriod_fromYear2000() {
     // given
     LocalDate baseDate = LocalDate.of(2024, 1, 1);
