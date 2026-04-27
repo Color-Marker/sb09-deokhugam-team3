@@ -1,5 +1,5 @@
 # SB09-DEOKHUGAM-TEAM3
-![Coverage](.github/badges/jacoco.svg)
+[![codecov](https://codecov.io/gh/Color-Marker/sb09-deokhugam-team3/graph/badge.svg?token=8RJEEWB8CZ)](https://codecov.io/gh/Color-Marker/sb09-deokhugam-team3)
 
 ### https://www.notion.so/Spring-7213bb75a7708284aaf901e6bf1ffd8c
 
