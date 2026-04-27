@@ -32,6 +32,7 @@ import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.global.exception.CustomException;
 import com.sb09.deokhugam.global.exception.ErrorCode;
 import com.sb09.deokhugam.global.exception.review.DuplicateReviewException;
+import com.sb09.deokhugam.global.exception.review.ReviewAlreadyDeletedException;
 import com.sb09.deokhugam.global.exception.review.ReviewForbiddenException;
 import com.sb09.deokhugam.global.exception.review.ReviewNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
@@ -223,22 +224,90 @@ public class BasicReviewServiceTest {
   }
 
   @Test
-  @DisplayName("인기 리뷰 조회 성공 테스트")
+  @DisplayName("인기 리뷰 조회 성공 테스트 - 전체 기간(ALL)")
   @SuppressWarnings("unchecked")
   void getPopularReviews_success() {
     Page<Review> mockPage = mock(Page.class);
     given(mockPage.getContent()).willReturn(List.of(review));
-    given(reviewRepository.findAll(any(PageRequest.class))).willReturn(mockPage);
+    given(reviewRepository.findByDeletedAtIsNull(any(PageRequest.class))).willReturn(mockPage);
 
     ReviewDto mockReviewDto = mock(ReviewDto.class);
     given(bookRepository.findById(any())).willReturn(Optional.of(book));
     given(userRepository.findById(any())).willReturn(Optional.of(users));
     given(reviewMapper.toDto(any(), any(), any(), anyBoolean())).willReturn(mockReviewDto);
 
-    List<ReviewDto> result = reviewService.getPopularReviews();
+    List<ReviewDto> result = reviewService.getPopularReviews("ALL");
 
     assertThat(result).isNotNull();
     assertThat(result).hasSize(1);
+    // 제대로 된 레포지토리 메서드가 불렸는지 확인
+    verify(reviewRepository, times(1)).findByDeletedAtIsNull(any(PageRequest.class));
+  }
+
+  @Test
+  @DisplayName("인기 리뷰 조회 성공 테스트 - 특정 기간(DAILY)")
+  @SuppressWarnings("unchecked")
+  void getPopularReviews_daily_success() {
+    Page<Review> mockPage = mock(Page.class);
+    given(mockPage.getContent()).willReturn(List.of(review));
+    given(reviewRepository.findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
+        any(PageRequest.class))).willReturn(mockPage);
+
+    ReviewDto mockReviewDto = mock(ReviewDto.class);
+    given(bookRepository.findById(any())).willReturn(Optional.of(book));
+    given(userRepository.findById(any())).willReturn(Optional.of(users));
+    given(reviewMapper.toDto(any(), any(), any(), anyBoolean())).willReturn(mockReviewDto);
+
+    List<ReviewDto> result = reviewService.getPopularReviews("DAILY");
+
+    assertThat(result).isNotNull();
+    assertThat(result).hasSize(1);
+    verify(reviewRepository, times(1)).findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
+        any(PageRequest.class));
+  }
+
+  @Test
+  @DisplayName("인기 리뷰 조회 성공 테스트 - 특정 기간(WEEKLY)")
+  @SuppressWarnings("unchecked")
+  void getPopularReviews_weekly_success() {
+    Page<Review> mockPage = mock(Page.class);
+    given(mockPage.getContent()).willReturn(List.of(review));
+    given(reviewRepository.findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
+        any(PageRequest.class))).willReturn(mockPage);
+
+    ReviewDto mockReviewDto = mock(ReviewDto.class);
+    given(bookRepository.findById(any())).willReturn(Optional.of(book));
+    given(userRepository.findById(any())).willReturn(Optional.of(users));
+    given(reviewMapper.toDto(any(), any(), any(), anyBoolean())).willReturn(mockReviewDto);
+
+    List<ReviewDto> result = reviewService.getPopularReviews("WEEKLY");
+
+    assertThat(result).isNotNull();
+    assertThat(result).hasSize(1);
+    verify(reviewRepository, times(1)).findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
+        any(PageRequest.class));
+  }
+
+  @Test
+  @DisplayName("인기 리뷰 조회 성공 테스트 - 특정 기간(MONTHLY)")
+  @SuppressWarnings("unchecked")
+  void getPopularReviews_monthly_success() {
+    Page<Review> mockPage = mock(Page.class);
+    given(mockPage.getContent()).willReturn(List.of(review));
+    given(reviewRepository.findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
+        any(PageRequest.class))).willReturn(mockPage);
+
+    ReviewDto mockReviewDto = mock(ReviewDto.class);
+    given(bookRepository.findById(any())).willReturn(Optional.of(book));
+    given(userRepository.findById(any())).willReturn(Optional.of(users));
+    given(reviewMapper.toDto(any(), any(), any(), anyBoolean())).willReturn(mockReviewDto);
+
+    List<ReviewDto> result = reviewService.getPopularReviews("MONTHLY");
+
+    assertThat(result).isNotNull();
+    assertThat(result).hasSize(1);
+    verify(reviewRepository, times(1)).findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
+        any(PageRequest.class));
   }
 
   @Test
@@ -266,5 +335,49 @@ public class BasicReviewServiceTest {
     reviewService.hardDeleteReview(reviewId, userId);
 
     verify(reviewRepository, times(1)).delete(review);
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 본인이 아닌 다른 유저가 리뷰 삭제 시도 시 예외 발생")
+  void deleteReview_notOwner() {
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+    UUID otherUserId = UUID.randomUUID();
+
+    assertThatThrownBy(() -> reviewService.deleteReview(reviewId, otherUserId))
+        .isInstanceOf(ReviewForbiddenException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.UNAUTHORIZED_ACCESS));
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 이미 논리삭제된 리뷰를 또 삭제 시도 시 예외 발생")
+  void deleteReview_alreadyDeleted() {
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+    given(review.getUserId()).willReturn(userId);
+    given(review.getDeletedAt()).willReturn(LocalDateTime.now());
+
+    assertThatThrownBy(() -> reviewService.deleteReview(reviewId, userId))
+        .isInstanceOf(ReviewAlreadyDeletedException.class);
+  }
+
+  @Test
+  @DisplayName("리뷰 삭제(논리 삭제) 성공 및 도서 통계 차감 테스트")
+  void deleteReview_success() {
+    // given: 정상적인 상태 셋팅
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+    given(review.getUserId()).willReturn(userId); // 권한 통과
+    given(review.getDeletedAt()).willReturn(null); // 아직 삭제 안 됨 통과
+
+    // 도서 평점 깎는 로직(removeBookStats)을 위해 필요한 셋팅
+    given(review.getBookId()).willReturn(bookId);
+    given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
+    given(review.getRating()).willReturn(5);
+
+    // when: 삭제 요청
+    reviewService.deleteReview(reviewId, userId);
+
+    // then: 삭제 처리(markAsDeleted)가 잘 호출되었는지, 도서 조회도 잘 일어났는지 검증
+    verify(review, times(1)).markAsDeleted();
+    verify(bookRepository, times(1)).findById(bookId);
   }
 }
