@@ -20,4 +20,6 @@ public interface BookRepository extends JpaRepository<Book, UUID>, CustomBookRep
   @Query("DELETE FROM Book b WHERE b.id = :id")
   void hardDeleteById(UUID id);
 
+  boolean existsByIdAndDeletedAtIsNotNull(UUID bookId);
+
 }
