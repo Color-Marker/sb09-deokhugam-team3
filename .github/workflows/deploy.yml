@@ -1,9 +1,9 @@
 name: 2. CD (Deploy to Public ECR)
 
 on:
-  workflow_dispatch: # 👈 깃허브 Actions 탭에서 수동으로 배포 버튼 클릭 가능
+  workflow_dispatch:
   schedule:
-    - cron: '0 18 * * *' # 👈 매일 한국 시간 새벽 3시 자동 배포 (UTC 18:00)
+    - cron: '0 18 * * *'
 
 jobs:
   deploy:
@@ -42,24 +42,47 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
           aws-region: ap-northeast-2
 
-      # 5. [프리티어 필수] 메모리 확보를 위해 기존 서비스 중단
-      - name: Stop current service (Desired Count 0)
+      # 5. 새 태스크 정의 등록 및 롤링 배포
+      # 서비스를 끄지 않고 새 이미지로 태스크를 순차 교체 (무중단)
+      - name: Update ECS Service with Rolling Deploy
         run: |
-          aws ecs update-service --cluster ${{ vars.ECS_CLUSTER }} --service ${{ vars.ECS_SERVICE }} --desired-count 0
+          # 현재 태스크 정의 조회
+          TASK_DEFINITION=$(aws ecs describe-task-definition \
+            --task-definition ${{ vars.ECS_TASK_DEFINITION }})
+          
+          # 새 이미지로 태스크 정의 업데이트
+          NEW_TASK_DEF=$(echo $TASK_DEFINITION | jq \
+            --arg IMAGE "${{ vars.ECR_REPOSITORY_URI }}:${{ github.sha }}" \
+            '.taskDefinition 
+              | .containerDefinitions[0].image = $IMAGE 
+              | del(.taskDefinitionArn) 
+              | del(.revision) 
+              | del(.status) 
+              | del(.requiresAttributes) 
+              | del(.compatibilities) 
+              | del(.registeredAt) 
+              | del(.registeredBy)')
+          
+          # 새 태스크 정의 등록
+          NEW_TASK_ARN=$(aws ecs register-task-definition \
+            --cli-input-json "$NEW_TASK_DEF" \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+          
+          # 서비스 업데이트 (desired-count 유지, 롤링 배포)
+          aws ecs update-service \
+            --cluster ${{ vars.ECS_CLUSTER }} \
+            --service ${{ vars.ECS_SERVICE }} \
+            --task-definition $NEW_TASK_ARN \
+            --force-new-deployment
 
-      # 6. [안정성 추가] 메모리가 완전히 반환될 때까지 30초 대기
-      - name: Wait for resource cleanup
-        run: sleep 30
-
-      # 7. 새 태스크 정의 등록 및 서비스 업데이트 (Desired Count 1)
-      - name: Update ECS Service
+      # 6. 배포 완료까지 대기 (헬스체크 통과 확인)
+      # 새 태스크가 정상 상태가 될 때까지 기다림 (최대 10분)
+      - name: Wait for deployment to complete
         run: |
-          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition ${{ vars.ECS_TASK_DEFINITION }})
-          NEW_TASK_DEF=$(echo $TASK_DEFINITION | jq --arg IMAGE "${{ vars.ECR_REPOSITORY_URI }}:${{ github.sha }}" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
-          
-          aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEF"
-          
-          aws ecs update-service --cluster ${{ vars.ECS_CLUSTER }} --service ${{ vars.ECS_SERVICE }} --task-definition ${{ vars.ECS_TASK_DEFINITION }} --desired-count 1 --force-new-deployment
+          aws ecs wait services-stable \
+            --cluster ${{ vars.ECS_CLUSTER }} \
+            --services ${{ vars.ECS_SERVICE }}
 
       # 배포 결과 알림 (Discord)
       - name: 배포 성공 알림
@@ -67,8 +90,8 @@ jobs:
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
-          title: "✅ 서버 새벽 정기 배포 완료"
-          description: "메모리 최적화 및 신규 코드 배포가 성공적으로 완료되었습니다."
+          title: "✅ 무중단 롤링 배포 완료"
+          description: "새 버전이 성공적으로 배포되었습니다."
           color: 0x00ff00
 
       - name: 배포 실패 알림
@@ -76,6 +99,6 @@ jobs:
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
-          title: "🚨 서버 배포 실패"
+          title: "🚨 배포 실패"
           description: "배포 중 에러가 발생했습니다. 로그를 확인해주세요."
           color: 0xff0000
