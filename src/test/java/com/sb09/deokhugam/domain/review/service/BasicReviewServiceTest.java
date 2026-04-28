@@ -257,24 +257,27 @@ public class BasicReviewServiceTest {
 
   @Test
   @DisplayName("인기 리뷰 조회 성공 테스트 - 특정 기간(DAILY)")
-  @SuppressWarnings("unchecked")
   void getPopularReviews_daily_success() {
-    Page<Review> mockPage = mock(Page.class);
-    given(mockPage.getContent()).willReturn(List.of(review));
-    given(reviewRepository.findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
-        any(PageRequest.class))).willReturn(mockPage);
+    PopularReview pr = mock(PopularReview.class);
+    given(pr.getPeriod()).willReturn(PeriodType.DAILY);
+    given(pr.getBaseDate()).willReturn(LocalDate.now());
+    given(pr.getRanking()).willReturn(1L);
+    given(pr.getReviewId()).willReturn(reviewId);
+
+    given(popularReviewRepository.findTopByPeriodOrderByBaseDateDesc(PeriodType.DAILY)).willReturn(
+        Optional.of(pr));
+    given(popularReviewRepository.findAll()).willReturn(List.of(pr));
+    given(reviewRepository.findAllById(List.of(reviewId))).willReturn(List.of(review));
 
     ReviewDto mockReviewDto = mock(ReviewDto.class);
-    given(bookRepository.findById(any())).willReturn(Optional.of(book));
-    given(userRepository.findById(any())).willReturn(Optional.of(users));
-    given(reviewMapper.toDto(any(), any(), any(), anyBoolean())).willReturn(mockReviewDto);
+    given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
+    given(userRepository.findById(userId)).willReturn(Optional.of(users));
+    given(reviewMapper.toDto(eq(review), eq(book), eq(users), eq(false))).willReturn(mockReviewDto);
 
     List<ReviewDto> result = reviewService.getPopularReviews("DAILY");
 
     assertThat(result).isNotNull();
     assertThat(result).hasSize(1);
-    verify(reviewRepository, times(1)).findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
-        any(PageRequest.class));
   }
 
   @Test
