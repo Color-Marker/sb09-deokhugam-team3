@@ -1,5 +1,6 @@
 package com.sb09.deokhugam.domain.dashboard;
 
+import com.sb09.deokhugam.domain.book.repository.BookRepository;
 import com.sb09.deokhugam.domain.dashboard.entity.PeriodType;
 import com.sb09.deokhugam.domain.dashboard.entity.PopularBook;
 import com.sb09.deokhugam.domain.dashboard.repository.PopularBookRepository;
@@ -33,6 +34,9 @@ class PopularBookServiceTest {
 
   @Mock
   private ReviewRepository reviewRepository;
+
+  @Mock
+  private BookRepository bookRepository;
 
   @InjectMocks
   private BasicPopularBookService popularBookService;
@@ -79,6 +83,7 @@ class PopularBookServiceTest {
     results.add(row);
 
     given(reviewRepository.calculateBookByPeriod(any(), any())).willReturn(results);
+    given(bookRepository.existsByIdAndDeletedAtIsNotNull(any())).willReturn(false);
 
     // when
     popularBookService.calculatePopularBook(baseDate);
@@ -107,6 +112,8 @@ class PopularBookServiceTest {
     results.add(row);
 
     given(reviewRepository.calculateBookByPeriod(any(), any())).willReturn(results);
+    given(bookRepository.existsByIdAndDeletedAtIsNotNull(any())).willReturn(false);
+
     ArgumentCaptor<PopularBook> captor = ArgumentCaptor.forClass(PopularBook.class);
 
     // when
@@ -131,6 +138,7 @@ class PopularBookServiceTest {
     Object[] row3 = new Object[]{UUID.randomUUID(), 5L, 3.0};
 
     given(reviewRepository.calculateBookByPeriod(any(), any())).willReturn(List.of(row1, row2, row3));
+    given(bookRepository.existsByIdAndDeletedAtIsNotNull(any())).willReturn(false);
 
     ArgumentCaptor<PopularBook> captor = ArgumentCaptor.forClass(PopularBook.class);
 
