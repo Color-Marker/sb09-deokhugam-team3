@@ -380,4 +380,315 @@ public class BasicReviewServiceTest {
     verify(review, times(1)).markAsDeleted();
     verify(bookRepository, times(1)).findById(bookId);
   }
+  // ==========================================
+  //  리뷰 등록 (Create) 추가 예외 테스트
+  // ==========================================
+
+  @Test
+  @DisplayName("예외 검증 - 존재하지 않는 도서에 리뷰 등록 시도")
+  void createReview_bookNotFound() {
+    given(bookRepository.findById(bookId)).willReturn(Optional.empty());
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "내용", 5);
+
+    assertThatThrownBy(() -> reviewService.createReview(request))
+        .isInstanceOf(CustomException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.BOOK_NOT_FOUND));
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 삭제된(휴지통) 도서에 리뷰 등록 시도")
+  void createReview_bookAlreadyDeleted() {
+    given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
+    given(book.getDeletedAt()).willReturn(LocalDateTime.now()); // 도서 삭제 상태 재현
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "내용", 5);
+
+    assertThatThrownBy(() -> reviewService.createReview(request))
+        .isInstanceOf(CustomException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.BOOK_NOT_FOUND));
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 존재하지 않는 사용자가 리뷰 등록 시도")
+  void createReview_userNotFound() {
+    given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
+    given(userRepository.findById(userId)).willReturn(Optional.empty());
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "내용", 5);
+
+    assertThatThrownBy(() -> reviewService.createReview(request))
+        .isInstanceOf(CustomException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.USER_NOT_FOUND));
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 탈퇴한(삭제된) 사용자가 리뷰 등록 시도")
+  void createReview_userAlreadyDeleted() {
+    given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
+    given(userRepository.findById(userId)).willReturn(Optional.of(users));
+    given(users.getDeletedAt()).willReturn(LocalDateTime.now()); // 사용자 탈퇴 상태 재현
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "내용", 5);
+
+    assertThatThrownBy(() -> reviewService.createReview(request))
+        .isInstanceOf(CustomException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.USER_NOT_FOUND));
+  }
+
+  // ==========================================
+  //  리뷰 좋아요 (Like) 추가 테스트
+  // ==========================================
+
+  @Test
+  @DisplayName("리뷰 좋아요 성공 테스트 - 이미 누른 상태면 [취소]됨")
+  void toggleLike_removeLike() {
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+    given(userRepository.findById(userId)).willReturn(Optional.of(users));
+
+    ReviewLike existingLike = mock(ReviewLike.class);
+    // 이미 좋아요가 존재하는 상황 재현
+    given(reviewLikeRepository.findByReviewIdAndUserId(reviewId, userId)).willReturn(
+        Optional.of(existingLike));
+    given(review.getLikeCount()).willReturn(0);
+
+    ReviewLikeDto result = reviewService.toggleLike(reviewId, userId);
+
+    verify(reviewLikeRepository, times(1)).delete(existingLike);
+    verify(review, times(1)).removeLikeCount(); // 좋아요 감소 로직 호출 확인
+
+    assertThat(result.liked()).isFalse();
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 이미 삭제된 리뷰에 좋아요 시도 시 예외 발생")
+  void toggleLike_deletedReview() {
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+    given(review.getDeletedAt()).willReturn(LocalDateTime.now()); // 리뷰 삭제 상태
+
+    assertThatThrownBy(() -> reviewService.toggleLike(reviewId, userId))
+        .isInstanceOf(CustomException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.REVIEW_NOT_FOUND));
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 없는 사용자가 좋아요 시도 시 예외 발생")
+  void toggleLike_userNotFound() {
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+    given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+    assertThatThrownBy(() -> reviewService.toggleLike(reviewId, userId))
+        .isInstanceOf(CustomException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.USER_NOT_FOUND));
+  }
+
+  // ==========================================
+  //  리뷰 단건 조회 (Detail) 추가 예외 테스트
+  // ==========================================
+
+  @Test
+  @DisplayName("예외 검증 - 존재하지 않는 리뷰 상세 조회 시도")
+  void getReviewDetail_notFound() {
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.empty());
+
+    assertThatThrownBy(() -> reviewService.getReviewDetail(reviewId, userId))
+        .isInstanceOf(ReviewNotFoundException.class);
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 삭제된 리뷰 상세 조회 시도 시 예외 발생")
+  void getReviewDetail_deletedReview() {
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+    given(review.getDeletedAt()).willReturn(LocalDateTime.now()); // 리뷰 삭제 상태
+
+    assertThatThrownBy(() -> reviewService.getReviewDetail(reviewId, userId))
+        .isInstanceOf(CustomException.class)
+        .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+            .isEqualTo(ErrorCode.REVIEW_NOT_FOUND));
+  }
+
+  // ==========================================
+  //  리뷰 등록  - 입력값 검증 3종
+  // ==========================================
+
+  @Test
+  @DisplayName("예외 검증 - 리뷰 등록 시 필수값 누락 (평점 또는 내용 없음)")
+  void createReview_missingRequiredFields() {
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, null,
+        null); // 널(null) 값 전달
+    assertThatThrownBy(() -> reviewService.createReview(request))
+        .isInstanceOf(RuntimeException.class); // 현하님이 만드신 예외가 터져야 성공!
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 리뷰 등록 시 평점 범위 오류 (1~5점 이탈)")
+  void createReview_invalidRatingRange() {
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "정상적인 내용입니다.",
+        6); // 6점 전달
+    assertThatThrownBy(() -> reviewService.createReview(request))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 리뷰 등록 시 내용 길이 오류 (너무 짧음)")
+  void createReview_invalidContentLength() {
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "", 5); // 빈 문자열 전달
+    assertThatThrownBy(() -> reviewService.createReview(request))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  // ==========================================
+  //  리뷰 수정  - 입력값 검증 3종
+  // ==========================================
+
+  @Test
+  @DisplayName("예외 검증 - 리뷰 수정 시 필수값 누락")
+  void updateReview_missingRequiredFields() {
+    ReviewUpdateRequest request = new ReviewUpdateRequest(null, null);
+    assertThatThrownBy(() -> reviewService.updateReview(reviewId, request, userId))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 리뷰 수정 시 평점 범위 오류")
+  void updateReview_invalidRatingRange() {
+    ReviewUpdateRequest request = new ReviewUpdateRequest("정상적인 내용입니다.", 0); // 0점 전달
+    assertThatThrownBy(() -> reviewService.updateReview(reviewId, request, userId))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 리뷰 수정 시 내용 길이 오류")
+  void updateReview_invalidContentLength() {
+    ReviewUpdateRequest request = new ReviewUpdateRequest("", 5);
+    assertThatThrownBy(() -> reviewService.updateReview(reviewId, request, userId))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  // ==========================================
+  // 리뷰 목록 조회 - 목록 및 필터 검증
+  // ==========================================
+
+  @Test
+  @DisplayName("예외 검증 - 목록 조회 시 잘못된 정렬 조건")
+  void getReviews_invalidSortCondition() {
+    // orderBy에 "STRANGE_SORT" 같이 약속되지 않은 값 전달
+    ReviewListRequest request = new ReviewListRequest(null, null, null, 10, null, null,
+        "STRANGE_SORT", Sort.Direction.DESC);
+
+    assertThatThrownBy(() -> reviewService.getReviews(request, userId))
+        .isInstanceOf(Exception.class);
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 목록 조회 시 limit 범위 오류 (음수)")
+  void getReviews_invalidLimitBounds() {
+    ReviewListRequest request = new ReviewListRequest(null, null, null, -5, null, null, "LATEST",
+        Sort.Direction.DESC);
+
+    assertThatThrownBy(() -> reviewService.getReviews(request, userId))
+        .isInstanceOf(Exception.class);
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 존재하지 않는 작성자 ID로 필터링 시도")
+  void getReviews_authorNotFound() {
+    UUID fakeAuthorId = UUID.randomUUID();
+    ReviewListRequest request = new ReviewListRequest(null, fakeAuthorId, null, 10, null, null,
+        "LATEST", Sort.Direction.DESC);
+
+    // Repository가 빈 값을 반환하도록 모킹
+    given(userRepository.findById(fakeAuthorId)).willReturn(Optional.empty());
+
+    assertThatThrownBy(() -> reviewService.getReviews(request, userId))
+        .isInstanceOf(Exception.class);
+  }
+
+  @Test
+  @DisplayName("성공 테스트 - 헤더 userId 누락(비로그인) 시 정상 조회 및 likedByMe false 처리")
+  @SuppressWarnings("unchecked")
+  void getReviews_noHeaderUserId() {
+    ReviewListRequest request = new ReviewListRequest(null, null, null, 10, null, null, "LATEST",
+        Sort.Direction.DESC);
+    Slice<ReviewDto> mockSlice = mock(Slice.class);
+    CursorPageResponseDto<ReviewDto> mockResponse = mock(CursorPageResponseDto.class);
+
+    // currentUserId 자리에 null이 들어감
+    given(reviewRepository.searchReviews(eq(request), eq(null))).willReturn(mockSlice);
+    doReturn(mockResponse).when(cursorPageResponseMapper)
+        .fromSlice(any(), any(), any(), any(), any());
+
+    CursorPageResponseDto<ReviewDto> result = reviewService.getReviews(request, null);
+
+    assertThat(result).isNotNull();
+    verify(reviewRepository, times(1)).searchReviews(eq(request), eq(null));
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 리뷰 등록 시 내용이 null인 경우 (부분 커버리지 보완)")
+  void createReview_contentIsNull() {
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, null, 5); // 내용만 null
+    assertThatThrownBy(() -> reviewService.createReview(request))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 리뷰 등록 시 내용이 띄어쓰기(공백)만 있는 경우 (부분 커버리지 보완)")
+  void createReview_contentIsBlank() {
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "   ", 5); // 공백만 전달
+    assertThatThrownBy(() -> reviewService.createReview(request))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 리뷰 등록 시 평점이 5점을 초과하는 경우 (부분 커버리지 보완)")
+  void createReview_ratingTooHigh() {
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, "정상적인 내용", 6); // 6점 전달
+    assertThatThrownBy(() -> reviewService.createReview(request))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 리뷰 등록 시 내용이 1000자를 초과하는 경우 (부분 커버리지 보완)")
+  void createReview_contentTooLong() {
+    String longContent = "a".repeat(1001); // 'a'를 1001번 반복해서 아주 긴 텍스트 생성
+    ReviewCreateRequest request = new ReviewCreateRequest(userId, bookId, longContent, 5);
+    assertThatThrownBy(() -> reviewService.createReview(request))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  @DisplayName("예외 검증 - 목록 조회 시 존재하지 않는 도서 ID로 필터링 시도")
+  void getReviews_bookNotFound() {
+    UUID fakeBookId = UUID.randomUUID();
+    ReviewListRequest request = new ReviewListRequest(fakeBookId, null, null, 10, null, null,
+        "LATEST", Sort.Direction.DESC);
+
+    // Repository가 빈 값을 반환하도록 모킹
+    given(bookRepository.findById(fakeBookId)).willReturn(Optional.empty());
+
+    assertThatThrownBy(() -> reviewService.getReviews(request, userId))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  @DisplayName("성공 테스트 - 목록 조회 시 정렬 조건이 RATING 인 경우 (부분 커버리지 보완)")
+  @SuppressWarnings("unchecked")
+  void getReviews_orderByRating() {
+    ReviewListRequest request = new ReviewListRequest(null, null, null, 10, null, null, "RATING",
+        Sort.Direction.DESC);
+    Slice<ReviewDto> mockSlice = mock(Slice.class);
+    CursorPageResponseDto<ReviewDto> mockResponse = mock(CursorPageResponseDto.class);
+
+    given(reviewRepository.searchReviews(eq(request), eq(userId))).willReturn(mockSlice);
+    doReturn(mockResponse).when(cursorPageResponseMapper)
+        .fromSlice(any(), any(), any(), any(), any());
+
+    CursorPageResponseDto<ReviewDto> result = reviewService.getReviews(request, userId);
+
+    assertThat(result).isNotNull();
+  }
+
 }
