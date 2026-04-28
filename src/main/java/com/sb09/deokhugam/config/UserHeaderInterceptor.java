@@ -2,6 +2,7 @@ package com.sb09.deokhugam.config;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -18,9 +19,16 @@ public class UserHeaderInterceptor implements HandlerInterceptor {
     }
 
     // 그 외(PATCH, DELETE 등)는 헤더가 있는지 검사함
+    // 1. 헤더 존재 여부 먼저 확인
     String header = request.getHeader("Deokhugam-Request-User-ID");
     if (header == null || header.isBlank()) {
       throw new IllegalArgumentException("필수 헤더가 누락되었습니다.");
+    }
+    // 2. 헤더가 있다면, UUID 형식이 맞는지 추가 검사
+    try {
+      UUID.fromString(header);
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException("유효하지 않은 사용자 ID 형식입니다.");
     }
     return true; //헤더가 있으면 통과
   }

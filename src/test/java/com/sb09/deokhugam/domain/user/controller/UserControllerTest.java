@@ -254,4 +254,14 @@ class UserControllerTest {
         .andExpect(status().isBadRequest());
   }
 
+  @Test
+  @DisplayName("닉네임 수정 실패 - 유효하지 않은 UUID 형식 - 400 반환")
+  void update_invalidUuidFormat_returns400() throws Exception {
+    mockMvc.perform(patch("/api/users/{userId}", userId)
+            .header("Deokhugam-Request-User-ID", "invalid-uuid-string") // uuid가 아닌 문자열로 잘못된 형식을 보냄
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(new UserUpdateRequest("새닉네임"))))
+        .andExpect(status().isBadRequest());
+  }
+
 }
