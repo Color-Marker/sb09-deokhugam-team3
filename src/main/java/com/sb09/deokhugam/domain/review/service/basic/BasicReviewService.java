@@ -28,10 +28,15 @@ import com.sb09.deokhugam.global.exception.review.ReviewNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -268,19 +273,19 @@ public class BasicReviewService implements ReviewService {
    * 6. 인기 리뷰 조회: 좋아요 많은 순 상위 10개
    */
   @Override
-  public java.util.List<ReviewDto> getPopularReviews(String period) {
+  public List<ReviewDto> getPopularReviews(String period) {
     // 페이징 및 정렬 조건 세팅 (1순위: 좋아요 내림차순, 2순위: 최신작성일 내림차순)
-    org.springframework.data.domain.PageRequest pageRequest = org.springframework.data.domain.PageRequest.of(
+    PageRequest pageRequest = PageRequest.of(
         0, 10,
-        org.springframework.data.domain.Sort.by(
-            org.springframework.data.domain.Sort.Order.desc("likeCount"),
-            org.springframework.data.domain.Sort.Order.desc("createdAt")
+        Sort.by(
+            Sort.Order.desc("likeCount"),
+            Sort.Order.desc("createdAt")
         )
     );
 
     // 현재 시간을 기준으로 기간 계산
-    java.time.LocalDateTime now = java.time.LocalDateTime.now();
-    java.time.LocalDateTime startDate = null;
+    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime startDate = null;
 
     if ("DAILY".equalsIgnoreCase(period)) {
       startDate = now.minusDays(1);   // 하루 전
@@ -291,7 +296,7 @@ public class BasicReviewService implements ReviewService {
     }
 
     // 기간 조건에 따라 DB 조회 (ALL 이거나 잘못된 값이면 전체 조회)
-    org.springframework.data.domain.Page<Review> popularReviews;
+    Page<Review> popularReviews;
     if (startDate == null || "ALL".equalsIgnoreCase(period)) {
       popularReviews = reviewRepository.findByDeletedAtIsNull(pageRequest); // 논리 삭제된 리뷰 제외
     } else {
