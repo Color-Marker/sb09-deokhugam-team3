@@ -10,6 +10,7 @@ import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.exception.CustomException;
 import com.sb09.deokhugam.global.exception.ErrorCode;
 import com.sb09.deokhugam.global.exception.comment.CommentNotFoundException;
+import com.sb09.deokhugam.global.exception.comment.ForbiddenAuthorityException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -108,6 +109,17 @@ class CommentControllerTest {
   }
 
   @Test
+  @DisplayName("댓글 생성 - userId 누락 - 400")
+  void createComment_nullUserId_returns400() throws Exception {
+    CommentCreateRequest request = new CommentCreateRequest(reviewId, null, "테스트 댓글 내용");
+
+    mockMvc.perform(post("/api/comments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
   @DisplayName("댓글 생성 실패 - 존재하지 않는 리뷰 - 404")
   void createComment_reviewNotFound_returns404() throws Exception {
     CommentCreateRequest request = new CommentCreateRequest(reviewId, userId, "테스트 댓글 내용");
@@ -118,6 +130,17 @@ class CommentControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @DisplayName("댓글 생성 실패 - content size초과 - 400")
+  void createComment_tooLongContent_returns400() throws Exception {
+    CommentCreateRequest request = new CommentCreateRequest(reviewId, userId, "a".repeat(501));
+
+    mockMvc.perform(post("/api/comments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
@@ -180,6 +203,62 @@ class CommentControllerTest {
   }
 
   @Test
+  @DisplayName("댓글 목록 조회 실패 - limit 음수 - 400")
+  void getComments_negativeLimit_returns400() throws Exception {
+    mockMvc.perform(get("/api/comments")
+            .param("reviewId", reviewId.toString())
+            .param("limit", "-1"))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("댓글 목록 조회 실패 - limit 초과 - 400")
+  void getComments_limitOver100_returns400() throws Exception {
+    mockMvc.perform(get("/api/comments")
+            .param("reviewId", reviewId.toString())
+            .param("limit", "101"))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("댓글 목록 조회 실패 - 잘못된 정렬 방향 - 400")
+  void getComments_invalidDirection_returns400() throws Exception {
+    mockMvc.perform(get("/api/comments")
+            .param("reviewId", reviewId.toString())
+            .param("direction", "invalid"))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("댓글 목록 조회 실패 - 존재하지 않는 리뷰 - 404")
+  void getComments_reviewNotFound_returns404() throws Exception {
+    given(commentService.findAllByReviewId(any()))
+        .willThrow(new CustomException(ErrorCode.REVIEW_NOT_FOUND));
+
+    mockMvc.perform(get("/api/comments")
+            .param("reviewId", UUID.randomUUID().toString()))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @DisplayName("댓글 목록 조회 실패 - cursor UUID 형식 오류 - 400")
+  void getComments_invalidCursor_returns400() throws Exception {
+    mockMvc.perform(get("/api/comments")
+            .param("reviewId", reviewId.toString())
+            .param("cursor", "not-a-uuid"))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("댓글 목록 조회 실패 - after 날짜 형식 오류 - 400")
+  void getComments_invalidAfter_returns400() throws Exception {
+    mockMvc.perform(get("/api/comments")
+            .param("reviewId", reviewId.toString())
+            .param("after", "not-a-date"))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
   @DisplayName("댓글 수정 성공(DTO) - 200 반환")
   void updateComment_success() throws Exception {
     CommentUpdateRequest request = new CommentUpdateRequest("수정된 내용");
@@ -195,7 +274,22 @@ class CommentControllerTest {
   @Test
   @DisplayName("댓글 수정 실패 - 헤더 누락 - 400")
   void updateComment_missingHeader_returns400() throws Exception {
+    CommentUpdateRequest request = new CommentUpdateRequest("수정 내용");
+    mockMvc.perform(patch("/api/comments/{commentId}", commentId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
 
+  @Test
+  @DisplayName("댓글 수정 실패 - size 초과 - 400")
+  void updateComment_overSize_returns400() throws Exception {
+    CommentUpdateRequest request = new CommentUpdateRequest("a".repeat(501));
+    mockMvc.perform(patch("/api/comments/{commentId}", commentId)
+            .header("Deokhugam-Request-User-ID", userId.toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
@@ -215,9 +309,28 @@ class CommentControllerTest {
   @Test
   @DisplayName("댓글 수정 실패 - 존재하지 않는 댓글 - 404")
   void updateComment_notFound_returns404() throws Exception {
+    CommentUpdateRequest request = new CommentUpdateRequest("수정 내용");
+    given(commentService.update(any(), any(), any()))
+        .willThrow(CommentNotFoundException.withId(commentId));
 
+    mockMvc.perform(patch("/api/comments/{commentId}", commentId)
+            .header("Deokhugam-Request-User-ID", userId.toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isNotFound());
   }
 
+  @Test
+  @DisplayName("댓글 수정 실패 - 수정 내용 없음 - 400")
+  void updateComment_emptyContent_returns400() throws Exception {
+    CommentUpdateRequest request = new CommentUpdateRequest("");
+
+    mockMvc.perform(patch("/api/comments/{commentId}", commentId)
+            .header("Deokhugam-Request-User-ID", userId.toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
 
   @Test
   @DisplayName("댓글 논리 삭제 성공 - 204 반환")
@@ -230,19 +343,30 @@ class CommentControllerTest {
   @Test
   @DisplayName("댓글 논리삭제 실패 - 헤더 누락 - 400")
   void softDeleteComment_missingHeader_returns400() throws Exception {
-
+    mockMvc.perform(delete("/api/comments/{commentId}", commentId))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
   @DisplayName("댓글 논리삭제 실패 - 타인 댓글 - 403")
   void softDeleteComment_forbidden_returns403() throws Exception {
+    willThrow(new ForbiddenAuthorityException(ErrorCode.COMMENT_DELETE_FORBIDDEN))
+        .given(commentService).softDelete(any(), any());
 
+    mockMvc.perform(delete("/api/comments/{commentId}", commentId)
+            .header("Deokhugam-Request-User-ID", UUID.randomUUID().toString()))
+        .andExpect(status().isForbidden());
   }
 
   @Test
   @DisplayName("댓글 논리삭제 실패 - 존재하지 않는 댓글 - 404")
   void softDeleteComment_notFound_returns404() throws Exception {
+    willThrow(CommentNotFoundException.withId(commentId))
+        .given(commentService).softDelete(any(), any());
 
+    mockMvc.perform(delete("/api/comments/{commentId}", commentId)
+            .header("Deokhugam-Request-User-ID", userId.toString()))
+        .andExpect(status().isNotFound());
   }
 
   @Test
@@ -267,18 +391,31 @@ class CommentControllerTest {
   @Test
   @DisplayName("댓글 물리삭제 실패 - 헤더 누락 - 400")
   void hardDeleteComment_missingHeader_returns400() throws Exception {
-
+    mockMvc.perform(delete("/api/comments/{commentId}/hard", commentId))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
   @DisplayName("댓글 물리삭제 실패 - 타인 댓글 - 403")
   void hardDeleteComment_forbidden_returns403() throws Exception {
+    willThrow(new ForbiddenAuthorityException(ErrorCode.COMMENT_DELETE_FORBIDDEN))
+        .given(commentService).hardDelete(any(), any());
 
+    mockMvc.perform(delete("/api/comments/{commentId}/hard", commentId)
+            .header("Deokhugam-Request-User-ID", UUID.randomUUID().toString()))
+        .andExpect(status().isForbidden());
   }
 
   @Test
   @DisplayName("댓글 물리삭제 실패 - 존재하지 않는 댓글 - 404")
   void hardDeleteComment_notFound_returns404() throws Exception {
+    willThrow(CommentNotFoundException.withId(commentId))
+        .given(commentService).hardDelete(any(), any());
+
+    mockMvc.perform(delete("/api/comments/{commentId}/hard", commentId)
+            .header("Deokhugam-Request-User-ID", userId.toString()))
+        .andExpect(status().isNotFound());
 
   }
+
 }
