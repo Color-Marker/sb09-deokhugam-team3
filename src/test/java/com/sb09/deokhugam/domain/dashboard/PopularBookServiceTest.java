@@ -38,18 +38,19 @@ class PopularBookServiceTest {
   private BasicPopularBookService popularBookService;
 
   @Test
-  @DisplayName("이미 배치 수행된 날짜 - 저장 없이 바로 리턴")
+  @DisplayName("이미 배치 수행된 날짜 - 기존 데이터 삭제 후 재저장")
   void calculatePopularBook_alreadyExists_skip() {
     // given
     LocalDate baseDate = LocalDate.of(2024, 1, 1);
-    given(popularBookRepository.existsByBaseDate(baseDate)).willReturn(true);
+    given(reviewRepository.calculateBookByPeriod(any(), any())).willReturn(Collections.emptyList());
 
     // when
     popularBookService.calculatePopularBook(baseDate);
 
     // then
     verify(popularBookRepository, never()).save(any());
-    verify(reviewRepository, never()).calculateBookByPeriod(any(), any());
+    verify(popularBookRepository, times(PeriodType.values().length))
+        .deleteByPeriodAndBaseDate(any(), eq(baseDate));
   }
 
   @Test
@@ -57,7 +58,6 @@ class PopularBookServiceTest {
   void calculatePopularBook_noReviews_nothingSaved() {
     // given
     LocalDate baseDate = LocalDate.of(2024, 1, 1);
-    given(popularBookRepository.existsByBaseDate(baseDate)).willReturn(false);
     given(reviewRepository.calculateBookByPeriod(any(), any())).willReturn(Collections.emptyList());
 
     // when
@@ -78,7 +78,6 @@ class PopularBookServiceTest {
     List<Object[]> results = new ArrayList<>();
     results.add(row);
 
-    given(popularBookRepository.existsByBaseDate(baseDate)).willReturn(false);
     given(reviewRepository.calculateBookByPeriod(any(), any())).willReturn(results);
 
     // when
@@ -107,7 +106,6 @@ class PopularBookServiceTest {
     List<Object[]> results = new ArrayList<>();
     results.add(row);
 
-    given(popularBookRepository.existsByBaseDate(baseDate)).willReturn(false);
     given(reviewRepository.calculateBookByPeriod(any(), any())).willReturn(results);
     ArgumentCaptor<PopularBook> captor = ArgumentCaptor.forClass(PopularBook.class);
 
@@ -132,7 +130,6 @@ class PopularBookServiceTest {
     Object[] row2 = new Object[]{UUID.randomUUID(), 10L, 4.0};
     Object[] row3 = new Object[]{UUID.randomUUID(), 5L, 3.0};
 
-    given(popularBookRepository.existsByBaseDate(baseDate)).willReturn(false);
     given(reviewRepository.calculateBookByPeriod(any(), any())).willReturn(List.of(row1, row2, row3));
 
     ArgumentCaptor<PopularBook> captor = ArgumentCaptor.forClass(PopularBook.class);
@@ -155,7 +152,6 @@ class PopularBookServiceTest {
   void calculatePopularBook_allTimePeriod_fromYear2000() {
     // given
     LocalDate baseDate = LocalDate.of(2024, 1, 1);
-    given(popularBookRepository.existsByBaseDate(baseDate)).willReturn(false);
     given(reviewRepository.calculateBookByPeriod(any(), any())).willReturn(Collections.emptyList());
 
     ArgumentCaptor<java.time.LocalDateTime> fromCaptor = ArgumentCaptor.forClass(java.time.LocalDateTime.class);
