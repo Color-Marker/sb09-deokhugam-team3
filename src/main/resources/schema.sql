@@ -43,12 +43,13 @@ CREATE TABLE books (
 
                        CONSTRAINT pk_books
                            PRIMARY KEY (id),
-                       CREATE UNIQUE INDEX uq_books_isbn_active ON books(isbn) WHERE deleted_at IS NULL AND isbn IS NOT NULL;
                        CONSTRAINT chk_books_rating
                            CHECK (rating >= 0.0 AND rating <= 5.0),
                        CONSTRAINT chk_books_review_count
                            CHECK (review_count >= 0)
 );
+
+CREATE UNIQUE INDEX uq_books_isbn_active ON books(isbn) WHERE deleted_at IS NULL AND isbn IS NOT NULL;
 
 -- =====================================================
 -- 리뷰 (Reviews)
@@ -69,7 +70,7 @@ CREATE TABLE reviews (
                              PRIMARY KEY (id),
                          CONSTRAINT fk_reviews_book
                              FOREIGN KEY (book_id) REFERENCES books (id)
-                             ON DELETE CASCADE,
+                                 ON DELETE CASCADE,
                          CONSTRAINT fk_reviews_user
                              FOREIGN KEY (user_id) REFERENCES users (id) ON
                                  DELETE CASCADE,
@@ -146,13 +147,13 @@ CREATE TABLE notifications (
                                    PRIMARY KEY (id),
                                CONSTRAINT fk_notifications_user
                                    FOREIGN KEY (user_id) REFERENCES users (id)
-                                   ON DELETE CASCADE,
+                                       ON DELETE CASCADE,
                                CONSTRAINT fk_notifications_sender
                                    FOREIGN KEY (sender_id) REFERENCES users (id)
-                                   ON DELETE SET NULL,
+                                       ON DELETE SET NULL,
                                CONSTRAINT fk_notifications_review
                                    FOREIGN KEY (review_id) REFERENCES reviews (id)
-                                   ON DELETE CASCADE,
+                                       ON DELETE CASCADE,
                                CONSTRAINT chk_notifications_type
                                    CHECK (type IN ('LIKE', 'COMMENT', 'RANKING'))
 );
@@ -175,7 +176,7 @@ CREATE TABLE popular_books (
                                    PRIMARY KEY (id),
                                CONSTRAINT fk_popular_books_book
                                    FOREIGN KEY (book_id) REFERENCES books (id)
-                                   ON DELETE CASCADE,
+                                       ON DELETE CASCADE,
                                CONSTRAINT chk_popular_books_period
                                    CHECK (period IN ('DAILY', 'WEEKLY', 'MONTHLY', 'ALL_TIME')),
                                CONSTRAINT chk_popular_books_ranking
