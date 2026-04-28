@@ -50,21 +50,34 @@ class BasicUserServiceTest {
   @InjectMocks
   private BasicUserService userService;
 
+  private String email;
+  private String nickname;
+  private String newNickname;
+  private String password;
+  private String encodedPassword;
+
   private UUID userId;
   private Users user;
   private UserResponse userResponse;
 
   @BeforeEach
   void setUp() {
+    email = "test@test.com";
+    nickname = "테스트유저";
+    newNickname = "새닉네임";
+    password = "Test1234!";
+    encodedPassword = "encodedPassword";
+
     userId = UUID.randomUUID();
     user = mock(Users.class);
+
     given(user.getId()).willReturn(userId);
-    given(user.getEmail()).willReturn("test@test.com");
-    given(user.getNickname()).willReturn("테스트유저");
-    given(user.getPassword()).willReturn("encodedPassword");
+    given(user.getEmail()).willReturn(email);
+    given(user.getNickname()).willReturn(nickname);
+    given(user.getPassword()).willReturn(encodedPassword);
     given(user.getDeletedAt()).willReturn(null);
 
-    userResponse = new UserResponse(userId, "test@test.com", "테스트유저", LocalDateTime.now());
+    userResponse = new UserResponse(userId, email, nickname, LocalDateTime.now());
   }
 
   // ===== create =====
@@ -72,22 +85,24 @@ class BasicUserServiceTest {
   @Test
   @DisplayName("회원가입 성공")
   void create_success() {
-    UserRegisterRequest request = new UserRegisterRequest("test@test.com", "테스트유저", "Test1234!");
+    UserRegisterRequest request = new UserRegisterRequest(email, nickname, password);
+
     given(userRepository.existsByEmailAndDeletedAtIsNull(request.email())).willReturn(false);
-    given(passwordEncoder.encode(request.password())).willReturn("encodedPassword");
+    given(passwordEncoder.encode(request.password())).willReturn(encodedPassword);
     given(userRepository.save(any(Users.class))).willReturn(user);
     given(userMapper.toDto(user)).willReturn(userResponse);
 
     UserResponse result = userService.create(request);
 
-    assertThat(result).isEqualTo(userResponse);  // 기댓값과 실제값 일치
-    verify(userRepository).save(any(Users.class));  // save()가 실제로 호출됐는지 확인
+    assertThat(result).isEqualTo(userResponse);
+    verify(userRepository).save(any(Users.class));
   }
 
   @Test
   @DisplayName("회원가입 실패 - 이메일 중복")
   void create_duplicateEmail() {
-    UserRegisterRequest request = new UserRegisterRequest("test@test.com", "테스트유저", "Test1234!");
+    UserRegisterRequest request = new UserRegisterRequest(email, nickname, password);
+
     given(userRepository.existsByEmailAndDeletedAtIsNull(request.email())).willReturn(true);
 
     assertThatThrownBy(() -> userService.create(request))
@@ -101,7 +116,8 @@ class BasicUserServiceTest {
   @Test
   @DisplayName("로그인 성공")
   void login_success() {
-    UserLoginRequest request = new UserLoginRequest("test@test.com", "Test1234!");
+    UserLoginRequest request = new UserLoginRequest(email, password);
+
     given(userRepository.findByEmailAndDeletedAtIsNull(request.email())).willReturn(
         Optional.of(user));
     given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(true);
@@ -115,7 +131,10 @@ class BasicUserServiceTest {
   @Test
   @DisplayName("로그인 실패 - 존재하지 않는 이메일")
   void login_emailNotFound() {
-    UserLoginRequest request = new UserLoginRequest("none@test.com", "Test1234!");
+    // 존재하지 않음을 명시하기 위해 변수 조합("none" + email) 사용
+    String nonExistentEmail = "none_" + email;
+    UserLoginRequest request = new UserLoginRequest(nonExistentEmail, password);
+
     given(userRepository.findByEmailAndDeletedAtIsNull(request.email())).willReturn(
         Optional.empty());
 
@@ -128,9 +147,11 @@ class BasicUserServiceTest {
   @Test
   @DisplayName("로그인 실패 - 비밀번호 불일치")
   void login_wrongPassword() {
-    UserLoginRequest request = new UserLoginRequest("test@test.com", "Wrong1234!");
+    UserLoginRequest request = new UserLoginRequest(email, "wrong_" + password);
+
     given(userRepository.findByEmailAndDeletedAtIsNull(request.email())).willReturn(
         Optional.of(user));
+    // passwordEncoder가 false를 반환하도록 설정함
     given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(false);
 
     assertThatThrownBy(() -> userService.login(request))
@@ -169,7 +190,8 @@ class BasicUserServiceTest {
   @Test
   @DisplayName("닉네임 수정 성공")
   void update_success() {
-    UserUpdateRequest request = new UserUpdateRequest("새닉네임");
+    UserUpdateRequest request = new UserUpdateRequest(newNickname);
+
     given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(user));
     given(userMapper.toDto(user)).willReturn(userResponse);
 
@@ -183,7 +205,7 @@ class BasicUserServiceTest {
   @DisplayName("닉네임 수정 실패 - 본인 아닌 사용자 수정 시도")
   void update_unauthorized() {
     UUID otherUserId = UUID.randomUUID();
-    UserUpdateRequest request = new UserUpdateRequest("새닉네임");
+    UserUpdateRequest request = new UserUpdateRequest(newNickname);
 
     assertThatThrownBy(() -> userService.update(otherUserId, userId, request))
         .isInstanceOf(UnauthorizedAccessException.class)
@@ -195,7 +217,7 @@ class BasicUserServiceTest {
   @DisplayName("닉네임 수정 실패 - 존재하지 않는 사용자")
   void update_notFound() {
     UUID notExistId = UUID.randomUUID();
-    UserUpdateRequest request = new UserUpdateRequest("새닉네임");
+    UserUpdateRequest request = new UserUpdateRequest(newNickname);
     given(userRepository.findByIdAndDeletedAtIsNull(notExistId)).willReturn(Optional.empty());
 
     assertThatThrownBy(() -> userService.update(notExistId, notExistId, request))

@@ -28,11 +28,10 @@ public class BasicPopularBookService implements PopularBookService {
   @Transactional
   @Override
   public void calculatePopularBook(LocalDate baseDate) {
-    if(popularBookRepository.existsByBaseDate(baseDate)){
-      log.info("이미 {} 날짜의 배치 작업이 수행되었습니다.", baseDate);
-      return;
-    }
+
     for(PeriodType period : PeriodType.values()){
+      popularBookRepository.deleteByPeriodAndBaseDate(period, baseDate);
+
         LocalDateTime from = calculateFrom(period, baseDate);
         LocalDateTime to = baseDate.atStartOfDay();
 

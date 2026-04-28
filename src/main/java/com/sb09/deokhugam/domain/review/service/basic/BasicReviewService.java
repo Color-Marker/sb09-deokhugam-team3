@@ -21,16 +21,22 @@ import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.global.exception.CustomException;
 import com.sb09.deokhugam.global.exception.ErrorCode;
 import com.sb09.deokhugam.global.exception.review.DuplicateReviewException;
+import com.sb09.deokhugam.global.exception.review.InvalidReviewInputException;
 import com.sb09.deokhugam.global.exception.review.ReviewAlreadyDeletedException;
 import com.sb09.deokhugam.global.exception.review.ReviewForbiddenException;
 import com.sb09.deokhugam.global.exception.review.ReviewNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +64,8 @@ public class BasicReviewService implements ReviewService {
   @Override
   @Transactional
   public ReviewDto createReview(ReviewCreateRequest request) {
+    // 도서 조회보다 먼저 검사합니다.
+    validateReviewData(request.rating(), request.content());
 
     UUID userId = request.userId();
 
@@ -117,6 +125,7 @@ public class BasicReviewService implements ReviewService {
   @Override
   @Transactional
   public ReviewDto updateReview(UUID reviewId, ReviewUpdateRequest request, UUID userId) {
+    validateReviewData(request.rating(), request.content());
 
     Review review = reviewRepository.findById(reviewId)
         .orElseThrow(() -> {
@@ -192,6 +201,7 @@ public class BasicReviewService implements ReviewService {
   @Override
   public CursorPageResponseDto<ReviewDto> getReviews(ReviewListRequest request,
       UUID currentUserId) {
+    validateReviewListRequest(request);
 
     log.info("리뷰 목록 조회를 요청했습니다. 요청자 userId: {}", currentUserId);
 
@@ -263,17 +273,19 @@ public class BasicReviewService implements ReviewService {
    * 6. 인기 리뷰 조회: 좋아요 많은 순 상위 10개
    */
   @Override
-  public java.util.List<ReviewDto> getPopularReviews(String period) {
-    // 페이징 및 정렬 조건 세팅 (좋아요 내림차순 상위 10개)
-    org.springframework.data.domain.PageRequest pageRequest = org.springframework.data.domain.PageRequest.of(
+  public List<ReviewDto> getPopularReviews(String period) {
+    // 페이징 및 정렬 조건 세팅 (1순위: 좋아요 내림차순, 2순위: 최신작성일 내림차순)
+    PageRequest pageRequest = PageRequest.of(
         0, 10,
-        org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,
-            "likeCount")
+        Sort.by(
+            Sort.Order.desc("likeCount"),
+            Sort.Order.desc("createdAt")
+        )
     );
 
     // 현재 시간을 기준으로 기간 계산
-    java.time.LocalDateTime now = java.time.LocalDateTime.now();
-    java.time.LocalDateTime startDate = null;
+    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime startDate = null;
 
     if ("DAILY".equalsIgnoreCase(period)) {
       startDate = now.minusDays(1);   // 하루 전
@@ -284,7 +296,7 @@ public class BasicReviewService implements ReviewService {
     }
 
     // 기간 조건에 따라 DB 조회 (ALL 이거나 잘못된 값이면 전체 조회)
-    org.springframework.data.domain.Page<Review> popularReviews;
+    Page<Review> popularReviews;
     if (startDate == null || "ALL".equalsIgnoreCase(period)) {
       popularReviews = reviewRepository.findByDeletedAtIsNull(pageRequest); // 논리 삭제된 리뷰 제외
     } else {
@@ -372,5 +384,49 @@ public class BasicReviewService implements ReviewService {
 
     log.info("도서 통계가 업데이트되었습니다(삭제 반영). bookId: {}, 새 평균 평점: {}, 총 리뷰 수: {}", book.getId(),
         finalRating, newReviewCount);
+  }
+
+  private void validateReviewData(Integer rating, String content) {
+    //  필수값 누락 체크
+    if (rating == null || content == null || content.trim().isEmpty()) {
+      throw new InvalidReviewInputException();
+    }
+
+    //  평점 범위 오류 체크 (1~5점)
+    if (rating < 1 || rating > 5) {
+      throw new InvalidReviewInputException();
+    }
+
+    //  내용 길이 오류 체크
+    if (content.length() < 1 || content.length() > 1000) {
+      throw new InvalidReviewInputException();
+    }
+  }
+
+  // 추가 : 리뷰 목록 조회용 검증 로직
+  private void validateReviewListRequest(ReviewListRequest request) {
+    // 1. limit 값 오류 검증 (0 이하의 값이 들어오면 에러)
+    if (request.limit() != null && request.limit() <= 0) {
+      throw new InvalidReviewInputException(); // 아까 만든 예외 재활용!
+    }
+
+    // 2. 잘못된 정렬 조건 검증 (예: LATEST 나 RATING이 아닌 이상한 값이 들어오면 차단)
+    // (프론트랑 약속한 정렬 조건에 맞춰서 조건은 수정하셔도 됩니다)
+    if (request.orderBy() != null && !(request.orderBy().equals("LATEST") || request.orderBy()
+        .equals("RATING"))) {
+      throw new InvalidReviewInputException();
+    }
+
+    // 3. 존재하지 않는 작성자 ID 필터링 검증
+    if (request.userId() != null) {
+      userRepository.findById(request.userId())
+          .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    // 4. 존재하지 않는 도서 ID 필터링 검증 (이것도 체크리스트에 있었죠!)
+    if (request.bookId() != null) {
+      bookRepository.findById(request.bookId())
+          .orElseThrow(() -> new CustomException(ErrorCode.BOOK_NOT_FOUND));
+    }
   }
 }
