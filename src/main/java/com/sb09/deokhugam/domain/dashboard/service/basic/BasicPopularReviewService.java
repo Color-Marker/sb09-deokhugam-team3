@@ -7,6 +7,11 @@ import com.sb09.deokhugam.domain.dashboard.event.PopularReviewTop10Event;
 import com.sb09.deokhugam.domain.dashboard.repository.DashboardQueryRepository;
 import com.sb09.deokhugam.domain.dashboard.repository.PopularReviewRepository;
 import com.sb09.deokhugam.domain.dashboard.service.PopularReviewService;
+import com.sb09.deokhugam.domain.notification.entity.NotificationType;
+import com.sb09.deokhugam.domain.notification.service.NotificationService;
+import com.sb09.deokhugam.domain.review.entity.Review;
+import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
+import com.sb09.deokhugam.global.exception.review.ReviewNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -26,7 +31,8 @@ public class BasicPopularReviewService implements PopularReviewService {
 
   private final DashboardQueryRepository dashboardQueryRepository;
   private final PopularReviewRepository popularReviewRepository;
-  private final ApplicationEventPublisher eventPublisher;
+  private final ReviewRepository reviewRepository;
+  private final NotificationService notificationService;
 
   @Transactional
   public void calculatePopularReview(LocalDate baseDate) {
@@ -46,9 +52,12 @@ public class BasicPopularReviewService implements PopularReviewService {
 
       // 4. Entity 변환 및 알림 이벤트 발행
       for (PopularReviewScoreDto dto : dtos) {
+
         // Top 10 이내면 이벤트 발행
         if (ranking <= 10) {
-          eventPublisher.publishEvent(new PopularReviewTop10Event(dto.getReviewId(), ranking));
+          Review review = reviewRepository.findById(dto.getReviewId()).orElseThrow(() ->
+              ReviewNotFoundException.withId(dto.getReviewId()));
+          notificationService.create(NotificationType.RANKING, review, null);
         }
 
         entitiesToSave.add(PopularReview.builder()
