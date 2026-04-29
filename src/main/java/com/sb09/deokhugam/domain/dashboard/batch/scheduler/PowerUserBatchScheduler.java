@@ -16,8 +16,8 @@ public class PowerUserBatchScheduler {
   private final JobLauncher jobLauncher;
   private final Job calculatePowerUserJob;
 
-  //@Scheduled(cron = "0 10 0 * * *") // 매일 00시 10분 실행
-  @Scheduled(cron = "0 */10 * * * *") // 테스트용입니다.
+  @Scheduled(cron = "0 10 0 * * *") // 매일 00시 10분 실행
+//  @Scheduled(cron = "0 */10 * * * *") // 테스트용입니다.
 
   public void calculatePowerUser(){
     try{

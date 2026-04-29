@@ -1,19 +1,26 @@
 package com.sb09.deokhugam.domain.user.controller.api;
 
+import com.sb09.deokhugam.domain.book.dto.PopularBookDto;
+import com.sb09.deokhugam.domain.dashboard.entity.PeriodType;
+import com.sb09.deokhugam.domain.dashboard.entity.PowerUser;
+import com.sb09.deokhugam.domain.user.dto.Response.PowerUserDto;
 import com.sb09.deokhugam.domain.user.dto.Response.UserResponse;
 import com.sb09.deokhugam.domain.user.dto.request.UserLoginRequest;
 import com.sb09.deokhugam.domain.user.dto.request.UserRegisterRequest;
 import com.sb09.deokhugam.domain.user.dto.request.UserUpdateRequest;
+import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "사용자 관리", description = "사용자 관련 API")
 public interface UserApi {
@@ -74,5 +81,18 @@ public interface UserApi {
   })
   ResponseEntity<Void> hardDeleteUser(
       @Parameter(description = "사용자 ID") @PathVariable UUID userId
+  );
+
+  @Operation(summary = "파워 유저 목록 조회", description = "기간별 파워 유저 목록을 조회합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "파워 유저 목록 조회 성공"),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+      @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+  })
+  ResponseEntity<CursorPageResponseDto<PowerUserDto>> getPowerUsers(
+      @Parameter(description = "기간 (DAILY/WEEKLY/MONTHLY/ALL_TIME)") @RequestParam PeriodType period,
+      @Parameter(description = "커서 값") @RequestParam(required = false) Long cursor,
+      @Parameter(description = "커서 시간") @RequestParam(required = false) LocalDateTime after,
+      @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int limit
   );
 }

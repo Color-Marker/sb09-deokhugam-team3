@@ -1,5 +1,9 @@
 package com.sb09.deokhugam.domain.user.service.basic;
 
+import com.sb09.deokhugam.domain.dashboard.entity.PeriodType;
+import com.sb09.deokhugam.domain.dashboard.entity.PowerUser;
+import com.sb09.deokhugam.domain.dashboard.repository.PowerUserRepository;
+import com.sb09.deokhugam.domain.user.dto.Response.PowerUserDto;
 import com.sb09.deokhugam.domain.user.dto.Response.UserResponse;
 import com.sb09.deokhugam.domain.user.dto.request.UserLoginRequest;
 import com.sb09.deokhugam.domain.user.dto.request.UserRegisterRequest;
@@ -8,11 +12,17 @@ import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.mapper.UserMapper;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.domain.user.service.UserService;
+import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.exception.user.DuplicateEmailException;
 import com.sb09.deokhugam.global.exception.user.InvalidUserCredentialsException;
 import com.sb09.deokhugam.global.exception.user.UnauthorizedAccessException;
 import com.sb09.deokhugam.global.exception.user.UserNotFoundException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,6 +37,7 @@ public class BasicUserService implements UserService {
   private final UserRepository userRepository;
   private final UserMapper userMapper;
   private final PasswordEncoder passwordEncoder;
+  private final PowerUserRepository powerUserRepository;
 
   @Override
   @Transactional
@@ -113,4 +124,59 @@ public class BasicUserService implements UserService {
     userRepository.deleteById(id);
     log.info("사용자 물리 삭제 완료: {}", id);
   }
+
+  @Override
+  public CursorPageResponseDto<PowerUserDto> getPowerUsers(PeriodType period,
+      Long cursor,
+      LocalDateTime after,
+      int limit){
+
+    LocalDate latestBaseDate = powerUserRepository
+        .findTopByPeriodOrderByBaseDateDesc(period)
+        .map(PowerUser::getBaseDate)
+        .orElse(LocalDate.now());
+
+    List<PowerUser> results = powerUserRepository
+        .findAll()
+        .stream()
+        .filter(pb -> pb.getPeriod() == period)
+        .filter(pb -> pb.getBaseDate().equals(latestBaseDate))
+        .filter(pb -> cursor == null || pb.getRanking() > cursor)
+        .sorted((a, b) -> Long.compare(a.getRanking(), b.getRanking()))
+        .limit(limit + 1)
+        .toList();
+
+    boolean hasNext = results.size() > limit;
+    List<PowerUser> content = hasNext ? results.subList(0, limit) : results;
+    List<UUID> userIds = content.stream()
+        .map(PowerUser::getUserId)
+        .toList();
+    Map<UUID, Users> userMap = userRepository.findAllById(userIds)
+        .stream()
+        .collect(Collectors.toMap(Users::getId, b -> b));
+
+    List<PowerUserDto> dtos = content.stream()
+        .map(pb -> {
+          Users foundUser = userMap.get(pb.getUserId());
+          return new PowerUserDto(
+              pb.getUserId(),
+              foundUser != null ? foundUser.getNickname() : null,
+              pb.getPeriod(),
+              pb.getCreatedAt(),
+              pb.getRanking(),
+              pb.getScore(),
+              pb.getReviewScoreSum(),
+              pb.getLikeCount(),
+              pb.getCommentCount()
+          );
+        })
+        .toList();
+
+    PowerUser lastItem = content.isEmpty() ? null : content.get(content.size() - 1);
+    Object nextCursor = hasNext && lastItem != null ? lastItem.getRanking() : null;
+    LocalDateTime nextAfter = hasNext && lastItem != null ? lastItem.getCreatedAt() : null;
+
+    return new CursorPageResponseDto<>(dtos, nextCursor, nextAfter, dtos.size(), null, hasNext);
+  };
+
 }
