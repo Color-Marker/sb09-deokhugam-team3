@@ -1,6 +1,7 @@
 package com.sb09.deokhugam.domain.notification.scheduler.config;
 
 import com.sb09.deokhugam.domain.notification.repository.NotificationRepository;
+import com.sb09.deokhugam.global.custom.BatchMetricsService;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class NotificationBatchConfig {
   private final JobRepository jobRepository;
   private final PlatformTransactionManager platformTransactionManager;
   private final NotificationRepository notificationRepository;
+  private final BatchMetricsService batchMetricsService;
 
   @Bean
   public Job deleteNotificationJob(Step deleteNotificationStep){
@@ -50,6 +52,7 @@ public class NotificationBatchConfig {
         try{
 
           long deletedCount = notificationRepository.deleteOldNotification(duration);
+          batchMetricsService.recordDeleted("notification", deletedCount);
           log.info("배치 작업 수행 완료. {}개의 알람이 삭제되었습니다.", deletedCount);
           return RepeatStatus.FINISHED;
 
@@ -58,6 +61,7 @@ public class NotificationBatchConfig {
           log.warn("DB 오류 발생, 재시도 {}/{}", attempt, maxRetry, e);
 
           if(attempt >= maxRetry){
+            batchMetricsService.recordFailure("notification");
             log.error("최대 재시도 횟수 초과, 배치 실패");
             throw e;
           }
