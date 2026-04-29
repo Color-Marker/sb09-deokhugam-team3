@@ -13,6 +13,9 @@ import static org.mockito.Mockito.doReturn;
 
 import com.sb09.deokhugam.domain.book.entity.Book;
 import com.sb09.deokhugam.domain.book.repository.BookRepository;
+import com.sb09.deokhugam.domain.dashboard.entity.PeriodType;
+import com.sb09.deokhugam.domain.dashboard.entity.PopularReview;
+import com.sb09.deokhugam.domain.dashboard.repository.PopularReviewRepository;
 import com.sb09.deokhugam.domain.notification.entity.NotificationType;
 import com.sb09.deokhugam.domain.notification.service.NotificationService;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
@@ -38,6 +41,7 @@ import com.sb09.deokhugam.global.exception.review.ReviewNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -74,6 +78,8 @@ public class BasicReviewServiceTest {
   private ReviewMapper reviewMapper;
   @Mock
   private CursorPageResponseMapper cursorPageResponseMapper;
+  @Mock
+  private PopularReviewRepository popularReviewRepository;
 
   @InjectMocks
   private BasicReviewService reviewService;
@@ -225,89 +231,98 @@ public class BasicReviewServiceTest {
 
   @Test
   @DisplayName("인기 리뷰 조회 성공 테스트 - 전체 기간(ALL)")
-  @SuppressWarnings("unchecked")
   void getPopularReviews_success() {
-    Page<Review> mockPage = mock(Page.class);
-    given(mockPage.getContent()).willReturn(List.of(review));
-    given(reviewRepository.findByDeletedAtIsNull(any(PageRequest.class))).willReturn(mockPage);
+    PopularReview pr = mock(PopularReview.class);
+    given(pr.getPeriod()).willReturn(PeriodType.ALL_TIME);
+    given(pr.getBaseDate()).willReturn(LocalDate.now());
+    given(pr.getRanking()).willReturn(1L);
+    given(pr.getReviewId()).willReturn(reviewId);
+
+    given(
+        popularReviewRepository.findTopByPeriodOrderByBaseDateDesc(PeriodType.ALL_TIME)).willReturn(
+        Optional.of(pr));
+    given(popularReviewRepository.findAll()).willReturn(List.of(pr));
+    given(reviewRepository.findAllById(List.of(reviewId))).willReturn(List.of(review));
 
     ReviewDto mockReviewDto = mock(ReviewDto.class);
-    given(bookRepository.findById(any())).willReturn(Optional.of(book));
-    given(userRepository.findById(any())).willReturn(Optional.of(users));
-    given(reviewMapper.toDto(any(), any(), any(), anyBoolean())).willReturn(mockReviewDto);
+    given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
+    given(userRepository.findById(userId)).willReturn(Optional.of(users));
+    given(reviewMapper.toDto(eq(review), eq(book), eq(users), eq(false))).willReturn(mockReviewDto);
 
     List<ReviewDto> result = reviewService.getPopularReviews("ALL");
 
     assertThat(result).isNotNull();
     assertThat(result).hasSize(1);
-    // 제대로 된 레포지토리 메서드가 불렸는지 확인
-    verify(reviewRepository, times(1)).findByDeletedAtIsNull(any(PageRequest.class));
   }
 
   @Test
   @DisplayName("인기 리뷰 조회 성공 테스트 - 특정 기간(DAILY)")
-  @SuppressWarnings("unchecked")
   void getPopularReviews_daily_success() {
-    Page<Review> mockPage = mock(Page.class);
-    given(mockPage.getContent()).willReturn(List.of(review));
-    given(reviewRepository.findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
-        any(PageRequest.class))).willReturn(mockPage);
+    PopularReview pr = mock(PopularReview.class);
+    given(pr.getPeriod()).willReturn(PeriodType.DAILY);
+    given(pr.getBaseDate()).willReturn(LocalDate.now());
+    given(pr.getRanking()).willReturn(1L);
+    given(pr.getReviewId()).willReturn(reviewId);
+
+    given(popularReviewRepository.findTopByPeriodOrderByBaseDateDesc(PeriodType.DAILY)).willReturn(
+        Optional.of(pr));
+    given(popularReviewRepository.findAll()).willReturn(List.of(pr));
+    given(reviewRepository.findAllById(List.of(reviewId))).willReturn(List.of(review));
 
     ReviewDto mockReviewDto = mock(ReviewDto.class);
-    given(bookRepository.findById(any())).willReturn(Optional.of(book));
-    given(userRepository.findById(any())).willReturn(Optional.of(users));
-    given(reviewMapper.toDto(any(), any(), any(), anyBoolean())).willReturn(mockReviewDto);
+    given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
+    given(userRepository.findById(userId)).willReturn(Optional.of(users));
+    given(reviewMapper.toDto(eq(review), eq(book), eq(users), eq(false))).willReturn(mockReviewDto);
 
     List<ReviewDto> result = reviewService.getPopularReviews("DAILY");
 
     assertThat(result).isNotNull();
     assertThat(result).hasSize(1);
-    verify(reviewRepository, times(1)).findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
-        any(PageRequest.class));
   }
 
   @Test
   @DisplayName("인기 리뷰 조회 성공 테스트 - 특정 기간(WEEKLY)")
-  @SuppressWarnings("unchecked")
   void getPopularReviews_weekly_success() {
-    Page<Review> mockPage = mock(Page.class);
-    given(mockPage.getContent()).willReturn(List.of(review));
-    given(reviewRepository.findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
-        any(PageRequest.class))).willReturn(mockPage);
+    PopularReview pr = mock(PopularReview.class);
+    given(pr.getPeriod()).willReturn(PeriodType.WEEKLY);
+    given(pr.getBaseDate()).willReturn(LocalDate.now());
+    given(pr.getRanking()).willReturn(1L);
+    given(pr.getReviewId()).willReturn(reviewId);
+
+    given(popularReviewRepository.findTopByPeriodOrderByBaseDateDesc(PeriodType.WEEKLY)).willReturn(
+        Optional.of(pr));
+    given(popularReviewRepository.findAll()).willReturn(List.of(pr));
+    given(reviewRepository.findAllById(List.of(reviewId))).willReturn(List.of(review));
 
     ReviewDto mockReviewDto = mock(ReviewDto.class);
-    given(bookRepository.findById(any())).willReturn(Optional.of(book));
-    given(userRepository.findById(any())).willReturn(Optional.of(users));
-    given(reviewMapper.toDto(any(), any(), any(), anyBoolean())).willReturn(mockReviewDto);
+    given(reviewMapper.toDto(any(), any(), any(), eq(false))).willReturn(mockReviewDto);
 
     List<ReviewDto> result = reviewService.getPopularReviews("WEEKLY");
 
-    assertThat(result).isNotNull();
     assertThat(result).hasSize(1);
-    verify(reviewRepository, times(1)).findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
-        any(PageRequest.class));
   }
 
   @Test
   @DisplayName("인기 리뷰 조회 성공 테스트 - 특정 기간(MONTHLY)")
-  @SuppressWarnings("unchecked")
   void getPopularReviews_monthly_success() {
-    Page<Review> mockPage = mock(Page.class);
-    given(mockPage.getContent()).willReturn(List.of(review));
-    given(reviewRepository.findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
-        any(PageRequest.class))).willReturn(mockPage);
+    PopularReview pr = mock(PopularReview.class);
+    given(pr.getPeriod()).willReturn(PeriodType.MONTHLY);
+    given(pr.getBaseDate()).willReturn(LocalDate.now());
+    given(pr.getRanking()).willReturn(1L);
+    given(pr.getReviewId()).willReturn(reviewId);
+
+    given(
+        popularReviewRepository.findTopByPeriodOrderByBaseDateDesc(PeriodType.MONTHLY)).willReturn(
+        Optional.of(pr));
+    given(popularReviewRepository.findAll()).willReturn(List.of(pr));
+    given(reviewRepository.findAllById(List.of(reviewId))).willReturn(List.of(review));
 
     ReviewDto mockReviewDto = mock(ReviewDto.class);
-    given(bookRepository.findById(any())).willReturn(Optional.of(book));
-    given(userRepository.findById(any())).willReturn(Optional.of(users));
-    given(reviewMapper.toDto(any(), any(), any(), anyBoolean())).willReturn(mockReviewDto);
+    given(reviewMapper.toDto(any(), any(), any(), eq(false))).willReturn(mockReviewDto);
 
     List<ReviewDto> result = reviewService.getPopularReviews("MONTHLY");
 
-    assertThat(result).isNotNull();
     assertThat(result).hasSize(1);
-    verify(reviewRepository, times(1)).findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(any(),
-        any(PageRequest.class));
   }
 
   @Test
