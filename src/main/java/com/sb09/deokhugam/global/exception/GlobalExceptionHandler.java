@@ -70,6 +70,24 @@ public class GlobalExceptionHandler {
         .body(response);
   }
 
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException e) {
+    log.error("부적절한 요청 인자: {}", e.getMessage());
+
+    ErrorResponse response = new ErrorResponse(
+        Instant.now(),
+        "INVALID_ARGUMENT",
+        e.getMessage(), // "필수 헤더가 누락되었습니다." 가 들어감
+        new HashMap<>(),
+        e.getClass().getSimpleName(),
+        HttpStatus.BAD_REQUEST.value()
+    );
+
+    return ResponseEntity
+        .status(HttpStatus.BAD_REQUEST)
+        .body(response);
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleException(Exception e) {
     log.error("예상치 못한 오류 발생: {}", e.getMessage(), e);
