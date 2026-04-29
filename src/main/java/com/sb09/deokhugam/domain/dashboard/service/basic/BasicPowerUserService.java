@@ -26,7 +26,8 @@ public class BasicPowerUserService implements PowerUserService {
   private final PowerUserRepository powerUserRepository;
 
   @Transactional
-  public void calculatePowerUser(LocalDate baseDate) {
+  public long calculatePowerUser(LocalDate baseDate) {
+    long ranking = 1;
     for (PeriodType period : PeriodType.values()) {
       // 1. 기존 데이터 깔끔하게 삭제
       powerUserRepository.deleteByPeriodAndBaseDate(period, baseDate);
@@ -39,7 +40,6 @@ public class BasicPowerUserService implements PowerUserService {
       List<PowerUserScoreDto> dtos = dashboardQueryRepository.findTopPowerUsers(from, to, 100);
 
       List<PowerUser> entitiesToSave = new ArrayList<>();
-      long ranking = 1;
 
       // 4. Entity 변환
       for (PowerUserScoreDto dto : dtos) {
@@ -58,6 +58,7 @@ public class BasicPowerUserService implements PowerUserService {
       // 5. DB 저장
       powerUserRepository.saveAll(entitiesToSave);
     }
+    return (ranking-1);
   }
 
   private LocalDateTime calculateFrom(PeriodType period, LocalDate baseDate) {

@@ -12,6 +12,7 @@ public class BatchMetricsService {
   public BatchMetricsService(MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
     preRegister("notification");
+    preRegister("user");
   }
 
   private void preRegister(String batchName) {
@@ -36,5 +37,12 @@ public class BatchMetricsService {
         .tag("batch", batchName)
         .register(meterRegistry)
         .increment();
+  }
+
+  public void recordCreated(String batchName, long count){
+    Counter.builder("batch.items.created")
+        .tag("batch", batchName)
+        .register(meterRegistry)
+        .increment(count);
   }
 }
