@@ -7,6 +7,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.sb09.deokhugam.domain.dashboard.entity.PeriodType;
+import com.sb09.deokhugam.domain.dashboard.entity.PowerUser;
+import com.sb09.deokhugam.domain.dashboard.repository.PowerUserRepository;
+import com.sb09.deokhugam.domain.user.dto.Response.PowerUserDto;
 import com.sb09.deokhugam.domain.user.dto.Response.UserResponse;
 import com.sb09.deokhugam.domain.user.dto.request.UserLoginRequest;
 import com.sb09.deokhugam.domain.user.dto.request.UserRegisterRequest;
@@ -15,12 +19,15 @@ import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.mapper.UserMapper;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.domain.user.service.basic.BasicUserService;
+import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.exception.ErrorCode;
 import com.sb09.deokhugam.global.exception.user.DuplicateEmailException;
 import com.sb09.deokhugam.global.exception.user.InvalidUserCredentialsException;
 import com.sb09.deokhugam.global.exception.user.UnauthorizedAccessException;
 import com.sb09.deokhugam.global.exception.user.UserNotFoundException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +53,9 @@ class BasicUserServiceTest {
 
   @Mock
   private PasswordEncoder passwordEncoder;
+
+  @Mock
+  private PowerUserRepository powerUserRepository;
 
   @InjectMocks
   private BasicUserService userService;
@@ -283,5 +293,49 @@ class BasicUserServiceTest {
         .isInstanceOf(UserNotFoundException.class)
         .satisfies(e -> assertThat(((UserNotFoundException) e).getErrorCode())
             .isEqualTo(ErrorCode.USER_NOT_FOUND));
+  }
+
+  @Test
+  @DisplayName("파워 유저 목록 조회 성공")
+  void getPowerUsers_success() {
+    PeriodType period = PeriodType.WEEKLY;
+    LocalDate baseDate = LocalDate.now();
+
+    PowerUser mockPowerUser = mock(PowerUser.class);
+    given(mockPowerUser.getRanking()).willReturn(1L);
+    given(mockPowerUser.getBaseDate()).willReturn(baseDate);
+    given(mockPowerUser.getPeriod()).willReturn(period);
+    given(mockPowerUser.getUserId()).willReturn(userId);
+    given(mockPowerUser.getCreatedAt()).willReturn(LocalDateTime.now());
+
+    given(powerUserRepository.findTopByPeriodOrderByBaseDateDesc(period))
+        .willReturn(Optional.of(mockPowerUser));
+    given(powerUserRepository.findAll())
+        .willReturn(List.of(mockPowerUser));
+    given(userRepository.findAllById(any()))
+        .willReturn(List.of(user));
+
+    CursorPageResponseDto<PowerUserDto> result =
+        userService.getPowerUsers(period, null, null, 10);
+
+    assertThat(result.content()).hasSize(1);
+    assertThat(result.hasNext()).isFalse();
+  }
+
+  @Test
+  @DisplayName("파워 유저 목록 조회 - 데이터 없을 때 빈 리스트 반환")
+  void getPowerUsers_empty() {
+    PeriodType period = PeriodType.WEEKLY;
+
+    given(powerUserRepository.findTopByPeriodOrderByBaseDateDesc(period))
+        .willReturn(Optional.empty());
+    given(powerUserRepository.findAll())
+        .willReturn(List.of());
+
+    CursorPageResponseDto<PowerUserDto> result =
+        userService.getPowerUsers(period, null, null, 10);
+
+    assertThat(result.content()).isEmpty();
+    assertThat(result.hasNext()).isFalse();
   }
 }
