@@ -18,3 +18,12 @@ logging:
     com.sb09: info
     org.hibernate.SQL: info
     org.hibernate.orm.jdbc.bind: info
+# application-prod.yml에 추가 필요
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
