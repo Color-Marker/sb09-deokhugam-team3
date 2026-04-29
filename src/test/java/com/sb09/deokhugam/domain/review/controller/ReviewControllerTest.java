@@ -187,4 +187,44 @@ class ReviewControllerTest {
       throw new RuntimeException(e);
     }
   }
+
+  // =========================================================================
+  // [공통 시나리오 검증 테스트] 유효성 검사, 헤더, 예외 처리기 작동 확인
+  // =========================================================================
+
+  @Test
+  @DisplayName("[공통 시나리오] 잘못된 요청 데이터 전송 시 400 Bad Request 및 헤더 처리 확인")
+  void commonScenario_ValidationAndHeaderTest() throws Exception {
+    UUID userId = UUID.randomUUID();
+    UUID bookId = UUID.randomUUID();
+
+    // given: 평점이 5점을 초과(6점)하고, 내용이 비어있는 완전히 잘못된 요청 생성
+    ReviewCreateRequest badRequest = new ReviewCreateRequest(userId, bookId, "", 6);
+
+    // when & then
+    mockMvc.perform(post("/api/reviews")
+            .header(USER_ID_HEADER, userId.toString()) // 헤더 정상 전달
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(badRequest)))
+        .andExpect(status().isBadRequest()); //  Validation 실패로 400 에러 반환되는지 확인
+  }
+
+  @Test
+  @DisplayName("[공통 시나리오] 커스텀 예외 발생 시 GlobalExceptionHandler 작동 확인")
+  void commonScenario_CustomExceptionTest() throws Exception {
+    UUID fakeReviewId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+
+    // given: 없는 리뷰를 조회하려고 할 때 백엔드 서비스가 예외를 던지도록함
+    given(reviewService.getReviewDetail(eq(fakeReviewId), eq(userId)))
+        .willThrow(new com.sb09.deokhugam.global.exception.review.ReviewNotFoundException());
+
+    // when & then
+    mockMvc.perform(get("/api/reviews/{reviewId}", fakeReviewId)
+            .header(USER_ID_HEADER, userId.toString())
+            .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isNotFound()) // 404 에러로 정상 변환되는지 확인
+        .andExpect(jsonPath("$.code").exists()) // 팀 약속 규격(code, message) 있는지 확인
+        .andExpect(jsonPath("$.message").exists());
+  }
 }
