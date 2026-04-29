@@ -14,7 +14,7 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   batch:
     jdbc:
-      initialize-schema: always
+      initialize-schema: never
     job:
       enabled: false
 
@@ -26,6 +26,8 @@ management:
   endpoint:
     health:
       show-details: always
+    db:
+      enabled: false
     metrics:
       access: read_only
 
