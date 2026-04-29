@@ -68,7 +68,8 @@ public class ReviewRepositoryImpl implements ReviewRepositoryCustom {
             bookIdEq(request.bookId()),
             userIdEq(request.userId()),
             keywordContains(request.keyword()),
-            cursorCondition(request)
+            cursorCondition(request),
+            book.deletedAt.isNull()
         )
         .orderBy(createOrderSpecifier(request)) // 동적 정렬 적용
         .limit(request.limit() + 1)

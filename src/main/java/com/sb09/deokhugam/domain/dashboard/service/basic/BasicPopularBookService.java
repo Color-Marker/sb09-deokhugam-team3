@@ -2,6 +2,7 @@ package com.sb09.deokhugam.domain.dashboard.service.basic;
 
 
 
+import com.sb09.deokhugam.domain.book.repository.BookRepository;
 import com.sb09.deokhugam.domain.dashboard.entity.PeriodType;
 import com.sb09.deokhugam.domain.dashboard.entity.PopularBook;
 import com.sb09.deokhugam.domain.dashboard.repository.PopularBookRepository;
@@ -24,6 +25,7 @@ public class BasicPopularBookService implements PopularBookService {
 
   private final PopularBookRepository popularBookRepository;
   private final ReviewRepository reviewRepository;
+  private final BookRepository bookRepository;
 
   @Transactional
   @Override
@@ -40,6 +42,9 @@ public class BasicPopularBookService implements PopularBookService {
         long rank = 1;
         for(Object[] row : results){
           UUID bookId = (UUID) row[0];
+          if(bookRepository.existsByIdAndDeletedAtIsNotNull(bookId)){
+            continue;
+          }
           Long reviewCount = (Long) row[1];
           BigDecimal avgRating = BigDecimal.valueOf((Double) row[2]);
           BigDecimal score = BigDecimal.valueOf(reviewCount).multiply(new BigDecimal("0.4"))

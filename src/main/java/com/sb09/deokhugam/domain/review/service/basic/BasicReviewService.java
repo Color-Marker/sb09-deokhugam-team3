@@ -262,8 +262,13 @@ public class BasicReviewService implements ReviewService {
       review.addLikeCount();
       log.info("리뷰 좋아요가 추가되었습니다. reviewId: {}, userId: {}", reviewId, userId);
 
-      // 알림 전송 로직
-      notificationService.create(NotificationType.LIKE, review, user);
+      // 수정 : 알림 전송 실패가 좋아요 로직에 영향을 주지 않도록 분리
+      try {
+        notificationService.create(NotificationType.LIKE, review, user);
+      } catch (Exception e) {
+        log.error("좋아요 알림 생성에 실패했습니다. (좋아요 처리는 정상 완료됨) reviewId: {}, error: {}", reviewId,
+            e.getMessage());
+      }
 
       return new ReviewLikeDto(true, review.getLikeCount());
     }
@@ -403,27 +408,29 @@ public class BasicReviewService implements ReviewService {
     }
   }
 
-  // 추가 : 리뷰 목록 조회용 검증 로직
   private void validateReviewListRequest(ReviewListRequest request) {
-    // 1. limit 값 오류 검증 (0 이하의 값이 들어오면 에러)
+    // 1. limit 값 검증
     if (request.limit() != null && request.limit() <= 0) {
-      throw new InvalidReviewInputException(); // 아까 만든 예외 재활용!
+      log.warn("목록 조회 검증 실패: limit 값이 0 이하입니다. (요청 limit: {})", request.limit());
+      throw new InvalidReviewInputException(); // 다시 활성화!
     }
 
-    // 2. 잘못된 정렬 조건 검증 (예: LATEST 나 RATING이 아닌 이상한 값이 들어오면 차단)
-    // (프론트랑 약속한 정렬 조건에 맞춰서 조건은 수정하셔도 됩니다)
-    if (request.orderBy() != null && !(request.orderBy().equals("LATEST") || request.orderBy()
-        .equals("RATING"))) {
-      throw new InvalidReviewInputException();
+    // 2. 정렬 조건 검증 (프론트가 보내는 createdAt 완벽 대응)
+    if (request.orderBy() != null && !request.orderBy().trim().isEmpty()) {
+      String order = request.orderBy().toUpperCase();
+      // 핵심: 프론트가 보내는 CREATEDAT 과 CREATED_AT 을 모두 허용 명단에 추가
+      if (!(order.equals("LATEST") || order.equals("RATING") || order.equals("CREATEDAT")
+          || order.equals("CREATED_AT"))) {
+        log.warn("목록 조회 검증 실패: 허용되지 않는 정렬 조건입니다. (요청 orderBy: {})", request.orderBy());
+        throw new InvalidReviewInputException(); // 다시 활성화!
+      }
     }
 
-    // 3. 존재하지 않는 작성자 ID 필터링 검증
+    // 3. 유저 ID 및 도서 ID 검증
     if (request.userId() != null) {
       userRepository.findById(request.userId())
           .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
-
-    // 4. 존재하지 않는 도서 ID 필터링 검증 (이것도 체크리스트에 있었죠!)
     if (request.bookId() != null) {
       bookRepository.findById(request.bookId())
           .orElseThrow(() -> new CustomException(ErrorCode.BOOK_NOT_FOUND));

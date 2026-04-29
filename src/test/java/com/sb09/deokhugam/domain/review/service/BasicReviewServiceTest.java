@@ -691,4 +691,79 @@ public class BasicReviewServiceTest {
     assertThat(result).isNotNull();
   }
 
+  @Test
+  @DisplayName("보충 1: 도서의 [마지막 남은 리뷰 1개]를 삭제할 때의 통계 차감 로직 검증")
+  void deleteReview_lastReview() {
+    // given (상황 세팅: 리뷰가 1개만 있는 도서)
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+    given(review.getUserId()).willReturn(userId);
+    given(review.getDeletedAt()).willReturn(null);
+    given(review.getBookId()).willReturn(bookId);
+    given(review.getRating()).willReturn(5);
+
+    given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
+    given(book.getReviewCount()).willReturn(1); // 리뷰가 1개! (이거 삭제하면 0개가 됨)
+
+    // when
+    reviewService.deleteReview(reviewId, userId);
+
+    // then
+    verify(review, times(1)).markAsDeleted();
+    verify(book, times(1)).updateRatingAndReviewCount(any(), eq(0)); // 0개로 업데이트 되었는지 확인
+  }
+
+  @Test
+  @DisplayName("보충 2: 리뷰 삭제 시, 도서가 이미 DB에서 지워져서 없는(null) 경우의 방어 로직 검증")
+  void deleteReview_bookIsNull() {
+    // given
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+    given(review.getUserId()).willReturn(userId);
+    given(review.getDeletedAt()).willReturn(null);
+    given(review.getBookId()).willReturn(bookId);
+
+    // 도서를 찾았는데 없는 상황 (Optional.empty 반환)
+    given(bookRepository.findById(bookId)).willReturn(Optional.empty());
+
+    // when
+    reviewService.deleteReview(reviewId, userId);
+
+    // then
+    verify(review, times(1)).markAsDeleted();
+    // 도서가 없으니 통계 업데이트 로직은 실행되지 않고 무사히 넘어가야 함!
+  }
+
+  @Test
+  @DisplayName("보충 3: 비로그인(currentUserId == null) 사용자가 리뷰 상세 조회를 요청할 때")
+  void getReviewDetail_notLoggedIn() {
+    // given
+    ReviewDto mockReviewDto = mock(ReviewDto.class);
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+    given(review.getDeletedAt()).willReturn(null);
+    given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
+    given(userRepository.findById(userId)).willReturn(Optional.of(users));
+
+    // likedByMe가 false로 잘 들어가는지 확인
+    given(reviewMapper.toDto(review, book, users, false)).willReturn(mockReviewDto);
+
+    // when (요청자 ID 자리에 null 전달)
+    ReviewDto result = reviewService.getReviewDetail(reviewId, null);
+
+    // then
+    assertThat(result).isNotNull();
+    // 비로그인이므로 좋아요 여부 DB 조회를 아예 하지 말아야 함!
+    verify(reviewLikeRepository, org.mockito.Mockito.never()).existsByReviewIdAndUserId(any(),
+        any());
+  }
+
+  @Test
+  @DisplayName("보충 4: 관리자용 완전 삭제(hardDelete) 시 존재하지 않는 리뷰 ID를 넣었을 때")
+  void hardDeleteReview_notFound() {
+    // given
+    given(reviewRepository.findById(reviewId)).willReturn(Optional.empty());
+
+    // when & then
+    assertThatThrownBy(() -> reviewService.hardDeleteReview(reviewId, userId))
+        .isInstanceOf(ReviewNotFoundException.class);
+  }
+
 }

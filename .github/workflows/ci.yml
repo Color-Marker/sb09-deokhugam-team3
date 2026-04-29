@@ -28,7 +28,7 @@ jobs:
       NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
       NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
       OCR_API_KEY: ${{ secrets.OCR_API_KEY }}
-      SPRING_PROFILES_ACTIVE: ${{ secrets.SPRING_PROFILES_ACTIVE }}
+      SPRING_PROFILES_ACTIVE: test
 
     steps:
       - name: Checkout repository
