@@ -2,6 +2,9 @@ package com.sb09.deokhugam.domain.review.service.basic;
 
 import com.sb09.deokhugam.domain.book.entity.Book;
 import com.sb09.deokhugam.domain.book.repository.BookRepository;
+import com.sb09.deokhugam.domain.dashboard.entity.PeriodType;
+import com.sb09.deokhugam.domain.dashboard.entity.PopularReview;
+import com.sb09.deokhugam.domain.dashboard.repository.PopularReviewRepository;
 import com.sb09.deokhugam.domain.notification.entity.NotificationType;
 import com.sb09.deokhugam.domain.notification.service.NotificationService;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
@@ -28,9 +31,12 @@ import com.sb09.deokhugam.global.exception.review.ReviewNotFoundException;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
 import com.sb09.deokhugam.global.common.mapper.CursorPageResponseMapper;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -57,6 +63,7 @@ public class BasicReviewService implements ReviewService {
   private final ReviewLikeRepository reviewLikeRepository;
   private final ReviewMapper reviewMapper;
   private final CursorPageResponseMapper cursorPageResponseMapper;
+  private final PopularReviewRepository popularReviewRepository;
 
   /**
    * 1. 리뷰 등록 (Create)
@@ -275,49 +282,65 @@ public class BasicReviewService implements ReviewService {
   }
 
   /**
-   * 6. 인기 리뷰 조회: 좋아요 많은 순 상위 10개
+   * 6. 인기 리뷰 조회: 대시보드(PopularReview) 테이블에서 미리 계산된 데이터 가져오기
    */
   @Override
   public List<ReviewDto> getPopularReviews(String period) {
-    // 페이징 및 정렬 조건 세팅 (1순위: 좋아요 내림차순, 2순위: 최신작성일 내림차순)
-    PageRequest pageRequest = PageRequest.of(
-        0, 10,
-        Sort.by(
-            Sort.Order.desc("likeCount"),
-            Sort.Order.desc("createdAt")
-        )
-    );
-
-    // 현재 시간을 기준으로 기간 계산
-    LocalDateTime now = LocalDateTime.now();
-    LocalDateTime startDate = null;
-
-    if ("DAILY".equalsIgnoreCase(period)) {
-      startDate = now.minusDays(1);   // 하루 전
-    } else if ("WEEKLY".equalsIgnoreCase(period)) {
-      startDate = now.minusWeeks(1);  // 일주일 전
-    } else if ("MONTHLY".equalsIgnoreCase(period)) {
-      startDate = now.minusMonths(1); // 한 달 전
+    //  프론트에서 넘어온 문자열을 대시보드의 PeriodType Enum으로 변환 (ALL -> ALL_TIME 처리)
+    PeriodType periodType;
+    try {
+      if ("ALL".equalsIgnoreCase(period)) {
+        periodType = PeriodType.ALL_TIME;
+      } else {
+        periodType = PeriodType.valueOf(period.toUpperCase());
+      }
+    } catch (IllegalArgumentException e) {
+      periodType = PeriodType.ALL_TIME; // 기본값
     }
 
-    // 기간 조건에 따라 DB 조회 (ALL 이거나 잘못된 값이면 전체 조회)
-    Page<Review> popularReviews;
-    if (startDate == null || "ALL".equalsIgnoreCase(period)) {
-      popularReviews = reviewRepository.findByDeletedAtIsNull(pageRequest); // 논리 삭제된 리뷰 제외
-    } else {
-      popularReviews = reviewRepository.findByCreatedAtGreaterThanEqualAndDeletedAtIsNull(startDate,
-          pageRequest);
+    final PeriodType finalPeriodType = periodType;
+
+    //  해당 기간의 가장 최신 배치 실행일(baseDate) 찾기
+    LocalDate latestBaseDate = popularReviewRepository
+        .findTopByPeriodOrderByBaseDateDesc(periodType)
+        .map(PopularReview::getBaseDate)
+        .orElse(LocalDate.now());
+
+    //  대시보드 테이블에서 해당 기간 + 최신 실행일의 랭킹 1~10위 가져오기
+    List<PopularReview> top10PopularReviews = popularReviewRepository.findAll().stream()
+        .filter(pr -> pr.getPeriod() == finalPeriodType)
+        .filter(pr -> pr.getBaseDate().equals(latestBaseDate))
+        .sorted((a, b) -> Long.compare(a.getRanking(), b.getRanking()))
+        .limit(10)
+        .toList();
+
+    if (top10PopularReviews.isEmpty()) {
+      return List.of(); // 데이터가 없으면 빈 리스트 반환
     }
 
-    // DTO 변환 후 반환
-    return popularReviews
-        .getContent()
-        .stream()
-        .map(review -> {
+    //  찾아낸 랭킹 데이터의 reviewId들만 추출해서 원본 리뷰 한 번에 싹 가져오기 (N+1 문제 방지)
+    List<UUID> reviewIds = top10PopularReviews.stream()
+        .map(PopularReview::getReviewId)
+        .toList();
+
+    Map<UUID, Review> reviewMap = reviewRepository.findAllById(reviewIds).stream()
+        .collect(Collectors.toMap(Review::getId, r -> r));
+
+    //  랭킹 순서대로 ReviewDto로 예쁘게 포장해서 반환
+    return top10PopularReviews.stream()
+        .map(pr -> {
+          Review review = reviewMap.get(pr.getReviewId());
+          if (review == null) {
+            return null; // 혹시 그 사이 리뷰가 완전 삭제됐으면 무시
+          }
+
           Book book = bookRepository.findById(review.getBookId()).orElse(null);
           Users user = userRepository.findById(review.getUserId()).orElse(null);
+
+          // 논리 삭제된 것도 인기 리뷰에 띄워야 한다면 이대로 진행
           return reviewMapper.toDto(review, book, user, false);
         })
+        .filter(java.util.Objects::nonNull)
         .toList();
   }
 

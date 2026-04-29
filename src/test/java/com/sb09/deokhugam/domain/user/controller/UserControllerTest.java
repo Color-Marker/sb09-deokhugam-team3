@@ -11,7 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sb09.deokhugam.config.RequestTrackingFilter;
+import com.sb09.deokhugam.config.WebConfig;
 import com.sb09.deokhugam.domain.user.dto.Response.UserResponse;
 import com.sb09.deokhugam.domain.user.dto.request.UserLoginRequest;
 import com.sb09.deokhugam.domain.user.dto.request.UserRegisterRequest;
@@ -28,19 +28,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(
-    value = UserController.class,
-    excludeFilters = @ComponentScan.Filter(
-        type = FilterType.ASSIGNABLE_TYPE,
-        classes = RequestTrackingFilter.class
-    )
-)
+@WebMvcTest(UserController.class)
+@Import(WebConfig.class)
 class UserControllerTest {
 
   @Autowired
@@ -225,7 +219,9 @@ class UserControllerTest {
   @Test
   @DisplayName("물리 삭제 성공 - 204 반환")
   void hardDelete_success() throws Exception {
-    mockMvc.perform(delete("/api/users/{userId}/hard", userId))
+    mockMvc.perform(delete("/api/users/{userId}/hard", userId)
+            //물리 삭제에도 헤더가 필요해서 헤더 추가
+            .header("Deokhugam-Request-User-ID", userId.toString()))
         .andExpect(status().isNoContent());
   }
 
@@ -235,7 +231,37 @@ class UserControllerTest {
     willThrow(UserNotFoundException.withId(userId))
         .given(userService).hardDelete(any());
 
-    mockMvc.perform(delete("/api/users/{userId}/hard", userId))
+    mockMvc.perform(delete("/api/users/{userId}/hard", userId)
+            //물리 삭제에도 헤더가 필요해서 헤더 추가
+            .header("Deokhugam-Request-User-ID", userId.toString()))
         .andExpect(status().isNotFound());
   }
+
+  //"헤더(이름표)가 없으면 통과 못해야 하니까
+  @Test
+  @DisplayName("닉네임 수정 실패 - 필수 헤더(Deokhugam-Request-User-ID) 누락 - 400 반환")
+  void update_missingHeader_returns400() throws Exception {
+    //바꾸고 싶다는 닉네임 요청 정보를 만들고
+    UserUpdateRequest request = new UserUpdateRequest("새닉네임");
+
+    //가짜로 닉네임 수정 api를 호출한다
+    mockMvc.perform(patch("/api/users/{userId}", userId)
+            //원래 여기에 .header(..)가 있어야 하지만 실패를 보기 위해 의도적으로 안 넣음
+            //그리고 헤더(이름표)없이 문을 두드림
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        //서버가 왜 헤더를 안 가져왔냐고 물으면서 400에러를 응답하는지 확인함
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("닉네임 수정 실패 - 유효하지 않은 UUID 형식 - 400 반환")
+  void update_invalidUuidFormat_returns400() throws Exception {
+    mockMvc.perform(patch("/api/users/{userId}", userId)
+            .header("Deokhugam-Request-User-ID", "invalid-uuid-string") // uuid가 아닌 문자열로 잘못된 형식을 보냄
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(new UserUpdateRequest("새닉네임"))))
+        .andExpect(status().isBadRequest());
+  }
+
 }
