@@ -29,9 +29,9 @@ public class BasicPopularBookService implements PopularBookService {
 
   @Transactional
   @Override
-  public long calculatePopularBook(LocalDate baseDate) {
-    long rank = 1;
+  public void calculatePopularBook(LocalDate baseDate) {
     for(PeriodType period : PeriodType.values()){
+      long rank = 1;
       popularBookRepository.deleteByPeriodAndBaseDate(period, baseDate);
 
         LocalDateTime from = calculateFrom(period, baseDate);
@@ -60,7 +60,6 @@ public class BasicPopularBookService implements PopularBookService {
               .build());
         }
     }
-    return (rank-1);
   }
 
   private LocalDateTime calculateFrom(PeriodType period, LocalDate baseDate){

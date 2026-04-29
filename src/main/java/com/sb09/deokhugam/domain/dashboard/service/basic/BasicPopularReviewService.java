@@ -35,10 +35,10 @@ public class BasicPopularReviewService implements PopularReviewService {
   private final NotificationService notificationService;
 
   @Transactional
-  public long calculatePopularReview(LocalDate baseDate) {
-    long ranking = 1;
+  public void calculatePopularReview(LocalDate baseDate) {
     for (PeriodType period : PeriodType.values()) {
       // 1. 기존 데이터 깔끔하게 삭제 (1안 적용!)
+      long ranking = 1;
       popularReviewRepository.deleteByPeriodAndBaseDate(period, baseDate);
 
       // 2. 기간 계산 (팀원의 calculateFrom 패턴과 동일)
@@ -74,7 +74,6 @@ public class BasicPopularReviewService implements PopularReviewService {
       // 5. 한 번에 DB 저장
       popularReviewRepository.saveAll(entitiesToSave);
     }
-    return (ranking-1);
   }
 
   private LocalDateTime calculateFrom(PeriodType period, LocalDate baseDate) {

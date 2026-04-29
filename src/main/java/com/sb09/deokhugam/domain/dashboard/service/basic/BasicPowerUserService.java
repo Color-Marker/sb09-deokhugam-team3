@@ -26,9 +26,9 @@ public class BasicPowerUserService implements PowerUserService {
   private final PowerUserRepository powerUserRepository;
 
   @Transactional
-  public long calculatePowerUser(LocalDate baseDate) {
-    long ranking = 1;
+  public void calculatePowerUser(LocalDate baseDate) {
     for (PeriodType period : PeriodType.values()) {
+      long ranking = 1;
       // 1. 기존 데이터 깔끔하게 삭제
       powerUserRepository.deleteByPeriodAndBaseDate(period, baseDate);
 
@@ -58,7 +58,6 @@ public class BasicPowerUserService implements PowerUserService {
       // 5. DB 저장
       powerUserRepository.saveAll(entitiesToSave);
     }
-    return (ranking-1);
   }
 
   private LocalDateTime calculateFrom(PeriodType period, LocalDate baseDate) {

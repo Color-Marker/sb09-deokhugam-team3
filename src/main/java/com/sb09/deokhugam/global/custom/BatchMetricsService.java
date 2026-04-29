@@ -46,10 +46,10 @@ public class BatchMetricsService {
         .increment();
   }
 
-  public void recordCreated(String batchName, long count){
+  public void recordCreated(String batchName) {
     Counter.builder("batch.items.created")
         .tag("batch", batchName)
         .register(meterRegistry)
-        .increment(count);
+        .increment();
   }
 }

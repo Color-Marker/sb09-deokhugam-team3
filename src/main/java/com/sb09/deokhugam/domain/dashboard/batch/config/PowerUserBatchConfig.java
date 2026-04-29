@@ -43,8 +43,8 @@ public class PowerUserBatchConfig {
   public Tasklet calculatePowerUserTasklet(){
     return (contribution, chunkContext) -> {
       LocalDate baseDate = LocalDate.now();
-      long createdCount = powerUserService.calculatePowerUser(baseDate);
-      batchMetricsService.recordCreated("powerUser",createdCount);
+      powerUserService.calculatePowerUser(baseDate);
+      batchMetricsService.recordCreated("powerUser");
       log.info("배치 작업 수행 완료. 파워 유저 랭킹이 저장되었습니다.");
       return RepeatStatus.FINISHED;
     };

@@ -43,8 +43,8 @@ public class PopularBookBatchConfig {
   public Tasklet calculatePopularBookTasklet(){
     return (contribution, chunkContext) -> {
       LocalDate baseDate = LocalDate.now();
-      long createCount = popularBookService.calculatePopularBook(baseDate);
-      batchMetricsService.recordCreated("popularBook", createCount);
+      popularBookService.calculatePopularBook(baseDate);
+      batchMetricsService.recordCreated("popularBook");
       log.info("배치 작업 수행 완료. 인기 도서 랭킹이 저장되었습니다.");
       return RepeatStatus.FINISHED;
     };

@@ -44,8 +44,8 @@ public class PopularReviewBatchConfig {
   public Tasklet calculatePopularReviewTasklet(){
     return (contribution, chunkContext) -> {
       LocalDate baseDate = LocalDate.now();
-      long createdCount = popularReviewService.calculatePopularReview(baseDate);
-      batchMetricsService.recordCreated("popularReview",createdCount);
+      popularReviewService.calculatePopularReview(baseDate);
+      batchMetricsService.recordCreated("popularReview");
       log.info("배치 작업 수행 완료. 인기 리뷰 랭킹이 저장되었습니다.");
       return RepeatStatus.FINISHED;
     };
