@@ -16,7 +16,9 @@ public class PopularReviewBatchScheduler {
   private final JobLauncher jobLauncher;
   private final Job calculatePopularReviewJob;
 
-  @Scheduled(cron = "0 5 0 * * *") // 매일 00시 05분 실행
+//  @Scheduled(cron = "0 5 0 * * *") // 매일 00시 05분 실행
+  @Scheduled(cron = "0 */10 * * * *") // 테스트용입니다.
+
   public void calculatePopularReview(){
     try{
       JobParameters jobParameters = new JobParametersBuilder()
