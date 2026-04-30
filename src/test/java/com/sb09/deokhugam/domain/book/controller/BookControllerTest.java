@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sb09.deokhugam.config.RequestTrackingFilter;
 import com.sb09.deokhugam.domain.book.dto.BookDto;
 import com.sb09.deokhugam.domain.book.dto.NaverBookDto;
 import com.sb09.deokhugam.domain.book.dto.PopularBookDto;
@@ -29,12 +30,20 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.HttpMethod;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(BookController.class)
+@WebMvcTest(
+    value = BookController.class,
+    excludeFilters = @ComponentScan.Filter(
+        type = FilterType.ASSIGNABLE_TYPE,
+        classes = RequestTrackingFilter.class
+    )
+)
 class BookControllerTest {
 
   @Autowired

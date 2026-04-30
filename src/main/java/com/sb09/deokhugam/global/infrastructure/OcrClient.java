@@ -4,6 +4,7 @@ import com.sb09.deokhugam.global.exception.CustomException;
 import com.sb09.deokhugam.global.exception.ErrorCode;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Base64;
 import java.util.List;
@@ -55,7 +56,9 @@ public class OcrClient {
       // 요청 파라미터 설정 (String 타입만 받도록 변경)
       MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
       body.add("apikey", apiKey);
-      body.add("language", "kor");
+      body.add("language", "eng"); //수정
+      body.add("OCREngine", "2");
+      body.add("scale", "true");
       body.add("isOverlayRequired", "false"); // boolean 대신 String으로
       body.add("base64Image", base64Image);
 
@@ -103,7 +106,7 @@ public class OcrClient {
     }
 
     // 1MB 초과 시 리사이징
-    BufferedImage originalImage = ImageIO.read(image.getInputStream());
+    BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(originalBytes));
     if (originalImage == null) {
       return originalBytes; // 읽기 실패 시 원본 반환
     }
