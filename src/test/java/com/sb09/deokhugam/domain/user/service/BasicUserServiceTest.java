@@ -97,7 +97,7 @@ class BasicUserServiceTest {
   void create_success() {
     UserRegisterRequest request = new UserRegisterRequest(email, nickname, password);
 
-    given(userRepository.existsByEmailAndDeletedAtIsNull(request.email())).willReturn(false);
+    given(userRepository.existsByEmail(request.email())).willReturn(false);
     given(passwordEncoder.encode(request.password())).willReturn(encodedPassword);
     given(userRepository.save(any(Users.class))).willReturn(user);
     given(userMapper.toDto(user)).willReturn(userResponse);
@@ -113,7 +113,7 @@ class BasicUserServiceTest {
   void create_duplicateEmail() {
     UserRegisterRequest request = new UserRegisterRequest(email, nickname, password);
 
-    given(userRepository.existsByEmailAndDeletedAtIsNull(request.email())).willReturn(true);
+    given(userRepository.existsByEmail(request.email())).willReturn(true);
 
     assertThatThrownBy(() -> userService.create(request))
         .isInstanceOf(DuplicateEmailException.class)
