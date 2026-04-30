@@ -74,8 +74,6 @@ CREATE TABLE reviews (
                          CONSTRAINT fk_reviews_user
                              FOREIGN KEY (user_id) REFERENCES users (id) ON
                                  DELETE CASCADE,
-                         CONSTRAINT uq_reviews_book_user
-                             UNIQUE (book_id, user_id),                  -- 유니크 설정으로 도서당 1개의 리뷰 제한
                          CONSTRAINT chk_reviews_rating
                              CHECK (rating >= 1 AND rating <= 5),
                          CONSTRAINT chk_reviews_like_count
@@ -83,6 +81,7 @@ CREATE TABLE reviews (
                          CONSTRAINT chk_reviews_comment_count
                              CHECK (comment_count >= 0)
 );
+CREATE UNIQUE INDEX uq_reviews_book_user_active ON reviews(book_id, user_id) WHERE deleted_at IS NULL;
 
 -- =====================================================
 -- 리뷰 좋아요 (Review Likes)
