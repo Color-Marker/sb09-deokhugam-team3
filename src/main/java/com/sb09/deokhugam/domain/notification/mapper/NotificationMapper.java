@@ -3,6 +3,7 @@ package com.sb09.deokhugam.domain.notification.mapper;
 import com.sb09.deokhugam.domain.notification.dto.response.NotificationDto;
 import com.sb09.deokhugam.domain.notification.entity.Notification;
 import com.sb09.deokhugam.domain.notification.entity.NotificationType;
+import com.sb09.deokhugam.domain.user.entity.Users;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -20,8 +21,15 @@ public interface NotificationMapper {
     if (notification.getType().equals(NotificationType.RANKING)) {
       return "당신의 리뷰가 인기 순위 10위 내에 선정되었습니다.";
     }
-    String nickname = notification.getSender() != null
-        ? notification.getSender().getNickname() : "알 수 없음";
+    Users sender = notification.getSender();
+    String nickname;
+    if(sender != null){
+      nickname = sender.getDeletedAt() != null
+          ? "알 수 없음" : sender.getNickname();
+    }
+    else{
+      nickname = "알 수 없음";
+    }
     if (notification.getType().equals(NotificationType.LIKE)) {
       return "[" + nickname + "]님이 나의 리뷰를 좋아합니다.";
     } else {
