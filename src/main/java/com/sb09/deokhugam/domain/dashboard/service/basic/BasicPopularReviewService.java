@@ -38,6 +38,7 @@ public class BasicPopularReviewService implements PopularReviewService {
   public void calculatePopularReview(LocalDate baseDate) {
     for (PeriodType period : PeriodType.values()) {
       // 1. 기존 데이터 깔끔하게 삭제 (1안 적용!)
+      long ranking = 1;
       popularReviewRepository.deleteByPeriodAndBaseDate(period, baseDate);
 
       // 2. 기간 계산 (팀원의 calculateFrom 패턴과 동일)
@@ -48,7 +49,6 @@ public class BasicPopularReviewService implements PopularReviewService {
       List<PopularReviewScoreDto> dtos = dashboardQueryRepository.findTopPopularReviews(from, to, 100);
 
       List<PopularReview> entitiesToSave = new ArrayList<>();
-      long ranking = 1;
 
       // 4. Entity 변환 및 알림 이벤트 발행
       for (PopularReviewScoreDto dto : dtos) {

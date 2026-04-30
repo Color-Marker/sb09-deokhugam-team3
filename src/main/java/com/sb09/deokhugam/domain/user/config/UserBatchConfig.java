@@ -2,6 +2,7 @@ package com.sb09.deokhugam.domain.user.config;
 
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
+import com.sb09.deokhugam.global.custom.BatchMetricsService;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,8 +27,8 @@ public class UserBatchConfig {
   private final JobRepository jobRepository;
   private final PlatformTransactionManager platformTransactionManager;
   private final UserRepository userRepository;
-  //스프링 부트에서 메트릭(숫자 데이터)을 관리하는 중앙 저장소. 여기에 데이터를 등록하면 Actuator가 이를 읽어 API로 노출함
-  private final MeterRegistry meterRegistry;
+  private final BatchMetricsService batchMetricsService;
+
 
   //전체적인 배치 프로세스를 정의하고 여기서는
   //deleteUserStep 하나만 실행하도록 설정됨
@@ -59,19 +60,11 @@ public class UserBatchConfig {
       List<Users> targets =
           userRepository.findAllByDeletedAtBefore(threshold);
       if (!targets.isEmpty()) {
+        long deletedCount = targets.size();
         userRepository.deleteAll(targets);
-        log.info("{}명의 유저가 완전히 삭제되었습니다.",
-            targets.size());
+        batchMetricsService.recordDeleted("user", deletedCount);
+        log.info("{}명의 유저가 완전히 삭제되었습니다.", deletedCount);
       }
-
-      //아래 코드 두줄의 목적 : API 호출 한 번으로 "지금까지 총 몇 명이 삭제됐지?"를 바로 알 수 있게 함
-      // "value": 15.0 <- JSON 형식의 데이터가 응답
-      //아래 메트릭이 나타날려면 배치가 최소 한 번은 실행된 이후여야함
-
-      //배치가 한 번 돌 때 삭제된 유저 수를 누적해서 더함
-      meterRegistry.counter("user.deletion.count").increment(targets.size());
-      //삭제된 데이터가 있든 없든, 배치가 '실행'된 횟수 자체를 1씩 올림
-      meterRegistry.counter("user.deletion.batch.runs").increment();
       return RepeatStatus.FINISHED;
     };
   }

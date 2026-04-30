@@ -1,6 +1,7 @@
 package com.sb09.deokhugam.domain.dashboard.batch.config;
 
 import com.sb09.deokhugam.domain.dashboard.service.PopularBookService;
+import com.sb09.deokhugam.global.custom.BatchMetricsService;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ public class PopularBookBatchConfig {
   private final JobRepository jobRepository;
   private final PlatformTransactionManager platformTransactionManager;
   private final PopularBookService popularBookService;
+  private final BatchMetricsService batchMetricsService;
 
   @Bean
   public Job calculatePopularBookJob(Step calculatePopularBookStep){
@@ -42,6 +44,7 @@ public class PopularBookBatchConfig {
     return (contribution, chunkContext) -> {
       LocalDate baseDate = LocalDate.now();
       popularBookService.calculatePopularBook(baseDate);
+      batchMetricsService.recordCreated("popularBook");
       log.info("배치 작업 수행 완료. 인기 도서 랭킹이 저장되었습니다.");
       return RepeatStatus.FINISHED;
     };

@@ -30,8 +30,8 @@ public class BasicPopularBookService implements PopularBookService {
   @Transactional
   @Override
   public void calculatePopularBook(LocalDate baseDate) {
-
     for(PeriodType period : PeriodType.values()){
+      long rank = 1;
       popularBookRepository.deleteByPeriodAndBaseDate(period, baseDate);
 
         LocalDateTime from = calculateFrom(period, baseDate);
@@ -39,7 +39,6 @@ public class BasicPopularBookService implements PopularBookService {
 
         List<Object[]> results = reviewRepository.calculateBookByPeriod(from, to);
 
-        long rank = 1;
         for(Object[] row : results){
           UUID bookId = (UUID) row[0];
           if(bookRepository.existsByIdAndDeletedAtIsNotNull(bookId)){

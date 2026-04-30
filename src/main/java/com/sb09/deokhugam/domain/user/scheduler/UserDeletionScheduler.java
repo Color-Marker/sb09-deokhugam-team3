@@ -30,7 +30,7 @@ public class UserDeletionScheduler {
   //Batch Job은 단순히 메서드를 호출한다고 실행x
   //JobLauncher를 통해 실행해야 하며,
   //동일한 작업으로 간주되지 않도록 현재 시간을 파라미터로 넘겨 매번 새로운 실행(JobInstance)으로 기록되게 함
-  @Scheduled(cron = "0 0 2 * * *")  // 매일 새벽 2시 실행
+  @Scheduled(cron = "0 0 0 * * *")  // 매일 00시 실행
   public void processScheduledDeletion() {
     try {
       JobParameters jobParameters = new JobParametersBuilder()

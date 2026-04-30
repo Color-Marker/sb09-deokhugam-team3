@@ -16,7 +16,7 @@ public class NotificationBatchScheduler {
   private final JobLauncher jobLauncher;
   private final Job deleteNotificationJob;
 
-  @Scheduled(cron = "0 0 0 * * *")
+  @Scheduled(cron = "0 20 0 * * *")
   public void deleteOldNotification(){
     try{
       JobParameters jobParameters = new JobParametersBuilder()

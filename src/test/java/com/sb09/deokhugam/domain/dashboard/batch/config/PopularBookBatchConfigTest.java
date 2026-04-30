@@ -1,6 +1,7 @@
 package com.sb09.deokhugam.domain.dashboard.batch.config;
 
 import com.sb09.deokhugam.domain.dashboard.service.PopularBookService;
+import com.sb09.deokhugam.global.custom.BatchMetricsService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +27,9 @@ class PopularBookBatchConfigTest {
 
   @InjectMocks
   private PopularBookBatchConfig batchConfig;
+
+  @Mock
+  private BatchMetricsService batchMetricsService;
 
   @Test
   @DisplayName("인기 도서 Tasklet이 실행되면 Service를 호출하고 FINISHED 상태를 반환한다")

@@ -1,6 +1,7 @@
 package com.sb09.deokhugam.domain.dashboard.batch.config;
 
 import com.sb09.deokhugam.domain.dashboard.service.PopularReviewService;
+import com.sb09.deokhugam.global.custom.BatchMetricsService;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,8 @@ public class PopularReviewBatchConfig {
   private final JobRepository jobRepository;
   private final PlatformTransactionManager platformTransactionManager;
   private final PopularReviewService popularReviewService;
+  private final BatchMetricsService batchMetricsService;
+
 
   @Bean
   public Job calculatePopularReviewJob(Step calculatePopularReviewStep){
@@ -42,6 +45,7 @@ public class PopularReviewBatchConfig {
     return (contribution, chunkContext) -> {
       LocalDate baseDate = LocalDate.now();
       popularReviewService.calculatePopularReview(baseDate);
+      batchMetricsService.recordCreated("popularReview");
       log.info("배치 작업 수행 완료. 인기 리뷰 랭킹이 저장되었습니다.");
       return RepeatStatus.FINISHED;
     };
