@@ -12,9 +12,6 @@ public interface UserRepository extends JpaRepository<Users, UUID> {
   // 회원가입: 논리 삭제 여부 무관하게 이메일 존재 여부 확인 (재가입 중복 방지)
   boolean existsByEmail(String email);
 
-  // 회원가입: 논리 삭제되지 않은 사용자 기준 이메일 중복 검증
-  boolean existsByEmailAndDeletedAtIsNull(String email);
-
   // 로그인: 논리 삭제되지 않은 사용자 이메일 조회
   Optional<Users> findByEmailAndDeletedAtIsNull(String email);
 
