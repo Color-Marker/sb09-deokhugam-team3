@@ -178,10 +178,18 @@ public class BasicBookService implements BookService {
   @Transactional(readOnly = true)
   public CursorPageResponseDto<BookDto> getBooks(BookSearchCondition condition) {
     Slice<Book> slice = bookRepository.searchBooks(condition);
+    String orderBy = condition.orderBy();
     return cursorPageResponseMapper.fromSlice(
         slice,
         bookMapper::toDto,
-        book -> book.getId(),
+        book -> switch (orderBy != null ? orderBy : "createdAt") {
+          case "title" -> book.getTitle();
+          case "publishedDate" ->
+              book.getPublishedDate() != null ? book.getPublishedDate().toString() : null;
+          case "rating" -> book.getRating();
+          case "reviewCount" -> book.getReviewCount();
+          default -> book.getId();
+        },
         book -> book.getCreatedAt(),
         null
     );
