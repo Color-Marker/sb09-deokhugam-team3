@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -65,8 +66,8 @@ public class BasicBookServiceTest {
   private OcrClient ocrClient;
   @Mock
   private S3Service s3Service;
-  @Mock
-  private CursorPageResponseMapper cursorPageResponseMapper;
+  @Spy
+  private CursorPageResponseMapper cursorPageResponseMapper = new CursorPageResponseMapper();
   @Mock
   private PopularBookRepository popularBookRepository;
 
@@ -352,6 +353,84 @@ public class BasicBookServiceTest {
     bookService.getBooks(condition);
 
     verify(bookRepository, times(1)).searchBooks(condition);
+  }
+
+  @Test
+  @DisplayName("도서 목록 검색 - title 정렬 시 nextCursor가 title")
+  void getBooks_orderByTitle_nextCursorIsTitle() {
+    Book realBook = new Book("테스트 제목", "저자", "설명", "출판사",
+        LocalDate.of(2023, 1, 1), "ISBN-T01", null);
+    BookSearchCondition condition = new BookSearchCondition(null, "title", "DESC", null, null, 1);
+    given(bookRepository.searchBooks(condition))
+        .willReturn(new SliceImpl<>(List.of(realBook), PageRequest.of(0, 1), true));
+    given(bookMapper.toDto(realBook)).willReturn(mock(BookDto.class));
+
+    var result = bookService.getBooks(condition);
+
+    assertThat(result.nextCursor()).isEqualTo("테스트 제목");
+  }
+
+  @Test
+  @DisplayName("도서 목록 검색 - publishedDate 정렬 시 nextCursor가 날짜 문자열")
+  void getBooks_orderByPublishedDate_nextCursorIsDateString() {
+    Book realBook = new Book("제목", "저자", "설명", "출판사",
+        LocalDate.of(2023, 6, 15), "ISBN-T02", null);
+    BookSearchCondition condition = new BookSearchCondition(null, "publishedDate", "DESC", null,
+        null, 1);
+    given(bookRepository.searchBooks(condition))
+        .willReturn(new SliceImpl<>(List.of(realBook), PageRequest.of(0, 1), true));
+    given(bookMapper.toDto(realBook)).willReturn(mock(BookDto.class));
+
+    var result = bookService.getBooks(condition);
+
+    assertThat(result.nextCursor()).isEqualTo("2023-06-15");
+  }
+
+  @Test
+  @DisplayName("도서 목록 검색 - rating 정렬 시 nextCursor가 평점 문자열")
+  void getBooks_orderByRating_nextCursorIsRatingString() {
+    Book realBook = new Book("제목", "저자", "설명", "출판사",
+        LocalDate.of(2023, 1, 1), "ISBN-T03", null);
+    realBook.updateRatingAndReviewCount(new BigDecimal("4.50"), 5);
+    BookSearchCondition condition = new BookSearchCondition(null, "rating", "DESC", null, null, 1);
+    given(bookRepository.searchBooks(condition))
+        .willReturn(new SliceImpl<>(List.of(realBook), PageRequest.of(0, 1), true));
+    given(bookMapper.toDto(realBook)).willReturn(mock(BookDto.class));
+
+    var result = bookService.getBooks(condition);
+
+    assertThat(result.nextCursor()).isEqualTo("4.50");
+  }
+
+  @Test
+  @DisplayName("도서 목록 검색 - reviewCount 정렬 시 nextCursor가 리뷰수 문자열")
+  void getBooks_orderByReviewCount_nextCursorIsCountString() {
+    Book realBook = new Book("제목", "저자", "설명", "출판사",
+        LocalDate.of(2023, 1, 1), "ISBN-T04", null);
+    realBook.updateRatingAndReviewCount(BigDecimal.ZERO, 42);
+    BookSearchCondition condition = new BookSearchCondition(null, "reviewCount", "DESC", null, null,
+        1);
+    given(bookRepository.searchBooks(condition))
+        .willReturn(new SliceImpl<>(List.of(realBook), PageRequest.of(0, 1), true));
+    given(bookMapper.toDto(realBook)).willReturn(mock(BookDto.class));
+
+    var result = bookService.getBooks(condition);
+
+    assertThat(result.nextCursor()).isEqualTo("42");
+  }
+
+  @Test
+  @DisplayName("도서 목록 검색 - 기본(createdAt) 정렬 시 nextCursor가 도서 ID")
+  void getBooks_orderByDefault_nextCursorIsBookId() {
+    BookSearchCondition condition = new BookSearchCondition(null, null, "DESC", null, null, 1);
+    given(bookRepository.searchBooks(condition))
+        .willReturn(new SliceImpl<>(List.of(book), PageRequest.of(0, 1), true));
+    given(bookMapper.toDto(book)).willReturn(mock(BookDto.class));
+
+    var result = bookService.getBooks(condition);
+
+    assertThat(result.hasNext()).isTrue();
+    assertThat(result.nextCursor()).isEqualTo(bookId);
   }
 
   // ===================== GET POPULAR BOOKS =====================
