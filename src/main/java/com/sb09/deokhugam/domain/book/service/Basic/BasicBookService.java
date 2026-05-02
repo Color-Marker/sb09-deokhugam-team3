@@ -186,8 +186,8 @@ public class BasicBookService implements BookService {
           case "title" -> book.getTitle();
           case "publishedDate" ->
               book.getPublishedDate() != null ? book.getPublishedDate().toString() : null;
-          case "rating" -> book.getRating();
-          case "reviewCount" -> book.getReviewCount();
+          case "rating" -> book.getRating().toPlainString();
+          case "reviewCount" -> String.valueOf(book.getReviewCount());
           default -> book.getId();
         },
         book -> book.getCreatedAt(),
