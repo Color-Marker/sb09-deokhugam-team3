@@ -5,6 +5,8 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sb09.deokhugam.domain.book.dto.request.BookSearchCondition;
 import com.sb09.deokhugam.domain.book.entity.Book;
 import com.sb09.deokhugam.domain.book.entity.QBook;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -24,17 +26,20 @@ public class CustomBookRepositoryImpl implements CustomBookRepository {
   @Override
   public Slice<Book> searchBooks(BookSearchCondition condition) {
     boolean isDesc = !"ASC".equalsIgnoreCase(condition.direction());
+    boolean isCreatedAtSort =
+        condition.orderBy() == null || "createdAt".equals(condition.orderBy());
 
     List<Book> results = queryFactory
         .selectFrom(book)
         .where(
             book.deletedAt.isNull(),
             keywordCondition(condition.keyword()),
-            cursorCondition(condition.cursor(), condition.after(), isDesc)
+            cursorCondition(condition.orderBy(), condition.cursor(), condition.after(), isDesc)
         )
         .orderBy(
             getOrderSpecifier(condition.orderBy(), isDesc),
-            isDesc ? book.id.desc() : book.id.asc()
+            isDesc ? (isCreatedAtSort ? book.id.desc() : book.createdAt.desc())
+                : (isCreatedAtSort ? book.id.asc() : book.createdAt.asc())
         )
         .limit(condition.limit() + 1)
         .fetch();
@@ -74,17 +79,45 @@ public class CustomBookRepositoryImpl implements CustomBookRepository {
     };
   }
 
-  private BooleanExpression cursorCondition(Object cursor, LocalDateTime after, boolean isDesc) {
+  private BooleanExpression cursorCondition(String orderBy, Object cursor, LocalDateTime after,
+      boolean isDesc) {
     if (cursor == null || after == null) {
       return null;
     }
-    UUID cursorId = UUID.fromString(cursor.toString());
-    if (isDesc) {
-      return book.createdAt.lt(after)
-          .or(book.createdAt.eq(after).and(book.id.lt(cursorId)));
-    } else {
-      return book.createdAt.gt(after)
-          .or(book.createdAt.eq(after).and(book.id.gt(cursorId)));
+    if (orderBy == null || "createdAt".equals(orderBy)) {
+      UUID cursorId = UUID.fromString(cursor.toString());
+      return isDesc
+          ? book.createdAt.lt(after).or(book.createdAt.eq(after).and(book.id.lt(cursorId)))
+          : book.createdAt.gt(after).or(book.createdAt.eq(after).and(book.id.gt(cursorId)));
     }
+    return switch (orderBy) {
+      case "title" -> {
+        String val = cursor.toString();
+        yield isDesc
+            ? book.title.lt(val).or(book.title.eq(val).and(book.createdAt.lt(after)))
+            : book.title.gt(val).or(book.title.eq(val).and(book.createdAt.gt(after)));
+      }
+      case "publishedDate" -> {
+        LocalDate val = LocalDate.parse(cursor.toString());
+        yield isDesc
+            ? book.publishedDate.lt(val)
+            .or(book.publishedDate.eq(val).and(book.createdAt.lt(after)))
+            : book.publishedDate.gt(val)
+                .or(book.publishedDate.eq(val).and(book.createdAt.gt(after)));
+      }
+      case "rating" -> {
+        BigDecimal val = new BigDecimal(cursor.toString());
+        yield isDesc
+            ? book.rating.lt(val).or(book.rating.eq(val).and(book.createdAt.lt(after)))
+            : book.rating.gt(val).or(book.rating.eq(val).and(book.createdAt.gt(after)));
+      }
+      case "reviewCount" -> {
+        int val = Integer.parseInt(cursor.toString());
+        yield isDesc
+            ? book.reviewCount.lt(val).or(book.reviewCount.eq(val).and(book.createdAt.lt(after)))
+            : book.reviewCount.gt(val).or(book.reviewCount.eq(val).and(book.createdAt.gt(after)));
+      }
+      default -> null;
+    };
   }
 }

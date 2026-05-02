@@ -28,7 +28,7 @@ CREATE TABLE users (
 -- =====================================================
 CREATE TABLE books (
                        id              UUID            NOT NULL DEFAULT gen_random_uuid(),
-                       title           VARCHAR(500)    NOT NULL,
+                       title           VARCHAR(500)    COLLATE "C" NOT NULL,
                        author          VARCHAR(255)    NOT NULL,
                        description     TEXT            NOT NULL,
                        publisher       VARCHAR(255)    NOT NULL,
