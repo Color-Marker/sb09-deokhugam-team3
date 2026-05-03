@@ -21,6 +21,7 @@ import com.sb09.deokhugam.domain.notification.service.NotificationService;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
+import com.sb09.deokhugam.domain.review.dto.response.PopularReviewDto;
 import com.sb09.deokhugam.domain.review.dto.response.ReviewDto;
 import com.sb09.deokhugam.domain.review.dto.response.ReviewLikeDto;
 import com.sb09.deokhugam.domain.review.entity.Review;
@@ -249,7 +250,7 @@ public class BasicReviewServiceTest {
     given(userRepository.findById(userId)).willReturn(Optional.of(users));
     given(reviewMapper.toDto(eq(review), eq(book), eq(users), eq(false))).willReturn(mockReviewDto);
 
-    List<ReviewDto> result = reviewService.getPopularReviews("ALL");
+    List<PopularReviewDto> result = reviewService.getPopularReviews("ALL");
 
     assertThat(result).isNotNull();
     assertThat(result).hasSize(1);
@@ -263,21 +264,25 @@ public class BasicReviewServiceTest {
     given(pr.getBaseDate()).willReturn(LocalDate.now());
     given(pr.getRanking()).willReturn(1L);
     given(pr.getReviewId()).willReturn(reviewId);
+    given(pr.getLikeCount()).willReturn(10L);
+    given(pr.getCommentCount()).willReturn(5L);
 
     given(popularReviewRepository.findTopByPeriodOrderByBaseDateDesc(PeriodType.DAILY)).willReturn(
         Optional.of(pr));
     given(popularReviewRepository.findAll()).willReturn(List.of(pr));
     given(reviewRepository.findAllById(List.of(reviewId))).willReturn(List.of(review));
 
-    ReviewDto mockReviewDto = mock(ReviewDto.class);
-    given(bookRepository.findById(bookId)).willReturn(Optional.of(book));
-    given(userRepository.findById(userId)).willReturn(Optional.of(users));
-    given(reviewMapper.toDto(eq(review), eq(book), eq(users), eq(false))).willReturn(mockReviewDto);
+    // N+1 최적화로 인해 findById -> findAllById 로 Mocking 변경
+    given(bookRepository.findAllById(List.of(bookId))).willReturn(List.of(book));
+    given(userRepository.findAllById(List.of(userId))).willReturn(List.of(users));
 
-    List<ReviewDto> result = reviewService.getPopularReviews("DAILY");
+    // Mapper 로직 제거 (직접 DTO를 생성하므로 더 이상 필요 없음)
+
+    List<PopularReviewDto> result = reviewService.getPopularReviews("DAILY");
 
     assertThat(result).isNotNull();
     assertThat(result).hasSize(1);
+    assertThat(result.get(0).likeCount()).isEqualTo(10L); // 💡 값이 제대로 들어갔는지 검증 추가
   }
 
   @Test
@@ -288,16 +293,18 @@ public class BasicReviewServiceTest {
     given(pr.getBaseDate()).willReturn(LocalDate.now());
     given(pr.getRanking()).willReturn(1L);
     given(pr.getReviewId()).willReturn(reviewId);
+    given(pr.getLikeCount()).willReturn(20L);
+    given(pr.getCommentCount()).willReturn(10L);
 
     given(popularReviewRepository.findTopByPeriodOrderByBaseDateDesc(PeriodType.WEEKLY)).willReturn(
         Optional.of(pr));
     given(popularReviewRepository.findAll()).willReturn(List.of(pr));
     given(reviewRepository.findAllById(List.of(reviewId))).willReturn(List.of(review));
 
-    ReviewDto mockReviewDto = mock(ReviewDto.class);
-    given(reviewMapper.toDto(any(), any(), any(), eq(false))).willReturn(mockReviewDto);
+    given(bookRepository.findAllById(List.of(bookId))).willReturn(List.of(book));
+    given(userRepository.findAllById(List.of(userId))).willReturn(List.of(users));
 
-    List<ReviewDto> result = reviewService.getPopularReviews("WEEKLY");
+    List<PopularReviewDto> result = reviewService.getPopularReviews("WEEKLY");
 
     assertThat(result).hasSize(1);
   }
@@ -310,6 +317,8 @@ public class BasicReviewServiceTest {
     given(pr.getBaseDate()).willReturn(LocalDate.now());
     given(pr.getRanking()).willReturn(1L);
     given(pr.getReviewId()).willReturn(reviewId);
+    given(pr.getLikeCount()).willReturn(30L);
+    given(pr.getCommentCount()).willReturn(15L);
 
     given(
         popularReviewRepository.findTopByPeriodOrderByBaseDateDesc(PeriodType.MONTHLY)).willReturn(
@@ -317,10 +326,10 @@ public class BasicReviewServiceTest {
     given(popularReviewRepository.findAll()).willReturn(List.of(pr));
     given(reviewRepository.findAllById(List.of(reviewId))).willReturn(List.of(review));
 
-    ReviewDto mockReviewDto = mock(ReviewDto.class);
-    given(reviewMapper.toDto(any(), any(), any(), eq(false))).willReturn(mockReviewDto);
+    given(bookRepository.findAllById(List.of(bookId))).willReturn(List.of(book));
+    given(userRepository.findAllById(List.of(userId))).willReturn(List.of(users));
 
-    List<ReviewDto> result = reviewService.getPopularReviews("MONTHLY");
+    List<PopularReviewDto> result = reviewService.getPopularReviews("MONTHLY");
 
     assertThat(result).hasSize(1);
   }

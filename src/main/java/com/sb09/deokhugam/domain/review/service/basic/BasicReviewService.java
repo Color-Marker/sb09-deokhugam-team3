@@ -10,6 +10,7 @@ import com.sb09.deokhugam.domain.notification.service.NotificationService;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
+import com.sb09.deokhugam.domain.review.dto.response.PopularReviewDto;
 import com.sb09.deokhugam.domain.review.dto.response.ReviewDto;
 import com.sb09.deokhugam.domain.review.dto.response.ReviewLikeDto;
 import com.sb09.deokhugam.domain.review.entity.Review;
@@ -285,8 +286,7 @@ public class BasicReviewService implements ReviewService {
    * 6. 인기 리뷰 조회: 대시보드(PopularReview) 테이블에서 미리 계산된 데이터 가져오기
    */
   @Override
-  public List<ReviewDto> getPopularReviews(String period) {
-    //  프론트에서 넘어온 문자열을 대시보드의 PeriodType Enum으로 변환 (ALL -> ALL_TIME 처리)
+  public List<PopularReviewDto> getPopularReviews(String period) {
     PeriodType periodType;
     try {
       if ("ALL".equalsIgnoreCase(period)) {
@@ -300,13 +300,13 @@ public class BasicReviewService implements ReviewService {
 
     final PeriodType finalPeriodType = periodType;
 
-    //  해당 기간의 가장 최신 배치 실행일(baseDate) 찾기
+    // 해당 기간의 가장 최신 배치 실행일(baseDate) 찾기
     LocalDate latestBaseDate = popularReviewRepository
         .findTopByPeriodOrderByBaseDateDesc(periodType)
         .map(PopularReview::getBaseDate)
         .orElse(LocalDate.now());
 
-    //  대시보드 테이블에서 해당 기간 + 최신 실행일의 랭킹 1~10위 가져오기
+    // 대시보드 테이블에서 랭킹 1~10위 가져오기
     List<PopularReview> top10PopularReviews = popularReviewRepository.findAll().stream()
         .filter(pr -> pr.getPeriod() == finalPeriodType)
         .filter(pr -> pr.getBaseDate().equals(latestBaseDate))
@@ -315,10 +315,9 @@ public class BasicReviewService implements ReviewService {
         .toList();
 
     if (top10PopularReviews.isEmpty()) {
-      return List.of(); // 데이터가 없으면 빈 리스트 반환
+      return List.of();
     }
 
-    //  찾아낸 랭킹 데이터의 reviewId들만 추출해서 원본 리뷰 한 번에 싹 가져오기 (N+1 문제 방지)
     List<UUID> reviewIds = top10PopularReviews.stream()
         .map(PopularReview::getReviewId)
         .toList();
@@ -326,19 +325,30 @@ public class BasicReviewService implements ReviewService {
     Map<UUID, Review> reviewMap = reviewRepository.findAllById(reviewIds).stream()
         .collect(Collectors.toMap(Review::getId, r -> r));
 
-    //  랭킹 순서대로 ReviewDto로 예쁘게 포장해서 반환
     return top10PopularReviews.stream()
         .map(pr -> {
           Review review = reviewMap.get(pr.getReviewId());
           if (review == null) {
-            return null; // 혹시 그 사이 리뷰가 완전 삭제됐으면 무시
+            return null;
           }
 
           Book book = bookRepository.findById(review.getBookId()).orElse(null);
           Users user = userRepository.findById(review.getUserId()).orElse(null);
 
-          // 논리 삭제된 것도 인기 리뷰에 띄워야 한다면 이대로 진행
-          return reviewMapper.toDto(review, book, user, false);
+          // 원본 리뷰의 누적 좋아요가 아니라, 대시보드(pr)에 저장된 "이번 주 좋아요"를 꽂아줍니다
+          return new PopularReviewDto(
+              review.getId(),
+              book != null ? book.getId() : null,
+              book != null ? book.getTitle() : "알 수 없는 도서",
+              book != null ? book.getThumbnailUrl() : null,
+              user != null ? user.getId() : null,
+              user != null ? user.getNickname() : "알 수 없는 사용자",
+              review.getContent(),
+              review.getRating(),
+              pr.getLikeCount(),
+              pr.getCommentCount(),
+              review.getCreatedAt()
+          );
         })
         .filter(java.util.Objects::nonNull)
         .toList();
