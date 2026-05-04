@@ -42,8 +42,8 @@ public class BasicUserService implements UserService {
   @Override
   @Transactional
   public UserResponse create(UserRegisterRequest request) {
-    if (userRepository.existsByEmailAndDeletedAtIsNull(request.email())) {
-      throw new DuplicateEmailException();
+    if (userRepository.existsByEmail(request.email())) {
+      throw DuplicateEmailException.withEmail(request.email());
     }
 
     Users user = Users.builder()
