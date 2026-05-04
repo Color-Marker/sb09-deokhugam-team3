@@ -790,4 +790,43 @@ public class BasicReviewServiceTest {
         .isInstanceOf(ReviewNotFoundException.class);
   }
 
+  @Test
+  @DisplayName("인기 리뷰 조회 - 대시보드에 집계된 데이터가 없을 경우 빈 리스트 반환 (Coverage 보완)")
+  void getPopularReviews_emptyList() {
+    // given: DB에 저장된 인기 리뷰가 아예 없는 상황
+    given(popularReviewRepository.findTopByPeriodOrderByBaseDateDesc(PeriodType.DAILY))
+        .willReturn(Optional.empty());
+    given(popularReviewRepository.findAll()).willReturn(List.of());
+
+    // when
+    List<PopularReviewDto> result = reviewService.getPopularReviews("DAILY");
+
+    // then: isEmpty()에 걸려 List.of()가 반환되어야 함
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  @DisplayName("인기 리뷰 조회 - 대시보드 데이터는 있으나 원본 리뷰가 삭제된 경우 무시 (Coverage 보완)")
+  void getPopularReviews_reviewIsNull() {
+    // given: 대시보드에는 랭킹 데이터가 있음
+    PopularReview pr = mock(PopularReview.class);
+    given(pr.getPeriod()).willReturn(PeriodType.DAILY);
+    given(pr.getBaseDate()).willReturn(LocalDate.now());
+    given(pr.getRanking()).willReturn(1L);
+    given(pr.getReviewId()).willReturn(reviewId);
+
+    given(popularReviewRepository.findTopByPeriodOrderByBaseDateDesc(PeriodType.DAILY))
+        .willReturn(Optional.of(pr));
+    given(popularReviewRepository.findAll()).willReturn(List.of(pr));
+
+    // 핵심: 원본 리뷰 저장소에서는 해당 리뷰를 못 찾음 (빈 리스트 반환) -> review == null 상황 유도
+    given(reviewRepository.findAllById(List.of(reviewId))).willReturn(List.of());
+
+    // when
+    List<PopularReviewDto> result = reviewService.getPopularReviews("DAILY");
+
+    // then: null로 처리되어 .filter(Objects::nonNull)에서 걸러지므로 최종 결과는 빈 리스트여야 함
+    assertThat(result).isEmpty();
+  }
+
 }
