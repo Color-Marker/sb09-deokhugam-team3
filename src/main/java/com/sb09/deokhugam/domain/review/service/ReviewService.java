@@ -3,6 +3,7 @@ package com.sb09.deokhugam.domain.review.service;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
+import com.sb09.deokhugam.domain.review.dto.response.PopularReviewDto;
 import com.sb09.deokhugam.domain.review.dto.response.ReviewDto;
 import com.sb09.deokhugam.domain.review.dto.response.ReviewLikeDto;
 import com.sb09.deokhugam.global.common.dto.CursorPageResponseDto;
@@ -27,7 +28,7 @@ public interface ReviewService {
   ReviewLikeDto toggleLike(UUID reviewId, UUID userId);
 
   // 인기 리뷰 조회
-  List<ReviewDto> getPopularReviews(String period);
+  List<PopularReviewDto> getPopularReviews(String period);
 
   // 리뷰 상세 조회
   ReviewDto getReviewDetail(UUID reviewId, UUID currentUserId);

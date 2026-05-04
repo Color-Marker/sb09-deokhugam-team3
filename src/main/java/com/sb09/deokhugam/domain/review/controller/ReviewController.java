@@ -4,6 +4,7 @@ import com.sb09.deokhugam.domain.review.controller.api.ReviewApi;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewCreateRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewListRequest;
 import com.sb09.deokhugam.domain.review.dto.request.ReviewUpdateRequest;
+import com.sb09.deokhugam.domain.review.dto.response.PopularReviewDto;
 import com.sb09.deokhugam.domain.review.dto.response.ReviewDto;
 import com.sb09.deokhugam.domain.review.dto.response.ReviewLikeDto;
 import com.sb09.deokhugam.domain.review.service.ReviewService;
@@ -114,7 +115,7 @@ public class ReviewController implements ReviewApi {
       @RequestParam(defaultValue = "ALL") String period
   ) {
     // 서비스 호출할 때 period 값을 넘겨주도록 수정
-    List<ReviewDto> popularReviews = reviewService.getPopularReviews(period);
+    List<PopularReviewDto> popularReviews = reviewService.getPopularReviews(period);
 
     // 프론트엔드 맞춰 "content"라는 구조로 반환
     return ResponseEntity.ok(java.util.Map.of("content", popularReviews));
