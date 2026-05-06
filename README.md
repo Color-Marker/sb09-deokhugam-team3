@@ -2,7 +2,7 @@
 
 [![codecov](https://codecov.io/gh/Color-Marker/sb09-deokhugam-team3/graph/badge.svg?token=8RJEEWB8CZ)](https://codecov.io/gh/Color-Marker/sb09-deokhugam-team3)
 
-### https://www.notion.so/Spring-7213bb75a7708284aaf901e6bf1ffd8c
+### https://titanium-profit-c81.notion.site/Spring-7213bb75a7708284aaf901e6bf1ffd8c?source=copy_link
 
 # 팀원 구성
 
