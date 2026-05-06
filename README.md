@@ -1,4 +1,5 @@
 # SB09-DEOKHUGAM-TEAM3
+
 [![codecov](https://codecov.io/gh/Color-Marker/sb09-deokhugam-team3/graph/badge.svg?token=8RJEEWB8CZ)](https://codecov.io/gh/Color-Marker/sb09-deokhugam-team3)
 
 ### https://www.notion.so/Spring-7213bb75a7708284aaf901e6bf1ffd8c
@@ -17,7 +18,10 @@
 
 최재훈 https://github.com/cjhh0707
 
+---
+
 # 프로젝트 소개
+
 제목: 덕후감
 
 소개: 도서 이미지 OCR 및 ISBN 매칭 서비스
@@ -28,4 +32,462 @@
 
 덕후감은 독서를 혼자만의 취미가 아닌, 함께 나누는 즐거움으로 확장하는 경험을 제공합니다. ✨📘
 
-프로젝트 기간: 
+프로젝트 기간: 2026.04.14(화) 13시 ~ 2026.05.07(목) 14시
+
+---
+
+# 기술 스택
+
+| 분류                 | 기술 스택                                                               |
+|:-------------------|:--------------------------------------------------------------------|
+| **Backend**        | Java 17, Spring Boot, Spring Data JPA, Hibernate, Swagger (OAS 3.0) |
+| **Database**       | PostgreSQL(운영), H2(local/test), DataGrip                            |
+| **Infra / DevOps** | AWS ECS(Rolling Update), GitHub Actions, Naver API (Book/OCR)       |
+| **Test / Quality** | JUnit5, JaCoCo, Codecov                                             |
+| **Tools**          | Git & GitHub, Figma, Postman, Notion, Discord                       |
+
+---
+
+# 팀원별 구현 기능 상세
+
+### 강지원
+
+- **댓글 등록**
+    - 리뷰에 댓글을 작성하는 기능 구현
+    - ReviewRepository와 연동하여 논리삭제된 리뷰에는 댓글 등록 불가 처리
+    - Notification과 연동하여 댓글 작성 시 해당 리뷰 작성자에게 알림이 가도록 처리
+    - 댓글 등록 시 리뷰의 commentCount 즉시 동기화 처리
+- **댓글 수정**
+    - 본인이 작성한 댓글인지 검증 후 댓글을 수정하는 기능 구현
+- **댓글 단건 조회**
+    - 논리삭제되지 않은 댓글을 조회하는 기능 구현
+- **댓글 목록 조회**
+    - @Query를 활용한 커서 페이지네이션 기반 댓글 목록 조회 기능 구현
+    - createdAt, commentId 두 가지를 복합 정렬 조건으로 사용하여 정확한 순서를 보장하도록 구현
+    - AND/OR 우선순위 괄호 처리로 다른 리뷰 댓글 혼입 방지
+- **댓글 삭제**
+    - softDelete, hardDelete 두 가지 기능을 모두 지원하도록 구현
+    - softDelete는 deletedAt 필드를 기록하여 논리삭제 처리
+    - hardDelete는 DB에서 영구삭제 처리
+    - 논리삭제된 댓글을 물리삭제 시 commentCount 이중 차감 방지 로직 적용
+- **공통 기여**
+    - BaseEntity 날짜 형식 ISO 8601 (yyyy-MM-dd'T'HH:mm:ss) 통일
+    - 전 도메인 오류 경우의 수 분석 및 팀 노션 문서화
+
+---
+
+### 김은애
+
+- **알림 생성 및 업데이트 처리**
+    - 각 상황에 따른 알람 생성 기능 구현
+    - 타 서비스 작업 완료 시 자동 실행 되도록 연결
+- **스프링 배치 작업 구현**
+    - 스프링 배치 config 및 실행용 스케줄러 구현
+- **로그 메시지 및 Actuator 설정**
+    - MDC에 IP 등 필요 정보 추가하여 로그 메시지 형태 구현
+    - 커스텀 매트릭 추가하여 Actuator로 배치 상태 체크 가능하도록 구현
+- **인기 도서 대시보드 작업 구현 보조**
+    - 도서 점수 계산 로직 쿼리 구현
+    - 인기 도서 테이블에 로직 결과 저장 구현
+
+---
+
+### 서현하
+
+- **리뷰 CRUD 및 권한 검증**
+    - 사용자가 특정 도서에 대해 리뷰를 작성, 조회, 수정, 삭제할 수 있는 핵심 API 구현
+    - JWT 기반 인증 정보를 활용하여 작성자 본인만 수정 및 삭제 로직에 접근할 수 있도록 권한 검증 적용
+- **도서별 리뷰 작성 제한 (비즈니스 로직)**
+    - 특정 도서에 대한 리뷰 독점 방지를 위해 사용자당 도서별 1개의 리뷰만 작성 가능하도록 설계
+    - 중복 작성 시도 시 전역 커스텀 예외(Global Exception) 발생 및 일관된 에러 응답 처리
+- **조회 성능 최적화**
+    - 마지막으로 조회한 식별자 기준의 커서 기반 페이지네이션 도입으로 DB 조회 성능 최적화
+- **복합 데이터 단일 응답 처리**
+    - 목록 조회 시 현재 로그인한 사용자의 좋아요 여부를 응답에 포함하여 프론트엔드 API 호출 최소화
+    - N+1 문제 방지를 위한 쿼리 최적화 수행
+
+---
+
+### 윤금비
+
+- **사용자 회원가입 및 로그인**
+    - Stateless 인증 구조: 세션/토큰 저장소 없이 고유 식별자를 반환하여 클라이언트 중심의 상태 관리 구현
+    - 보안 및 유효성 검증: BCrypt 암호화 및 정규표현식 기반 유효성 검증 어노테이션 적용
+    - 재가입 방지 로직: 논리 삭제된 계정을 포함한 전체 이메일 중복 검사로 탈퇴 계정 재가입 원천 차단
+    - API 문서 최적화: Swagger 내 @Schema를 활용하여 정규식 기반 난수 생성 오류 해결 및 예시값 고정
+- **사용자 정보 관리 및 보안**
+    - 리소스 소유권 검증: 요청 헤더 ID와 대상 리소스 ID 대조를 통한 타인 정보 수정 및 접근 차단
+    - 닉네임 수정 기능: 프론트엔드 요구사항에 맞춘 단일 필드 데이터 갱신 지원
+- **사용자 논리 및 물리 삭제 (Spring Batch)**
+    - 이중 삭제 전략: BaseFullAuditEntity 기반 논리 삭제와 배치 처리를 통한 물리 삭제 병행
+    - Spring Batch 자동화: 매일 자정 논리 삭제 후 24시간 경과 데이터를 자동 제거하는 배치 파이프라인 구축
+    - 작업 안정성 확보: JobParameters 기반 중복 실행 방지 및 단계별(Job-Step-Tasklet) 구조 설계
+- **데이터 정합성 및 모니터링**
+    - 연쇄 삭제 자동화: DB 레벨 ON DELETE CASCADE 설정을 통한 관련 데이터 연계 무결성 보장
+    - 배치 메트릭 기록: BatchMetricsService를 통한 삭제 건수 기록 및 배치 결과 모니터링 환경 마련
+
+---
+
+### 전명훈
+
+- **인프라 및 CI/CD 자동화**
+    - GitHub Actions 기반 CI 파이프라인: PR 생성 시 자동화 테스트를 수행하여 코드 안정성 조기 확보
+    - AWS ECS 자동 배포: 새벽 3시 자동 롤링 배포 환경 및 예비용 수동 배포 시스템 구축
+    - 서버리스 로그 아카이빙: AWS Lambda를 활용한 CloudWatch 로그의 S3 자동 적재 및 비용 최적화
+- **배치 기반 통계 및 랭킹 시스템**
+    - 데이터 스케줄링: 매일 정기적으로 데이터를 가공하여 일간·주간·월간·역대 순위 갱신
+    - 가중치 기반 랭킹 알고리즘: 도서(리뷰+평점), 리뷰(좋아요+댓글), 유저(참여도 종합) 활동 점수 산출
+- **테스트 품질 관리 체계**
+    - JaCoCo 품질 게이트 도입: Java Code Coverage를 연동하여 프로젝트 전반의 신뢰성 지표화
+    - 테스트 커버리지 자동화: 시각화된 HTML 리포트 자동 생성을 통한 도메인별 보완 환경 조성
+
+---
+
+### 최재훈
+
+- **도서 등록 / 수정 / 삭제**
+    - 도서 CRUD RESTful API 엔드포인트 구현 (Spring Data JPA)
+    - 동일 ISBN 재등록 시 논리 삭제된 도서를 복구하는 3단계 ISBN 검증 로직 구현
+    - 썸네일 이미지 AWS S3 업로드 및 URL 저장 처리
+- **Naver API / OCR 연동**
+    - Naver Search API를 활용한 ISBN 기반 도서 정보 자동 조회 기능 구현
+    - OCR Space API를 활용한 이미지 기반 ISBN 인식 기능 구현
+- **도서 목록 조회**
+    - 제목/저자/ISBN 키워드 부분 일치 검색 기능 구현
+    - 제목, 출판일, 평점, 리뷰 수 기준 정렬 및 커서 기반 페이지네이션 구현 (QueryDSL)
+
+---
+
+# 프로젝트 파일 구조
+
+```
+sb09-deokhugam-team3
+├── .github
+│   └── workflows
+│       ├── ci.yml
+│       └── deploy.yml
+├── src
+│   ├── main
+│   │   ├── java
+│   │   │   └── com.sb09.deokhugam
+│   │   │       ├── config
+│   │   │       │   ├── AppConfig
+│   │   │       │   ├── PasswordEncoderConfig
+│   │   │       │   ├── QueryDslConfig
+│   │   │       │   ├── RequestTrackingFilter
+│   │   │       │   ├── S3Config
+│   │   │       │   ├── SwaggerConfig
+│   │   │       │   ├── UserHeaderInterceptor
+│   │   │       │   └── WebConfig
+│   │   │       ├── domain
+│   │   │       │   ├── book
+│   │   │       │   │   ├── controller
+│   │   │       │   │   │   ├── api
+│   │   │       │   │   │   │   └── BookApi
+│   │   │       │   │   │   └── BookController
+│   │   │       │   │   ├── dto
+│   │   │       │   │   │   ├── request
+│   │   │       │   │   │   │   ├── BookCreateRequest
+│   │   │       │   │   │   │   ├── BookSearchCondition
+│   │   │       │   │   │   │   └── BookUpdateRequest
+│   │   │       │   │   │   ├── BookDto
+│   │   │       │   │   │   ├── NaverBookDto
+│   │   │       │   │   │   └── PopularBookDto
+│   │   │       │   │   ├── entity
+│   │   │       │   │   │   └── Book
+│   │   │       │   │   ├── mapper
+│   │   │       │   │   │   └── BookMapper
+│   │   │       │   │   ├── repository
+│   │   │       │   │   │   ├── custom
+│   │   │       │   │   │   │   ├── CustomBookRepository
+│   │   │       │   │   │   │   └── CustomBookRepositoryImpl
+│   │   │       │   │   │   └── BookRepository
+│   │   │       │   │   └── service
+│   │   │       │   │       ├── basic
+│   │   │       │   │       │   └── BasicBookService
+│   │   │       │   │       └── BookService
+│   │   │       │   ├── comment
+│   │   │       │   │   ├── controller
+│   │   │       │   │   │   ├── api
+│   │   │       │   │   │   │   └── CommentApi
+│   │   │       │   │   │   └── CommentController
+│   │   │       │   │   ├── dto
+│   │   │       │   │   │   ├── request
+│   │   │       │   │   │   │   ├── CommentCreateRequest
+│   │   │       │   │   │   │   ├── CommentListRequest
+│   │   │       │   │   │   │   └── CommentUpdateRequest
+│   │   │       │   │   │   └── CommentDto
+│   │   │       │   │   ├── entity
+│   │   │       │   │   │   └── Comment
+│   │   │       │   │   ├── mapper
+│   │   │       │   │   │   └── CommentMapper
+│   │   │       │   │   ├── repository
+│   │   │       │   │   │   └── CommentRepository
+│   │   │       │   │   └── service
+│   │   │       │   │       ├── basic
+│   │   │       │   │       │   └── BasicCommentService
+│   │   │       │   │       └── CommentService
+│   │   │       │   ├── dashboard
+│   │   │       │   │   ├── batch
+│   │   │       │   │   │   ├── config
+│   │   │       │   │   │   │   ├── PopularBookBatchConfig
+│   │   │       │   │   │   │   ├── PopularReviewBatchConfig
+│   │   │       │   │   │   │   └── PowerUserBatchConfig
+│   │   │       │   │   │   └── scheduler
+│   │   │       │   │   │       ├── PopularBookBatchScheduler
+│   │   │       │   │   │       ├── PopularReviewBatchScheduler
+│   │   │       │   │   │       └── PowerUserBatchScheduler
+│   │   │       │   │   ├── dto
+│   │   │       │   │   │   ├── PopularBookScoreDto
+│   │   │       │   │   │   ├── PopularReviewScoreDto
+│   │   │       │   │   │   └── PowerUserScoreDto
+│   │   │       │   │   ├── entity
+│   │   │       │   │   │   ├── PeriodType
+│   │   │       │   │   │   ├── PopularBook
+│   │   │       │   │   │   ├── PopularReview
+│   │   │       │   │   │   └── PowerUser
+│   │   │       │   │   ├── event
+│   │   │       │   │   │   └── PopularReviewTop10Event
+│   │   │       │   │   ├── repository
+│   │   │       │   │   │   ├── DashboardQueryRepository
+│   │   │       │   │   │   ├── PopularBookRepository
+│   │   │       │   │   │   ├── PopularReviewRepository
+│   │   │       │   │   │   └── PowerUserRepository
+│   │   │       │   │   └── service
+│   │   │       │   │       ├── basic
+│   │   │       │   │       │   ├── BasicPopularBookService
+│   │   │       │   │       │   ├── BasicPopularReviewService
+│   │   │       │   │       │   └── BasicPowerUserService
+│   │   │       │   │       ├── PopularBookService
+│   │   │       │   │       ├── PopularReviewService
+│   │   │       │   │       └── PowerUserService
+│   │   │       │   ├── notification
+│   │   │       │   │   ├── controller
+│   │   │       │   │   │   ├── api
+│   │   │       │   │   │   │   └── NotificationApi
+│   │   │       │   │   │   └── NotificationController
+│   │   │       │   │   ├── dto
+│   │   │       │   │   │   ├── request
+│   │   │       │   │   │   │   ├── NotificationListRequest
+│   │   │       │   │   │   │   └── NotificationUpdateRequest
+│   │   │       │   │   │   └── response
+│   │   │       │   │   │       └── NotificationDto
+│   │   │       │   │   ├── entity
+│   │   │       │   │   │   ├── Notification
+│   │   │       │   │   │   └── NotificationType
+│   │   │       │   │   ├── mapper
+│   │   │       │   │   │   └── NotificationMapper
+│   │   │       │   │   ├── repository
+│   │   │       │   │   │   ├── basic
+│   │   │       │   │   │   │   └── NotificationRepositoryImpl
+│   │   │       │   │   │   ├── NotificationRepository
+│   │   │       │   │   │   └── NotificationRepositoryCustom
+│   │   │       │   │   ├── scheduler
+│   │   │       │   │   │   ├── config
+│   │   │       │   │   │   │   └── NotificationBatchConfig
+│   │   │       │   │   │   └── NotificationBatchScheduler
+│   │   │       │   │   └── service
+│   │   │       │   │       ├── basic
+│   │   │       │   │       │   └── BasicNotificationService
+│   │   │       │   │       └── NotificationService
+│   │   │       │   ├── review
+│   │   │       │   │   ├── controller
+│   │   │       │   │   │   ├── api
+│   │   │       │   │   │   │   └── ReviewApi
+│   │   │       │   │   │   └── ReviewController
+│   │   │       │   │   ├── dto
+│   │   │       │   │   │   ├── request
+│   │   │       │   │   │   │   ├── ReviewCreateRequest
+│   │   │       │   │   │   │   ├── ReviewListRequest
+│   │   │       │   │   │   │   └── ReviewUpdateRequest
+│   │   │       │   │   │   └── response
+│   │   │       │   │   │       ├── PopularReviewDto
+│   │   │       │   │   │       ├── ReviewDto
+│   │   │       │   │   │       └── ReviewLikeDto
+│   │   │       │   │   ├── entity
+│   │   │       │   │   │   ├── Review
+│   │   │       │   │   │   └── ReviewLike
+│   │   │       │   │   ├── mapper
+│   │   │       │   │   │   └── ReviewMapper
+│   │   │       │   │   ├── repository
+│   │   │       │   │   │   ├── basic
+│   │   │       │   │   │   │   └── ReviewRepositoryImpl
+│   │   │       │   │   │   ├── ReviewLikeRepository
+│   │   │       │   │   │   ├── ReviewRepository
+│   │   │       │   │   │   └── ReviewRepositoryCustom
+│   │   │       │   │   └── service
+│   │   │       │   │       ├── basic
+│   │   │       │   │       │   └── BasicReviewService
+│   │   │       │   │       └── ReviewService
+│   │   │       │   └── user
+│   │   │       │       ├── config
+│   │   │       │       │   └── UserBatchConfig
+│   │   │       │       ├── controller
+│   │   │       │       │   ├── api
+│   │   │       │       │   │   └── UserApi
+│   │   │       │       │   └── UserController
+│   │   │       │       ├── dto
+│   │   │       │       │   ├── request
+│   │   │       │       │   │   ├── UserLoginRequest
+│   │   │       │       │   │   ├── UserRegisterRequest
+│   │   │       │       │   │   └── UserUpdateRequest
+│   │   │       │       │   └── response
+│   │   │       │       │       ├── PowerUserDto
+│   │   │       │       │       └── UserResponse
+│   │   │       │       ├── entity
+│   │   │       │       │   └── Users
+│   │   │       │       ├── mapper
+│   │   │       │       │   └── UserMapper
+│   │   │       │       ├── repository
+│   │   │       │       │   └── UserRepository
+│   │   │       │       ├── scheduler
+│   │   │       │       │   └── UserDeletionScheduler
+│   │   │       │       └── service
+│   │   │       │           ├── basic
+│   │   │       │           │   └── BasicUserService
+│   │   │       │           └── UserService
+│   │   │       ├── global
+│   │   │       │   ├── common
+│   │   │       │   │   ├── dto
+│   │   │       │   │   │   └── CursorPageResponseDto
+│   │   │       │   │   ├── entity
+│   │   │       │   │   │   ├── BaseDeleteableEntity
+│   │   │       │   │   │   ├── BaseEntity
+│   │   │       │   │   │   ├── BaseFullAuditEntity
+│   │   │       │   │   │   └── BaseUpdateableEntity
+│   │   │       │   │   └── mapper
+│   │   │       │   │       └── CursorPageResponseMapper
+│   │   │       │   ├── custom
+│   │   │       │   │   └── BatchMetricsService
+│   │   │       │   ├── exception
+│   │   │       │   │   ├── book
+│   │   │       │   │   │   ├── BookException
+│   │   │       │   │   │   ├── BookNotFoundException
+│   │   │       │   │   │   └── DuplicateIsbnException
+│   │   │       │   │   ├── comment
+│   │   │       │   │   │   ├── CommentAlreadyDeletedException
+│   │   │       │   │   │   ├── CommentException
+│   │   │       │   │   │   ├── CommentNotFoundException
+│   │   │       │   │   │   └── ForbiddenAuthorityException
+│   │   │       │   │   ├── notification
+│   │   │       │   │   │   ├── NotificationException
+│   │   │       │   │   │   ├── NotificationForbiddenException
+│   │   │       │   │   │   └── NotificationNotFoundException
+│   │   │       │   │   ├── review
+│   │   │       │   │   │   ├── DuplicateReviewException
+│   │   │       │   │   │   ├── InvalidReviewInputException
+│   │   │       │   │   │   ├── ReviewAlreadyDeletedException
+│   │   │       │   │   │   ├── ReviewException
+│   │   │       │   │   │   ├── ReviewForbiddenException
+│   │   │       │   │   │   └── ReviewNotFoundException
+│   │   │       │   │   ├── user
+│   │   │       │   │   │   ├── DuplicateEmailException
+│   │   │       │   │   │   ├── InvalidUserCredentialsException
+│   │   │       │   │   │   ├── UnauthorizedAccessException
+│   │   │       │   │   │   ├── UserAlreadyDeletedException
+│   │   │       │   │   │   ├── UserException
+│   │   │       │   │   │   └── UserNotFoundException
+│   │   │       │   │   ├── CustomException
+│   │   │       │   │   ├── ErrorCode
+│   │   │       │   │   ├── ErrorResponse
+│   │   │       │   │   └── GlobalExceptionHandler
+│   │   │       │   ├── infrastructure
+│   │   │       │   │   ├── NaverBookClient
+│   │   │       │   │   ├── OcrClient
+│   │   │       │   │   └── S3Service
+│   │   │       │   └── presentation
+│   │   │       │       └── ImageController
+│   │   │       └── DeokhugamApplication
+│   │   └── resources
+│   │       ├── static
+│   │       │   ├── assets
+│   │       │   ├── images
+│   │       │   ├── favicon.ico
+│   │       │   └── index.html
+│   │       ├── application.yaml
+│   │       ├── application-dev.yaml
+│   │       ├── application-prod.yaml
+│   │       ├── application-test.yaml
+│   │       ├── logback.xml
+│   │       └── schema.sql
+│   └── test
+│       └── java
+│           └── com.sb09.deokhugam
+│               └── domain
+│                   ├── book
+│                   │   ├── controller
+│                   │   │   └── BookControllerTest
+│                   │   ├── repository
+│                   │   │   └── CustomBookRepositoryImplTest
+│                   │   └── service
+│                   │       └── BasicBookServiceTest
+│                   ├── comment
+│                   │   ├── controller
+│                   │   │   └── CommentControllerTest
+│                   │   └── service
+│                   │       └── BasicCommentServiceTest
+│                   ├── config
+│                   │   └── QueryDslTestConfig
+│                   ├── dashboard
+│                   │   ├── batch
+│                   │   │   ├── config
+│                   │   │   │   ├── PopularBookBatchConfigTest
+│                   │   │   │   ├── PopularReviewBatchConfigTest
+│                   │   │   │   └── PowerUserBatchConfigTest
+│                   │   │   └── scheduler
+│                   │   │       ├── PopularBookBatchSchedulerTest
+│                   │   │       ├── PopularReviewBatchSchedulerTest
+│                   │   │       └── PowerUserBatchSchedulerTest
+│                   │   ├── dto
+│                   │   │   ├── PopularBookScoreDtoTest
+│                   │   │   ├── PopularReviewScoreDtoTest
+│                   │   │   └── PowerUserScoreDtoTest
+│                   │   ├── repository
+│                   │   │   └── DashboardQueryRepositoryTest
+│                   │   └── service
+│                   │       ├── BasicPopularBookServiceTest
+│                   │       ├── BasicPopularReviewServiceTest
+│                   │       └── BasicPowerUserServiceTest
+│                   ├── notification
+│                   │   ├── controller
+│                   │   │   └── NotificationControllerTest
+│                   │   ├── repository
+│                   │   │   └── NotificationRepositoryTest
+│                   │   └── service
+│                   │       └── BasicNotificationServiceTest
+│                   ├── review
+│                   │   ├── controller
+│                   │   │   └── ReviewControllerTest
+│                   │   ├── repository
+│                   │   │   └── ReviewRepositoryTest
+│                   │   └── service
+│                   │       └── BasicReviewServiceTest
+│                   └── user
+│                       ├── controller
+│                       │   └── UserControllerTest
+│                       └── service
+│                           └── BasicUserServiceTest
+├── .dockerignore
+├── .env
+├── .gitattributes
+├── .gitignore
+├── build.gradle
+├── docker-compose.yml
+├── Dockerfile
+├── gradlew
+├── gradlew.bat
+├── README.md
+└── settings.gradle
+```
+
+---
+
+# 구현 홈페이지
+
+[서비스 배포 링크](http://3.35.165.64:8080/#/)
+
+---
+
+# 프로젝트 회고록
+
+[발표 자료(ppt 완성되면 첨부할 예정)](http://)
