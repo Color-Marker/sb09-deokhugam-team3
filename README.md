@@ -73,6 +73,8 @@
 - **공통 기여**
     - BaseEntity 날짜 형식 ISO 8601 (yyyy-MM-dd'T'HH:mm:ss) 통일
     - 전 도메인 오류 경우의 수 분석 및 팀 노션 문서화
+    - ExceptionHandler 예외전역처리 적용
+    - Webhook 알람 기능으로 협업툴 구성
 
 ---
 
