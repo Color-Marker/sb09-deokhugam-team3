@@ -35,4 +35,7 @@ public interface ReviewRepository extends JpaRepository<Review, UUID>, ReviewRep
   Page<Review> findByDeletedAtIsNull(Pageable pageable);
 
   boolean existsByIdAndDeletedAtIsNull(UUID id);
+
+  // 배치 삭제용: 특정 유저들의 활성 리뷰 조회
+  List<Review> findAllByUserIdInAndDeletedAtIsNull(List<UUID> userIds);
 }
