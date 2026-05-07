@@ -733,7 +733,7 @@ public class BasicReviewServiceTest {
 
     // then
     verify(review, times(1)).markAsDeleted();
-    verify(book, times(1)).updateRatingAndReviewCount(any(), eq(0)); // 0개로 업데이트 되었는지 확인
+    verify(book, times(1)).removeReviewStat(5); // 별점 5점 차감 호출 확인
   }
 
   @Test
