@@ -385,6 +385,11 @@ public class BasicReviewService implements ReviewService {
     Review review = reviewRepository.findById(reviewId)
         .orElseThrow(() -> ReviewNotFoundException.withId(reviewId));
 
+    Book book = bookRepository.findById(review.getBookId()).orElse(null);
+    if (book != null) {
+      removeBookStats(book, review.getRating());
+    }
+
     // 엔티티에 설정된 cascade = CascadeType.ALL 옵션으로 좋아요도 함께 물리 삭제됨
     reviewRepository.delete(review);
   }
@@ -408,20 +413,9 @@ public class BasicReviewService implements ReviewService {
    * [내부 로직] 도서 평균 평점 및 리뷰 수 계산 (리뷰 삭제 시 차감용)
    */
   private void removeBookStats(Book book, Integer deletedRatingValue) {
-    int newReviewCount = book.getReviewCount() - 1;
-    double newAverage = 0.0;
-
-    // 리뷰가 아직 남아있다면 평점 다시 계산
-    if (newReviewCount > 0) {
-      double currentTotal = book.getRating().doubleValue() * book.getReviewCount();
-      newAverage = (currentTotal - deletedRatingValue) / newReviewCount;
-    }
-
-    BigDecimal finalRating = BigDecimal.valueOf(newAverage).setScale(2, RoundingMode.HALF_UP);
-    book.updateRatingAndReviewCount(finalRating, newReviewCount);
-
-    log.info("도서 통계가 업데이트되었습니다(삭제 반영). bookId: {}, 새 평균 평점: {}, 총 리뷰 수: {}", book.getId(),
-        finalRating, newReviewCount);
+    book.removeReviewStat(deletedRatingValue);
+    log.info("도서 통계가 업데이트되었습니다(삭제 반영). bookId: {}, 새 평균 평점: {}, 총 리뷰 수: {}",
+        book.getId(), book.getRating(), book.getReviewCount());
   }
 
   private void validateReviewData(Integer rating, String content) {

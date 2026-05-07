@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -80,5 +81,16 @@ public class Book extends BaseFullAuditEntity {
   public void updateRatingAndReviewCount(BigDecimal rating, int reviewCount) {
     this.rating = rating;
     this.reviewCount = reviewCount;
+  }
+
+  public void removeReviewStat(Integer deletedRating) {
+    int newReviewCount = this.reviewCount - 1;
+    double newAverage = 0.0;
+    if (newReviewCount > 0) {
+      double currentTotal = this.rating.doubleValue() * this.reviewCount;
+      newAverage = (currentTotal - deletedRating) / newReviewCount;
+    }
+    this.rating = BigDecimal.valueOf(newAverage).setScale(2, RoundingMode.HALF_UP);
+    this.reviewCount = newReviewCount;
   }
 }

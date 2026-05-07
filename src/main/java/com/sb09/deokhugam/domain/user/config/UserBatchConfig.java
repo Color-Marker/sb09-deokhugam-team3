@@ -1,11 +1,15 @@
 package com.sb09.deokhugam.domain.user.config;
 
+import com.sb09.deokhugam.domain.book.entity.Book;
+import com.sb09.deokhugam.domain.book.repository.BookRepository;
+import com.sb09.deokhugam.domain.review.entity.Review;
+import com.sb09.deokhugam.domain.review.repository.ReviewRepository;
 import com.sb09.deokhugam.domain.user.entity.Users;
 import com.sb09.deokhugam.domain.user.repository.UserRepository;
 import com.sb09.deokhugam.global.custom.BatchMetricsService;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -27,6 +31,8 @@ public class UserBatchConfig {
   private final JobRepository jobRepository;
   private final PlatformTransactionManager platformTransactionManager;
   private final UserRepository userRepository;
+  private final ReviewRepository reviewRepository;
+  private final BookRepository bookRepository;
   private final BatchMetricsService batchMetricsService;
 
 
@@ -57,9 +63,19 @@ public class UserBatchConfig {
   public Tasklet deleteUserTasklet() {
     return (contribution, chunkContext) -> {
       LocalDateTime threshold = LocalDateTime.now().minusDays(1);
-      List<Users> targets =
-          userRepository.findAllByDeletedAtBefore(threshold);
+      List<Users> targets = userRepository.findAllByDeletedAtBefore(threshold);
       if (!targets.isEmpty()) {
+        List<UUID> targetUserIds = targets.stream().map(Users::getId).toList();
+
+        // DB CASCADE 삭제 전, 활성 리뷰의 별점을 도서 통계에서 먼저 차감
+        List<Review> activeReviews =
+            reviewRepository.findAllByUserIdInAndDeletedAtIsNull(targetUserIds);
+
+        for (Review review : activeReviews) {
+          bookRepository.findById(review.getBookId())
+              .ifPresent(book -> book.removeReviewStat(review.getRating()));
+        }
+
         long deletedCount = targets.size();
         userRepository.deleteAll(targets);
         batchMetricsService.recordDeleted("user", deletedCount);
