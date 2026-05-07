@@ -2,7 +2,7 @@
 
 [![codecov](https://codecov.io/gh/Color-Marker/sb09-deokhugam-team3/graph/badge.svg?token=8RJEEWB8CZ)](https://codecov.io/gh/Color-Marker/sb09-deokhugam-team3)
 
-### https://www.notion.so/Spring-7213bb75a7708284aaf901e6bf1ffd8c
+### https://titanium-profit-c81.notion.site/Spring-7213bb75a7708284aaf901e6bf1ffd8c?source=copy_link
 
 # 팀원 구성
 
@@ -73,6 +73,8 @@
 - **공통 기여**
     - BaseEntity 날짜 형식 ISO 8601 (yyyy-MM-dd'T'HH:mm:ss) 통일
     - 전 도메인 오류 경우의 수 분석 및 팀 노션 문서화
+    - ExceptionHandler 예외전역처리 적용
+    - Webhook 알람 기능으로 협업툴 구성
 
 ---
 
@@ -117,8 +119,7 @@
     - API 문서 최적화: Swagger 내 @Schema를 활용하여 정규식 기반 난수 생성 오류 해결 및 예시값 고정
 - **사용자 정보 관리 및 보안**
     - 리소스 소유권 검증: 요청 헤더 ID와 대상 리소스 ID 대조를 통한 타인 정보 수정 및 접근 차단
-    - 닉네임 수정 기능: 프론트엔드 요구사항에 맞춘 단일 필드 데이터 갱신 지원
-- **사용자 논리 및 물리 삭제 (Spring Batch)**
+- **사용자 논리 및 물리 삭제 **
     - 이중 삭제 전략: BaseFullAuditEntity 기반 논리 삭제와 배치 처리를 통한 물리 삭제 병행
     - Spring Batch 자동화: 매일 자정 논리 삭제 후 24시간 경과 데이터를 자동 제거하는 배치 파이프라인 구축
     - 작업 안정성 확보: JobParameters 기반 중복 실행 방지 및 단계별(Job-Step-Tasklet) 구조 설계
