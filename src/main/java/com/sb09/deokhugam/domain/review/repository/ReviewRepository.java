@@ -22,7 +22,7 @@ public interface ReviewRepository extends JpaRepository<Review, UUID>, ReviewRep
       WHERE r.createdAt >= :from AND r.createdAt < :to
       AND r.deletedAt IS NULL
       GROUP BY r.bookId
-      ORDER BY (COUNT(r) * 0.4 + AVG(r.rating) * 0.6) DESC
+      ORDER BY (COUNT(r) * 0.4 + AVG(r.rating) * 0.6) DESC, r.bookId ASC
       """)
   List<Object[]> calculateBookByPeriod(@Param("from") LocalDateTime from,
       @Param("to") LocalDateTime to);
